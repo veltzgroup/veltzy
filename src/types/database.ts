@@ -1,0 +1,408 @@
+export type AppRole = 'super_admin' | 'admin' | 'manager' | 'seller'
+export type LeadStatus = 'new' | 'qualifying' | 'open' | 'deal' | 'lost'
+export type LeadTemperature = 'cold' | 'warm' | 'hot' | 'fire'
+export type SenderType = 'ai' | 'human' | 'lead'
+export type ConversationStatus = 'unread' | 'read' | 'replied' | 'waiting_client' | 'waiting_internal' | 'resolved'
+export type IntegrationType = 'manual' | 'webhook' | 'whatsapp_api' | 'instagram_api' | 'linkedin_api'
+
+export interface CompanyFeatures {
+  whatsapp_enabled: boolean
+  instagram_enabled: boolean
+  ai_sdr_enabled: boolean
+  custom_pipeline: boolean
+  export_reports: boolean
+  automation_rules: boolean
+  max_users: number
+  max_leads: number
+}
+
+export interface Company {
+  id: string
+  name: string
+  slug: string
+  logo_url: string | null
+  primary_color: string
+  secondary_color: string
+  features: CompanyFeatures
+  settings: Record<string, unknown>
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface Profile {
+  id: string
+  user_id: string
+  company_id: string | null
+  email: string
+  name: string
+  is_available: boolean
+  last_seen_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface UserRole {
+  id: string
+  user_id: string
+  role: AppRole
+}
+
+export interface SystemSetting {
+  id: string
+  company_id: string
+  key: string
+  value: Record<string, unknown>
+  created_at: string
+  updated_at: string
+}
+
+export interface PipelineStage {
+  id: string
+  company_id: string
+  name: string
+  slug: string
+  position: number
+  color: string
+  is_final: boolean
+  is_positive: boolean | null
+  created_at: string
+  updated_at: string
+}
+
+export interface AdContext {
+  ad_id?: string
+  ad_title?: string
+  ad_body?: string
+  photo_url?: string
+  media_url?: string
+  media_type?: 'image' | 'video'
+  source?: string
+  source_url?: string
+  ctwa_clid?: string
+}
+
+export interface Lead {
+  id: string
+  company_id: string
+  name: string | null
+  phone: string
+  email: string | null
+  instagram_id: string | null
+  linkedin_id: string | null
+  source_id: string | null
+  stage_id: string
+  status: LeadStatus
+  temperature: LeadTemperature
+  ai_score: number
+  assigned_to: string | null
+  is_ai_active: boolean
+  is_queued: boolean
+  conversation_status: ConversationStatus
+  tags: string[]
+  deal_value: number | null
+  observations: string | null
+  avatar_url: string | null
+  ad_context: AdContext | null
+  created_at: string
+  updated_at: string
+}
+
+export interface LeadWithDetails extends Lead {
+  profiles?: Partial<Profile> | null
+  lead_sources?: LeadSourceRecord | null
+  pipeline_stages?: PipelineStage | null
+}
+
+export interface CreateLeadInput {
+  name?: string
+  phone: string
+  email?: string
+  source_id?: string
+  stage_id: string
+  temperature?: LeadTemperature
+  deal_value?: number
+  observations?: string
+  assigned_to?: string
+  tags?: string[]
+}
+
+export interface UpdateLeadInput {
+  name?: string | null
+  phone?: string
+  email?: string | null
+  source_id?: string | null
+  stage_id?: string
+  status?: LeadStatus
+  temperature?: LeadTemperature
+  ai_score?: number
+  assigned_to?: string | null
+  is_ai_active?: boolean
+  tags?: string[]
+  deal_value?: number | null
+  observations?: string | null
+  conversation_status?: ConversationStatus
+}
+
+export type MessageType = 'text' | 'image' | 'audio' | 'video' | 'document' | 'sticker' | 'location' | 'contact'
+export type MessageSource = 'whatsapp' | 'instagram' | 'linkedin' | 'manual'
+export type WhatsAppStatus = 'connected' | 'disconnected' | 'connecting' | 'error'
+
+export interface Message {
+  id: string
+  lead_id: string
+  company_id: string
+  content: string
+  sender_type: SenderType
+  message_type: MessageType
+  file_url: string | null
+  file_name: string | null
+  file_mime_type: string | null
+  file_size: number | null
+  source: MessageSource
+  external_id: string | null
+  replied_message_id: string | null
+  is_scheduled: boolean
+  scheduled_at: string | null
+  is_read: boolean
+  created_at: string
+}
+
+export interface SendMessagePayload {
+  leadId: string
+  content: string
+  messageType?: MessageType
+  fileUrl?: string
+  fileName?: string
+  mimeType?: string
+  repliedMessageId?: string
+}
+
+export interface WhatsAppConfig {
+  id: string
+  company_id: string
+  instance_id: string
+  instance_token: string
+  client_token: string
+  phone_number: string | null
+  status: WhatsAppStatus
+  qr_code: string | null
+  connected_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface ReplyTemplate {
+  id: string
+  company_id: string
+  title: string
+  content: string
+  category: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface LeadWithLastMessage extends Lead {
+  profiles?: Partial<Profile> | null
+  lead_sources?: LeadSourceRecord | null
+  last_message?: Pick<Message, 'content' | 'sender_type' | 'created_at' | 'message_type'> | null
+  unread_count?: number
+}
+
+export type AutomationTrigger = 'lead_created' | 'lead_stage_changed' | 'lead_temperature_changed' | 'message_received' | 'no_response' | 'deal_closed' | 'lead_lost'
+export type AutomationAction = 'send_message' | 'change_stage' | 'assign_lead' | 'add_tag' | 'remove_tag' | 'update_temperature' | 'send_webhook' | 'notify_team'
+export type NotificationType = 'new_lead' | 'lead_assigned' | 'new_message' | 'lead_transferred' | 'system'
+
+export interface AutomationCondition {
+  field: string
+  operator: 'eq' | 'neq' | 'gt' | 'lt' | 'contains' | 'in'
+  value: unknown
+}
+
+export interface AutomationRule {
+  id: string
+  company_id: string
+  name: string
+  trigger_type: AutomationTrigger
+  conditions: AutomationCondition[]
+  action_type: AutomationAction
+  action_data: Record<string, unknown>
+  priority: number
+  is_enabled: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface AutomationLog {
+  id: string
+  company_id: string
+  rule_id: string | null
+  lead_id: string | null
+  status: 'success' | 'failed' | 'skipped'
+  trigger_data: Record<string, unknown>
+  old_value: Record<string, unknown> | null
+  new_value: Record<string, unknown> | null
+  error_message: string | null
+  executed_at: string
+}
+
+export interface Notification {
+  id: string
+  company_id: string
+  user_id: string
+  type: NotificationType
+  title: string
+  body: string | null
+  action_type: string | null
+  action_data: Record<string, unknown>
+  is_read: boolean
+  created_at: string
+}
+
+export interface SdrConfig {
+  enabled: boolean
+  model: string
+  prompt: string
+  api_key?: string
+}
+
+export interface AutoReplyConfig {
+  enabled: boolean
+  message: string
+  schedule: {
+    start: string
+    end: string
+    days: number[]
+    timezone: string
+  }
+}
+
+export interface CompanyInvite {
+  id: string
+  company_id: string
+  email: string
+  role: AppRole
+  invite_code: string
+  invited_by: string | null
+  accepted_at: string | null
+  expires_at: string
+  created_at: string
+}
+
+export interface ProfileWithRole extends Profile {
+  user_roles?: UserRole[]
+}
+
+export interface ConversionMetrics {
+  totalLeads: number
+  dealsClosed: number
+  conversionRate: number
+  totalRevenue: number
+  prevTotalLeads: number
+  prevDealsClosed: number
+  prevConversionRate: number
+  prevTotalRevenue: number
+}
+
+export interface SourceMetrics {
+  source_id: string
+  name: string
+  color: string
+  count: number
+}
+
+export interface StageMetrics {
+  stage_id: string
+  name: string
+  color: string
+  position: number
+  count: number
+  value: number
+}
+
+export interface SellerMetrics {
+  profile_id: string
+  name: string
+  leads_count: number
+  deals_count: number
+  conversion_rate: number
+  avg_response_minutes: number | null
+  is_available: boolean
+}
+
+export interface MonthlyData {
+  month: string
+  leads: number
+  deals: number
+}
+
+export interface SourceIntegration {
+  id: string
+  company_id: string
+  source_id: string
+  integration_type: IntegrationType
+  config: Record<string, unknown>
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface InstagramConnection {
+  id: string
+  company_id: string
+  page_id: string
+  page_name: string | null
+  instagram_account_id: string
+  instagram_username: string | null
+  access_token: string
+  token_expires_at: string | null
+  is_active: boolean
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type TicketPriority = 'low' | 'medium' | 'high' | 'critical'
+export type TicketStatus = 'open' | 'in_progress' | 'resolved' | 'closed'
+
+export interface SupportTicket {
+  id: string
+  company_id: string | null
+  user_id: string | null
+  title: string
+  description: string
+  error_message: string | null
+  error_stack: string | null
+  page_url: string | null
+  user_agent: string | null
+  priority: TicketPriority
+  status: TicketStatus
+  resolved_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface ActivityLog {
+  id: string
+  company_id: string
+  user_id: string | null
+  action: string
+  resource_type: string
+  resource_id: string | null
+  metadata: Record<string, unknown>
+  created_at: string
+}
+
+export interface LeadSourceRecord {
+  id: string
+  company_id: string | null
+  name: string
+  slug: string
+  color: string
+  icon_name: string
+  is_active: boolean
+  is_system: boolean
+  created_at: string
+  updated_at: string
+}

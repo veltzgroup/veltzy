@@ -1,0 +1,153 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+interface Condition {
+  field: string
+  operator: 'eq' | 'neq' | 'gt' | 'lt' | 'contains' | 'in'
+  value: unknown
+}
+
+function evaluateCondition(condition: Condition, lead: Record<string, unknown>): boolean {
+  const fieldValue = lead[condition.field]
+  switch (condition.operator) {
+    case 'eq': return fieldValue === condition.value
+    case 'neq': return fieldValue !== condition.value
+    case 'gt': return Number(fieldValue) > Number(condition.value)
+    case 'lt': return Number(fieldValue) < Number(condition.value)
+    case 'contains': return String(fieldValue).includes(String(condition.value))
+    case 'in': return Array.isArray(condition.value) && (condition.value as unknown[]).includes(fieldValue)
+    default: return false
+  }
+}
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
+  try {
+    const { trigger, leadId, companyId, triggerData } = await req.json()
+
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    )
+
+    const { data: rules } = await supabase
+      .from('automation_rules')
+      .select('*')
+      .eq('company_id', companyId)
+      .eq('trigger_type', trigger)
+      .eq('is_enabled', true)
+      .order('priority', { ascending: false })
+
+    if (!rules || rules.length === 0) {
+      return new Response(JSON.stringify({ executed: 0 }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
+    const { data: lead } = await supabase
+      .from('leads')
+      .select('*')
+      .eq('id', leadId)
+      .single()
+
+    if (!lead) {
+      return new Response(JSON.stringify({ error: 'Lead not found' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
+    let executed = 0
+
+    for (const rule of rules) {
+      const conditions = (rule.conditions as Condition[]) ?? []
+      const allPass = conditions.every((c) => evaluateCondition(c, lead))
+
+      if (!allPass) {
+        await supabase.from('automation_logs').insert({
+          company_id: companyId,
+          rule_id: rule.id,
+          lead_id: leadId,
+          status: 'skipped',
+          trigger_data: triggerData,
+        })
+        continue
+      }
+
+      const actionData = rule.action_data as Record<string, unknown>
+      const oldValue = { stage_id: lead.stage_id, temperature: lead.temperature, tags: lead.tags, assigned_to: lead.assigned_to }
+
+      try {
+        switch (rule.action_type) {
+          case 'change_stage':
+            await supabase.from('leads').update({ stage_id: actionData.stage_id }).eq('id', leadId)
+            break
+          case 'assign_lead':
+            await supabase.from('leads').update({ assigned_to: actionData.profile_id }).eq('id', leadId)
+            break
+          case 'add_tag':
+            await supabase.from('leads').update({ tags: [...(lead.tags ?? []), actionData.tag as string] }).eq('id', leadId)
+            break
+          case 'remove_tag':
+            await supabase.from('leads').update({ tags: (lead.tags ?? []).filter((t: string) => t !== actionData.tag) }).eq('id', leadId)
+            break
+          case 'update_temperature':
+            await supabase.from('leads').update({ temperature: actionData.temperature }).eq('id', leadId)
+            break
+          case 'notify_team': {
+            const { data: members } = await supabase
+              .from('profiles')
+              .select('user_id')
+              .eq('company_id', companyId)
+            for (const m of members ?? []) {
+              await supabase.from('notifications').insert({
+                company_id: companyId,
+                user_id: m.user_id,
+                type: 'system',
+                title: actionData.title as string ?? 'Automacao executada',
+                body: actionData.body as string ?? `Regra "${rule.name}" executada para lead ${lead.name ?? lead.phone}`,
+              })
+            }
+            break
+          }
+          case 'send_message':
+            await supabase.from('messages').insert({
+              lead_id: leadId,
+              company_id: companyId,
+              content: actionData.message as string,
+              sender_type: 'ai',
+              message_type: 'text',
+              source: 'manual',
+            })
+            break
+        }
+
+        await supabase.from('automation_logs').insert({
+          company_id: companyId,
+          rule_id: rule.id,
+          lead_id: leadId,
+          status: 'success',
+          trigger_data: triggerData,
+          old_value: oldValue,
+          new_value: actionData,
+        })
+        executed++
+      } catch (err) {
+        await supabase.from('automation_logs').insert({
+          company_id: companyId,
+          rule_id: rule.id,
+          lead_id: leadId,
+          status: 'failed',
+          trigger_data: triggerData,
+          error_message: (err as Error).message,
+        })
+      }
+    }
+
+    return new Response(JSON.stringify({ executed }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+  } catch (err) {
+    return new Response(JSON.stringify({ error: (err as Error).message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+  }
+})

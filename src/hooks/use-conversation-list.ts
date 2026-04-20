@@ -1,0 +1,53 @@
+import { useEffect, useMemo } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { useAuthStore } from '@/stores/auth.store'
+import { useInboxStore } from '@/stores/inbox.store'
+import { getConversationList } from '@/services/messages.service'
+
+export const useConversationList = () => {
+  const companyId = useAuthStore((s) => s.company?.id)
+  const profileId = useAuthStore((s) => s.profile?.id)
+  const filters = useInboxStore((s) => s.filters)
+  const setUnreadCount = useInboxStore((s) => s.setUnreadCount)
+
+  const query = useQuery({
+    queryKey: ['conversations', companyId],
+    queryFn: () => getConversationList(companyId!),
+    enabled: !!companyId,
+    refetchInterval: 15000,
+  })
+
+  const filtered = useMemo(() => {
+    if (!query.data) return []
+    let result = query.data
+
+    if (filters.search) {
+      const q = filters.search.toLowerCase()
+      result = result.filter(
+        (l) =>
+          l.name?.toLowerCase().includes(q) ||
+          l.phone.includes(q) ||
+          l.email?.toLowerCase().includes(q)
+      )
+    }
+
+    if (filters.status !== 'all') {
+      result = result.filter((l) => l.conversation_status === filters.status)
+    }
+
+    if (filters.assignedTo === 'mine') {
+      result = result.filter((l) => l.assigned_to === profileId)
+    } else if (filters.assignedTo !== 'all') {
+      result = result.filter((l) => l.assigned_to === filters.assignedTo)
+    }
+
+    return result
+  }, [query.data, filters, profileId])
+
+  useEffect(() => {
+    const total = query.data?.reduce((acc, l) => acc + (l.unread_count ?? 0), 0) ?? 0
+    setUnreadCount(total)
+  }, [query.data, setUnreadCount])
+
+  return { ...query, data: filtered }
+}

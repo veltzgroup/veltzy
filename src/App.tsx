@@ -1,0 +1,100 @@
+import { lazy, Suspense } from 'react'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { Toaster } from '@/components/ui/sonner'
+import { TooltipProvider } from '@/components/ui/tooltip'
+import { ThemeInitializer } from '@/components/layout/theme-initializer'
+import { useAuthInit } from '@/hooks/use-auth-init'
+import { ProtectedRoute } from '@/components/auth/protected-route'
+import { MainLayout } from '@/components/layout/main-layout'
+import { PageLoadingSkeleton } from '@/components/shared/page-loading-skeleton'
+import { ErrorBoundary } from '@/components/shared/error-boundary'
+
+const AuthPage = lazy(() => import('@/pages/auth'))
+const OnboardingPage = lazy(() => import('@/pages/onboarding'))
+const DashboardPage = lazy(() => import('@/pages/dashboard'))
+const UpdatePasswordPage = lazy(() => import('@/pages/update-password'))
+const PipelinePage = lazy(() => import('@/pages/pipeline'))
+const InboxPage = lazy(() => import('@/pages/inbox'))
+const SettingsPage = lazy(() => import('@/pages/settings'))
+const AdminPage = lazy(() => import('@/pages/admin'))
+const SellersPage = lazy(() => import('@/pages/sellers'))
+const CompanyPage = lazy(() => import('@/pages/company'))
+const SuperAdminPage = lazy(() => import('@/pages/super-admin'))
+const NotFoundPage = lazy(() => import('@/pages/not-found'))
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
+      refetchOnWindowFocus: true,
+      retry: 1,
+    },
+  },
+})
+
+const AuthInitializer = () => {
+  useAuthInit()
+  return null
+}
+
+const App = () => {
+  return (
+    <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <BrowserRouter>
+          <AuthInitializer />
+          <ThemeInitializer />
+          <Toaster />
+          <Suspense fallback={<PageLoadingSkeleton />}>
+            <Routes>
+              <Route path="/auth" element={<AuthPage />} />
+
+              <Route
+                path="/onboarding"
+                element={
+                  <ProtectedRoute skipCompanyCheck>
+                    <OnboardingPage />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/update-password"
+                element={
+                  <ProtectedRoute skipCompanyCheck>
+                    <UpdatePasswordPage />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                element={
+                  <ProtectedRoute>
+                    <MainLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route path="/" element={<DashboardPage />} />
+                <Route path="/pipeline" element={<PipelinePage />} />
+                <Route path="/inbox" element={<InboxPage />} />
+                <Route path="/sellers" element={<SellersPage />} />
+                <Route path="/settings" element={<SettingsPage />} />
+                <Route path="/admin" element={<AdminPage />} />
+                <Route path="/company" element={<CompanyPage />} />
+                <Route path="/super-admin" element={<SuperAdminPage />} />
+              </Route>
+
+              <Route path="*" element={<NotFoundPage />} />
+            </Routes>
+          </Suspense>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+    </ErrorBoundary>
+  )
+}
+
+export default App

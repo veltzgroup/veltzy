@@ -1,0 +1,39 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
+import { useAuthStore } from '@/stores/auth.store'
+import * as templatesService from '@/services/reply-templates.service'
+
+export const useReplyTemplates = () => {
+  const companyId = useAuthStore((s) => s.company?.id)
+
+  return useQuery({
+    queryKey: ['reply-templates', companyId],
+    queryFn: () => templatesService.getTemplates(companyId!),
+    enabled: !!companyId,
+  })
+}
+
+export const useCreateTemplate = () => {
+  const queryClient = useQueryClient()
+  const companyId = useAuthStore((s) => s.company?.id)
+
+  return useMutation({
+    mutationFn: (input: { title: string; content: string; category?: string }) =>
+      templatesService.createTemplate(companyId!, input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reply-templates'] })
+      toast.success('Template criado!')
+    },
+  })
+}
+
+export const useDeleteTemplate = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (id: string) => templatesService.deleteTemplate(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reply-templates'] })
+    },
+  })
+}
