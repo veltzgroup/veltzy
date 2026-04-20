@@ -394,6 +394,39 @@ export interface ActivityLog {
   created_at: string
 }
 
+export type PaymentProvider = 'asaas' | 'stripe' | 'mercadopago'
+export type PaymentEnvironment = 'sandbox' | 'production'
+
+export interface PaymentConfig {
+  id: string
+  company_id: string
+  provider: PaymentProvider
+  api_key: string
+  api_secret: string | null
+  webhook_secret: string | null
+  environment: PaymentEnvironment
+  is_active: boolean
+  metadata: Record<string, unknown>
+  created_at: string
+  updated_at: string
+}
+
+export interface NotificationPreferences {
+  new_lead: boolean
+  new_message: boolean
+  lead_transferred: boolean
+  system_alerts: boolean
+  sound_enabled: boolean
+}
+
+export interface PersonalReport {
+  assigned_leads: number
+  deals_closed: number
+  conversion_rate: number
+  avg_response_time: number | null
+  revenue: number
+}
+
 export interface LeadSourceRecord {
   id: string
   company_id: string | null

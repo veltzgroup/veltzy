@@ -56,3 +56,37 @@ export const acceptInvite = async (inviteCode: string, userId: string): Promise<
   if (error) throw error
   return data
 }
+
+export const resetMemberPassword = async (email: string): Promise<void> => {
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/update-password`,
+  })
+  if (error) throw error
+}
+
+export const setFallbackLeadOwner = async (companyId: string, profileId: string | null): Promise<void> => {
+  const { data: existing } = await supabase
+    .from('system_settings')
+    .select('value')
+    .eq('company_id', companyId)
+    .eq('key', 'business_rules')
+    .single()
+
+  const value = { ...(existing?.value as Record<string, unknown> ?? {}), fallback_lead_owner: profileId }
+  const { error } = await supabase
+    .from('system_settings')
+    .update({ value })
+    .eq('company_id', companyId)
+    .eq('key', 'business_rules')
+  if (error) throw error
+}
+
+export const getFallbackLeadOwner = async (companyId: string): Promise<string | null> => {
+  const { data } = await supabase
+    .from('system_settings')
+    .select('value')
+    .eq('company_id', companyId)
+    .eq('key', 'business_rules')
+    .single()
+  return (data?.value as Record<string, unknown>)?.fallback_lead_owner as string | null ?? null
+}

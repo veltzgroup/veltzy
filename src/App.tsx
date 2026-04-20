@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -18,7 +18,6 @@ const PipelinePage = lazy(() => import('@/pages/pipeline'))
 const InboxPage = lazy(() => import('@/pages/inbox'))
 const SettingsPage = lazy(() => import('@/pages/settings'))
 const AdminPage = lazy(() => import('@/pages/admin'))
-const SellersPage = lazy(() => import('@/pages/sellers'))
 const CompanyPage = lazy(() => import('@/pages/company'))
 const SuperAdminPage = lazy(() => import('@/pages/super-admin'))
 const NotFoundPage = lazy(() => import('@/pages/not-found'))
@@ -80,7 +79,7 @@ const App = () => {
                 <Route path="/" element={<DashboardPage />} />
                 <Route path="/pipeline" element={<PipelinePage />} />
                 <Route path="/inbox" element={<InboxPage />} />
-                <Route path="/sellers" element={<SellersPage />} />
+                <Route path="/sellers" element={<Navigate to="/admin?tab=sellers" replace />} />
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/admin" element={<AdminPage />} />
                 <Route path="/company" element={<CompanyPage />} />

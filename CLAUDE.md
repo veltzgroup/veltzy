@@ -10,7 +10,7 @@ CRM multi-tenant SaaS white-label com IA SDR, pipeline drag & drop, inbox multic
 - **Drag & Drop:** dnd-kit
 - **Charts:** Recharts
 - **Forms:** react-hook-form + zod
-- **Deploy:** Netlify (frontend) + Supabase (backend)
+- **Deploy:** Vercel (frontend) + Supabase (backend)
 - **Idioma:** pt-BR | Fuso: America/Sao_Paulo
 
 ## ESTRUTURA DO PROJETO

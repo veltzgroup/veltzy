@@ -1,14 +1,16 @@
 import { Navigate } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth.store'
+import type { AppRole } from '@/types/database'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
   skipCompanyCheck?: boolean
+  requireRole?: AppRole[]
 }
 
-const ProtectedRoute = ({ children, skipCompanyCheck = false }: ProtectedRouteProps) => {
-  const { user, company, isLoading } = useAuthStore()
+const ProtectedRoute = ({ children, skipCompanyCheck = false, requireRole }: ProtectedRouteProps) => {
+  const { user, company, roles, isLoading } = useAuthStore()
 
   if (isLoading) {
     return (
@@ -24,6 +26,10 @@ const ProtectedRoute = ({ children, skipCompanyCheck = false }: ProtectedRoutePr
 
   if (!skipCompanyCheck && !company) {
     return <Navigate to="/onboarding" replace />
+  }
+
+  if (requireRole && !requireRole.some((r) => roles.includes(r))) {
+    return <Navigate to="/settings" replace />
   }
 
   return <>{children}</>

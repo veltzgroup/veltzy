@@ -4,9 +4,10 @@ import {
   Kanban,
   MessageSquare,
   Handshake,
-  Users,
   Settings,
   Shield,
+  Building2,
+  Crown,
   LogOut,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -25,6 +26,7 @@ interface NavItem {
   disabled?: boolean
   adminOnly?: boolean
   managerOnly?: boolean
+  superAdminOnly?: boolean
 }
 
 const navItems: NavItem[] = [
@@ -32,13 +34,14 @@ const navItems: NavItem[] = [
   { label: 'Pipeline', href: '/pipeline', icon: Kanban },
   { label: 'Inbox', href: '/inbox', icon: MessageSquare },
   { label: 'Deals', href: '/deals', icon: Handshake, disabled: true },
-  { label: 'Vendedores', href: '/sellers', icon: Users, managerOnly: true },
-  { label: 'Admin', href: '/admin', icon: Shield, adminOnly: true },
+  { label: 'Admin', href: '/admin', icon: Shield, managerOnly: true },
+  { label: 'Empresa', href: '/company', icon: Building2, adminOnly: true },
+  { label: 'Super Admin', href: '/super-admin', icon: Crown, superAdminOnly: true },
 ]
 
 const AppSidebar = () => {
   const { profile, company, signOut } = useAuth()
-  const { isAdmin, isManager } = useRoles()
+  const { isAdmin, isManager, isSuperAdmin } = useRoles()
 
   const initials = profile?.name
     ?.split(' ')
@@ -65,6 +68,7 @@ const AppSidebar = () => {
 
       <nav className="flex-1 space-y-1 px-3 py-4">
         {navItems.map((item) => {
+          if (item.superAdminOnly && !isSuperAdmin) return null
           if (item.adminOnly && !isAdmin) return null
           if (item.managerOnly && !isManager) return null
 
