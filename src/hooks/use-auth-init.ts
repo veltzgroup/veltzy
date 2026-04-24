@@ -1,8 +1,8 @@
 import { useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/auth.store'
-import { getCurrentProfile } from '@/services/profile.service'
-import { getCurrentCompany } from '@/services/company.service'
+import { getProfile } from '@/services/profile.service'
+import { getCompany } from '@/services/company.service'
 import { getUserRoles } from '@/services/roles.service'
 
 export const useAuthInit = () => {
@@ -17,7 +17,7 @@ export const useAuthInit = () => {
     const loadUserData = async (userId: string) => {
       try {
         const [profile, roles] = await Promise.all([
-          getCurrentProfile(),
+          getProfile(userId),
           getUserRoles(userId),
         ])
 
@@ -25,7 +25,7 @@ export const useAuthInit = () => {
         setRoles(roles.map((r) => r.role))
 
         if (profile?.company_id) {
-          const company = await getCurrentCompany()
+          const company = await getCompany(profile.company_id)
           setCompany(company)
         }
       } catch (err) {
