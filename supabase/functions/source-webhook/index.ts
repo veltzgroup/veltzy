@@ -9,8 +9,8 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
-    const url = new URL(req.url)
-    const companySlug = url.searchParams.get('company')
+    const reqUrl = new URL(req.url)
+    const companySlug = reqUrl.searchParams.get('company')
     const sourceSlug = url.searchParams.get('source') ?? 'manual'
 
     if (!companySlug) {

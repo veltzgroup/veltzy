@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { supabasePublic as supabase } from '@/lib/supabase'
 import type { AppRole, UserRole } from '@/types/database'
 
 export const getUserRoles = async (userId: string): Promise<UserRole[]> => {

@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { supabase } from '@/lib/supabase'
+import { supabasePublic as supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/auth.store'
 
 export const useToggleAvailability = () => {

@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { supabasePublic as supabase } from '@/lib/supabase'
 import type { Company } from '@/types/database'
 
 export const createCompany = async (name: string, slug: string): Promise<Company> => {
