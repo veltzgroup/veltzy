@@ -11,10 +11,10 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    )
+    const url = Deno.env.get('SUPABASE_URL')!
+    const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const supabase = createClient(url, key, { db: { schema: 'veltzy' } })
+    const supabasePublic = createClient(url, key, { db: { schema: 'public' } })
 
     const { data: queuedLeads } = await supabase
       .from('leads')
@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
     let totalDistributed = 0
 
     for (const [companyId, leadIds] of companiesMap) {
-      const { data: sellers } = await supabase
+      const { data: sellers } = await supabasePublic
         .from('profiles')
         .select('id')
         .eq('company_id', companyId)

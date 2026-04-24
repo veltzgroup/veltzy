@@ -1,8 +1,8 @@
-import { supabase } from '@/lib/supabase'
+import { supabase, supabasePublic } from '@/lib/supabase'
 import type { Profile } from '@/types/database'
 
 export const getProfile = async (userId: string): Promise<Profile> => {
-  const { data, error } = await supabase
+  const { data, error } = await supabasePublic
     .from('profiles')
     .select('*')
     .eq('user_id', userId)
@@ -15,7 +15,7 @@ export const getCurrentProfile = async (): Promise<Profile | null> => {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
-  const { data, error } = await supabase
+  const { data, error } = await supabasePublic
     .from('profiles')
     .select('*')
     .eq('user_id', user.id)
@@ -25,7 +25,7 @@ export const getCurrentProfile = async (): Promise<Profile | null> => {
 }
 
 export const updateProfile = async (profileId: string, updates: Partial<Profile>): Promise<Profile> => {
-  const { data, error } = await supabase
+  const { data, error } = await supabasePublic
     .from('profiles')
     .update(updates)
     .eq('id', profileId)
@@ -36,7 +36,7 @@ export const updateProfile = async (profileId: string, updates: Partial<Profile>
 }
 
 export const getCompanyMembers = async (companyId: string): Promise<Profile[]> => {
-  const { data, error } = await supabase
+  const { data, error } = await supabasePublic
     .from('profiles')
     .select('*')
     .eq('company_id', companyId)

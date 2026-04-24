@@ -44,10 +44,10 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ ok: true, skipped: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    )
+    const url = Deno.env.get('SUPABASE_URL')!
+    const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const supabase = createClient(url, key, { db: { schema: 'veltzy' } })
+    const supabasePublic = createClient(url, key, { db: { schema: 'public' } })
 
     const { data: config } = await supabase
       .from('whatsapp_configs')
@@ -116,7 +116,7 @@ Deno.serve(async (req) => {
         .single()
 
       let assignedTo: string | null = null
-      const { data: sellers } = await supabase
+      const { data: sellers } = await supabasePublic
         .from('profiles')
         .select('id')
         .eq('company_id', companyId)
@@ -173,8 +173,8 @@ Deno.serve(async (req) => {
       external_id: payload.messageId,
     })
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const supabaseUrl = url
+    const serviceKey = key
     const fnHeaders = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${serviceKey}` }
 
     // Dispara IA SDR

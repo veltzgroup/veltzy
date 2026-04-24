@@ -26,10 +26,11 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    const supabaseAuth = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    )
+    const url = Deno.env.get('SUPABASE_URL')!
+    const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const supabaseAuth = createClient(url, key)
+    const supabase = createClient(url, key, { db: { schema: 'veltzy' } })
+    const supabasePublic = createClient(url, key, { db: { schema: 'public' } })
 
     const token = authHeader.replace('Bearer ', '')
     const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(token)
@@ -39,7 +40,7 @@ Deno.serve(async (req) => {
 
     const payload: SendPayload = await req.json()
 
-    const { data: profile } = await supabaseAuth
+    const { data: profile } = await supabasePublic
       .from('profiles')
       .select('company_id')
       .eq('user_id', user.id)
@@ -49,7 +50,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'No company' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    const { data: lead } = await supabaseAuth
+    const { data: lead } = await supabase
       .from('leads')
       .select('phone')
       .eq('id', payload.leadId)
@@ -60,7 +61,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Lead not found' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    const { data: config } = await supabaseAuth
+    const { data: config } = await supabase
       .from('whatsapp_configs')
       .select('*')
       .eq('company_id', profile.company_id)
@@ -102,7 +103,7 @@ Deno.serve(async (req) => {
       })
     }
 
-    const { data: message } = await supabaseAuth
+    const { data: message } = await supabase
       .from('messages')
       .insert({
         lead_id: payload.leadId,
@@ -119,7 +120,7 @@ Deno.serve(async (req) => {
       .select()
       .single()
 
-    await supabaseAuth
+    await supabase
       .from('leads')
       .update({ conversation_status: 'replied' })
       .eq('id', payload.leadId)

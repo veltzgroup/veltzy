@@ -10,7 +10,7 @@ Deno.serve(async (req) => {
 
   try {
     const { action, companyId, code, redirectUri } = await req.json()
-    const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
+    const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { db: { schema: 'veltzy' } })
 
     if (action === 'authorize') {
       const appId = Deno.env.get('INSTAGRAM_APP_ID')

@@ -21,7 +21,7 @@ Deno.serve(async (req) => {
 
   try {
     const payload = await req.json()
-    const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
+    const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { db: { schema: 'veltzy' } })
 
     for (const entry of payload.entry ?? []) {
       for (const messaging of entry.messaging ?? []) {

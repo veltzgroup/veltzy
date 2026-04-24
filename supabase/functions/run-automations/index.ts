@@ -32,10 +32,10 @@ Deno.serve(async (req) => {
   try {
     const { trigger, leadId, companyId, triggerData } = await req.json()
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    )
+    const url = Deno.env.get('SUPABASE_URL')!
+    const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const supabase = createClient(url, key, { db: { schema: 'veltzy' } })
+    const supabasePublic = createClient(url, key, { db: { schema: 'public' } })
 
     const { data: rules } = await supabase
       .from('automation_rules')
@@ -97,7 +97,7 @@ Deno.serve(async (req) => {
             await supabase.from('leads').update({ temperature: actionData.temperature }).eq('id', leadId)
             break
           case 'notify_team': {
-            const { data: members } = await supabase
+            const { data: members } = await supabasePublic
               .from('profiles')
               .select('user_id')
               .eq('company_id', companyId)

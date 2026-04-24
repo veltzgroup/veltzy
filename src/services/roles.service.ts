@@ -1,8 +1,8 @@
-import { supabase } from '@/lib/supabase'
+import { supabase, supabasePublic } from '@/lib/supabase'
 import type { AppRole, UserRole } from '@/types/database'
 
 export const getUserRoles = async (userId: string): Promise<UserRole[]> => {
-  const { data, error } = await supabase
+  const { data, error } = await supabasePublic
     .from('user_roles')
     .select('*')
     .eq('user_id', userId)
@@ -11,7 +11,7 @@ export const getUserRoles = async (userId: string): Promise<UserRole[]> => {
 }
 
 export const hasRole = async (userId: string, role: AppRole): Promise<boolean> => {
-  const { data, error } = await supabase
+  const { data, error } = await supabasePublic
     .from('user_roles')
     .select('id')
     .eq('user_id', userId)

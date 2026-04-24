@@ -17,9 +17,12 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Missing company param' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
+    const url = Deno.env.get('SUPABASE_URL')!
+    const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const supabase = createClient(url, key, { db: { schema: 'veltzy' } })
+    const supabasePublic = createClient(url, key, { db: { schema: 'public' } })
 
-    const { data: company } = await supabase.from('companies').select('id').eq('slug', companySlug).single()
+    const { data: company } = await supabasePublic.from('companies').select('id').eq('slug', companySlug).single()
     if (!company) return new Response(JSON.stringify({ error: 'Company not found' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 
     const payload = await req.json()
@@ -44,7 +47,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ success: true, leadId: existingLead.id, updated: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    const { data: sellers } = await supabase.from('profiles').select('id').eq('company_id', company.id).eq('is_available', true)
+    const { data: sellers } = await supabasePublic.from('profiles').select('id').eq('company_id', company.id).eq('is_available', true)
     const assignedTo = sellers && sellers.length > 0 ? sellers[Math.floor(Math.random() * sellers.length)].id : null
 
     const { data: lead } = await supabase.from('leads').insert({

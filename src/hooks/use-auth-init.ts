@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
+import { supabase, supabasePublic } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/auth.store'
 import { getCurrentProfile } from '@/services/profile.service'
 import { getCurrentCompany } from '@/services/company.service'
@@ -27,6 +27,17 @@ export const useAuthInit = () => {
         if (profile?.company_id) {
           const company = await getCurrentCompany()
           setCompany(company)
+
+          const { data: sub } = await supabasePublic
+            .from('subscriptions')
+            .select('*')
+            .eq('company_id', profile.company_id)
+            .eq('product', 'veltzy')
+            .single()
+
+          if (!sub || !['trial', 'active'].includes(sub.status)) {
+            console.warn('No active Veltzy subscription')
+          }
         }
       } catch (err) {
         console.error('Erro ao carregar dados do usuario:', err)

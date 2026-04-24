@@ -10,7 +10,7 @@ Deno.serve(async (req) => {
 
   try {
     const { leadId, content, companyId } = await req.json()
-    const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
+    const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { db: { schema: 'veltzy' } })
 
     const { data: lead } = await supabase.from('leads').select('instagram_id').eq('id', leadId).single()
     if (!lead?.instagram_id) return new Response(JSON.stringify({ error: 'No Instagram ID' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
