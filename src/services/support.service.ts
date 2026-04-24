@@ -1,4 +1,4 @@
-import { supabase, supabasePublic } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
 import type { SupportTicket, TicketStatus } from '@/types/database'
 
 export const createTicket = async (input: {
@@ -10,7 +10,7 @@ export const createTicket = async (input: {
   user_agent?: string
 }): Promise<SupportTicket> => {
   const { data: { user } } = await supabase.auth.getUser()
-  const { data: profile } = await supabasePublic.from('profiles').select('company_id').eq('user_id', user!.id).single()
+  const { data: profile } = await supabase.from('profiles').select('company_id').eq('user_id', user!.id).single()
 
   const { data, error } = await supabase
     .from('support_tickets')

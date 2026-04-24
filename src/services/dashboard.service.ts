@@ -1,4 +1,4 @@
-import { supabase, supabasePublic } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
 import type { ConversionMetrics, SourceMetrics, StageMetrics, SellerMetrics, MonthlyData } from '@/types/database'
 
 const getPeriodDates = (days: number) => {
@@ -142,7 +142,7 @@ export const getMonthlyComparison = async (companyId: string): Promise<MonthlyDa
 }
 
 export const getSellerPerformance = async (companyId: string): Promise<SellerMetrics[]> => {
-  const { data: profiles } = await supabasePublic.from('profiles').select('id, name, is_available').eq('company_id', companyId)
+  const { data: profiles } = await supabase.from('profiles').select('id, name, is_available').eq('company_id', companyId)
   const { data: leads } = await supabase.from('leads').select('assigned_to, status, deal_value').eq('company_id', companyId)
   const { data: responseTimes } = await supabase.rpc('get_seller_avg_response_times', { _company_id: companyId })
 

@@ -1,8 +1,8 @@
-import { supabase, supabasePublic } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
 import type { ProfileWithRole, CompanyInvite, AppRole } from '@/types/database'
 
 export const getMembers = async (companyId: string): Promise<ProfileWithRole[]> => {
-  const { data, error } = await supabasePublic
+  const { data, error } = await supabase
     .from('profiles')
     .select('*, user_roles(*)')
     .eq('company_id', companyId)
@@ -41,8 +41,8 @@ export const cancelInvite = async (inviteId: string): Promise<void> => {
 }
 
 export const updateMemberRole = async (userId: string, role: AppRole): Promise<void> => {
-  await supabasePublic.from('user_roles').delete().eq('user_id', userId).neq('role', 'super_admin')
-  const { error } = await supabasePublic.from('user_roles').insert({ user_id: userId, role })
+  await supabase.from('user_roles').delete().eq('user_id', userId).neq('role', 'super_admin')
+  const { error } = await supabase.from('user_roles').insert({ user_id: userId, role })
   if (error) throw error
 }
 
