@@ -1,13 +1,36 @@
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 import { useSellerPerformance } from '@/hooks/use-dashboard-metrics'
 import { useRoles } from '@/hooks/use-roles'
 
-const SellerPerformanceTable = () => {
-  const { data: sellers } = useSellerPerformance()
+interface SellerPerformanceTableProps {
+  days?: number
+}
+
+const SellerPerformanceTable = ({ days }: SellerPerformanceTableProps) => {
+  const { data: sellers, isLoading } = useSellerPerformance(days)
   const { isAdmin, isManager } = useRoles()
 
-  if (!sellers?.length || (!isAdmin && !isManager)) return null
+  if (!isAdmin && !isManager) return null
+
+  if (isLoading) {
+    return (
+      <div className="glass-card rounded-xl p-5">
+        <h3 className="text-sm font-semibold mb-4">Performance dos Vendedores</h3>
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="flex items-center gap-3">
+              <Skeleton className="h-7 w-7 rounded-full" />
+              <Skeleton className="h-4 flex-1" />
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (!sellers?.length) return null
 
   return (
     <div className="glass-card rounded-xl p-5">
@@ -19,7 +42,7 @@ const SellerPerformanceTable = () => {
               <th className="pb-3 text-left font-medium text-muted-foreground text-[11px] uppercase tracking-wider">Vendedor</th>
               <th className="pb-3 text-right font-medium text-muted-foreground text-[11px] uppercase tracking-wider">Leads</th>
               <th className="pb-3 text-right font-medium text-muted-foreground text-[11px] uppercase tracking-wider">Deals</th>
-              <th className="pb-3 text-right font-medium text-muted-foreground text-[11px] uppercase tracking-wider">Conversão</th>
+              <th className="pb-3 text-right font-medium text-muted-foreground text-[11px] uppercase tracking-wider">Conversao</th>
               <th className="pb-3 text-right font-medium text-muted-foreground text-[11px] uppercase tracking-wider">Tempo Resp.</th>
               <th className="pb-3 text-right font-medium text-muted-foreground text-[11px] uppercase tracking-wider">Status</th>
             </tr>

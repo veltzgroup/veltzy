@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import { LineChart, Line, ResponsiveContainer } from 'recharts'
 import { cn } from '@/lib/utils'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useAuthStore } from '@/stores/auth.store'
 import { useDashboardKpis } from '@/hooks/use-dashboard-metrics'
 import { MonthlyComparisonChart } from '@/components/dashboard/monthly-comparison-chart'
@@ -15,7 +16,7 @@ const curveData = [5, 8, 15, 35, 60, 75, 60, 35, 15, 8, 5].map((v, i) => ({ x: i
 const periodOptions = [
   { label: 'Hoje', icon: Clock, days: 1 },
   { label: 'Semana', icon: Calendar, days: 7 },
-  { label: 'Mês', icon: CalendarDays, days: 30 },
+  { label: 'Mes', icon: CalendarDays, days: 30 },
   { label: 'Total', icon: BarChart3, days: undefined },
 ] as const
 
@@ -72,10 +73,31 @@ const Breakdown = ({ items }: { items: BreakdownItem[] }) => (
   </>
 )
 
+const KpiCardSkeleton = ({ hasBreakdown = false }: { hasBreakdown?: boolean }) => (
+  <div className="bg-card border border-border/30 rounded-2xl p-5">
+    <div className="flex justify-between">
+      <Skeleton className="h-4 w-28" />
+      <Skeleton className="h-10 w-10 rounded-lg" />
+    </div>
+    <Skeleton className="h-8 w-20 mt-3" />
+    <Skeleton className="h-3 w-36 mt-2" />
+    {hasBreakdown ? (
+      <>
+        <div className="border-t border-border/30 my-3" />
+        <div className="grid grid-cols-3 gap-2">
+          {[1, 2, 3].map((i) => <Skeleton key={i} className="h-8 w-full" />)}
+        </div>
+      </>
+    ) : (
+      <Skeleton className="h-[80px] w-full mt-4" />
+    )}
+  </div>
+)
+
 const DashboardPage = () => {
   const company = useAuthStore((s) => s.company)
   const [selectedDays, setSelectedDays] = useState<number | undefined>(30)
-  const { data: kpis } = useDashboardKpis(selectedDays)
+  const { data: kpis, isLoading } = useDashboardKpis(selectedDays)
 
   const cardBase = 'bg-card border border-border/30 rounded-2xl p-5'
 
@@ -84,17 +106,17 @@ const DashboardPage = () => {
       <div className="space-y-8 animate-fade-in">
 
         {/* HEADER */}
-        <div className="flex items-start justify-between">
+        <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
           <div className="flex items-start gap-4">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15">
               <Building2 className="h-5 w-5 text-primary" />
             </div>
             <div>
               <h1 className="text-2xl font-bold text-foreground">
-                Olá, {company?.name}!
+                Ola, {company?.name}!
               </h1>
               <p className="text-sm text-muted-foreground mt-0.5">
-                Bem-vindo ao seu painel de gestão
+                Bem-vindo ao seu painel de gestao
               </p>
             </div>
           </div>
@@ -125,113 +147,124 @@ const DashboardPage = () => {
           </div>
         </div>
 
-        {/* GRID 3x2 DE KPI CARDS */}
-        <div className="grid grid-cols-3 gap-6">
-
-          {/* LINHA 1 - Cards com grafico decorativo */}
-
-          {/* Taxa de Conversão */}
-          <div className={cardBase}>
-            <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Taxa de Conversão</span>
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15">
-                <TrendingUp className="h-5 w-5 text-primary" />
-              </div>
-            </div>
-            <p className="text-3xl font-bold text-foreground mt-2">
-              {kpis?.conversionRate ?? 0}%
-            </p>
-            <p className="text-sm text-muted-foreground mt-1">Leads convertidos em deals</p>
-            <DecorativeLine />
+        {/* GRID KPI CARDS */}
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <KpiCardSkeleton />
+            <KpiCardSkeleton />
+            <KpiCardSkeleton />
+            <KpiCardSkeleton hasBreakdown />
+            <KpiCardSkeleton />
+            <KpiCardSkeleton hasBreakdown />
           </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
-          {/* Score Médio IA */}
-          <div className={cardBase}>
-            <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Score Médio IA</span>
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15">
-                <Target className="h-5 w-5 text-primary" />
+            {/* LINHA 1 - Cards com grafico decorativo */}
+
+            {/* Taxa de Conversao */}
+            <div className={cardBase}>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Taxa de Conversao</span>
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15">
+                  <TrendingUp className="h-5 w-5 text-primary" />
+                </div>
               </div>
+              <p className="text-3xl font-bold text-foreground mt-2">
+                {kpis?.conversionRate ?? 0}%
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">Leads convertidos em deals</p>
+              <DecorativeLine />
             </div>
-            <p className="text-3xl font-bold text-foreground mt-2">
-              {kpis?.avgAiScore ?? 0}%
-            </p>
-            <p className="text-sm text-muted-foreground mt-1">Qualificação média dos leads</p>
-            <DecorativeLine />
-          </div>
 
-          {/* Deals Fechados */}
-          <div className={cardBase}>
-            <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Deals Fechados</span>
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15">
-                <DollarSign className="h-5 w-5 text-primary" />
+            {/* Score Medio IA */}
+            <div className={cardBase}>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Score Medio IA</span>
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15">
+                  <Target className="h-5 w-5 text-primary" />
+                </div>
               </div>
+              <p className="text-3xl font-bold text-foreground mt-2">
+                {kpis?.avgAiScore ?? 0}%
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">Qualificacao media dos leads</p>
+              <DecorativeLine />
             </div>
-            <p className="text-3xl font-bold text-foreground mt-2">
-              {kpis?.dealsClosed ?? 0}
-            </p>
-            <p className="text-sm text-muted-foreground mt-1">Negócios concluídos com sucesso</p>
-            <DecorativeLine />
-          </div>
 
-          {/* LINHA 2 - Cards com breakdown */}
-
-          {/* Negócios */}
-          <div className={cardBase}>
-            <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Negócios</span>
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15">
-                <Users className="h-5 w-5 text-primary" />
+            {/* Deals Fechados */}
+            <div className={cardBase}>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Deals Fechados</span>
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15">
+                  <DollarSign className="h-5 w-5 text-primary" />
+                </div>
               </div>
+              <p className="text-3xl font-bold text-foreground mt-2">
+                {kpis?.dealsClosed ?? 0}
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">Negocios concluidos com sucesso</p>
+              <DecorativeLine />
             </div>
-            <p className="text-3xl font-bold text-foreground mt-2">
-              {kpis?.totalLeads ?? 0}
-            </p>
-            <Breakdown items={[
-              { value: String(kpis?.openCount ?? 0), color: 'text-yellow-500', dotColor: 'bg-yellow-500', label: 'Aberto' },
-              { value: String(kpis?.closedCount ?? 0), color: 'text-primary', dotColor: 'bg-primary', label: 'Fechado' },
-              { value: String(kpis?.lostCount ?? 0), color: 'text-red-500', dotColor: 'bg-red-500', label: 'Perdido' },
-            ]} />
-          </div>
 
-          {/* Ticket Médio */}
-          <div className={cardBase}>
-            <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Ticket Médio</span>
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15">
-                <TrendingUp className="h-5 w-5 text-primary" />
-              </div>
-            </div>
-            <p className="text-3xl font-bold text-foreground mt-2">
-              {fmt(kpis?.avgTicket ?? 0)}
-            </p>
-          </div>
+            {/* LINHA 2 - Cards com breakdown */}
 
-          {/* Valor Total */}
-          <div className={cardBase}>
-            <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Valor Total</span>
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15">
-                <DollarSign className="h-5 w-5 text-primary" />
+            {/* Negocios */}
+            <div className={cardBase}>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Negocios</span>
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15">
+                  <Users className="h-5 w-5 text-primary" />
+                </div>
               </div>
+              <p className="text-3xl font-bold text-foreground mt-2">
+                {kpis?.totalLeads ?? 0}
+              </p>
+              <Breakdown items={[
+                { value: String(kpis?.openCount ?? 0), color: 'text-yellow-500', dotColor: 'bg-yellow-500', label: 'Aberto' },
+                { value: String(kpis?.closedCount ?? 0), color: 'text-primary', dotColor: 'bg-primary', label: 'Fechado' },
+                { value: String(kpis?.lostCount ?? 0), color: 'text-red-500', dotColor: 'bg-red-500', label: 'Perdido' },
+              ]} />
             </div>
-            <p className="text-3xl font-bold text-primary mt-2">
-              {fmt(kpis?.totalValue ?? 0)}
-            </p>
-            <Breakdown items={[
-              { value: fmt(kpis?.openValue ?? 0), color: 'text-yellow-500', dotColor: 'bg-yellow-500', label: 'Aberto' },
-              { value: fmt(kpis?.closedValue ?? 0), color: 'text-primary', dotColor: 'bg-primary', label: 'Fechado' },
-              { value: fmt(kpis?.lostValue ?? 0), color: 'text-red-500', dotColor: 'bg-red-500', label: 'Perdido' },
-            ]} />
+
+            {/* Ticket Medio */}
+            <div className={cardBase}>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Ticket Medio</span>
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15">
+                  <TrendingUp className="h-5 w-5 text-primary" />
+                </div>
+              </div>
+              <p className="text-3xl font-bold text-foreground mt-2">
+                {fmt(kpis?.avgTicket ?? 0)}
+              </p>
+            </div>
+
+            {/* Valor Total */}
+            <div className={cardBase}>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Valor Total</span>
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15">
+                  <DollarSign className="h-5 w-5 text-primary" />
+                </div>
+              </div>
+              <p className="text-3xl font-bold text-primary mt-2">
+                {fmt(kpis?.totalValue ?? 0)}
+              </p>
+              <Breakdown items={[
+                { value: fmt(kpis?.openValue ?? 0), color: 'text-yellow-500', dotColor: 'bg-yellow-500', label: 'Aberto' },
+                { value: fmt(kpis?.closedValue ?? 0), color: 'text-primary', dotColor: 'bg-primary', label: 'Fechado' },
+                { value: fmt(kpis?.lostValue ?? 0), color: 'text-red-500', dotColor: 'bg-red-500', label: 'Perdido' },
+              ]} />
+            </div>
           </div>
-        </div>
+        )}
 
         {/* COMPARATIVO MENSAL */}
-        <MonthlyComparisonChart />
+        <MonthlyComparisonChart days={selectedDays} />
 
         {/* PERFORMANCE VENDEDORES */}
-        <SellerPerformanceTable />
+        <SellerPerformanceTable days={selectedDays} />
 
       </div>
     </div>

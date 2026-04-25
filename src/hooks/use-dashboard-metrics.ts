@@ -42,21 +42,21 @@ export const usePipelineOverview = () => {
   })
 }
 
-export const useMonthlyComparison = () => {
+export const useMonthlyComparison = (days?: number) => {
   const companyId = useAuthStore((s) => s.company?.id)
   return useQuery({
-    queryKey: ['monthly-comparison', companyId],
-    queryFn: () => dashboardService.getMonthlyComparison(companyId!),
+    queryKey: ['monthly-comparison', companyId, days],
+    queryFn: () => dashboardService.getMonthlyComparison(companyId!, days),
     enabled: !!companyId,
     staleTime: 1000 * 60 * 5,
   })
 }
 
-export const useSellerPerformance = () => {
+export const useSellerPerformance = (days?: number) => {
   const companyId = useAuthStore((s) => s.company?.id)
   return useQuery({
-    queryKey: ['seller-performance', companyId],
-    queryFn: () => dashboardService.getSellerPerformance(companyId!),
+    queryKey: ['seller-performance', companyId, days],
+    queryFn: () => dashboardService.getSellerPerformance(companyId!, days),
     enabled: !!companyId,
     staleTime: 1000 * 60 * 5,
   })
