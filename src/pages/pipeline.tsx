@@ -2,7 +2,7 @@ import { PipelineBoard } from '@/components/pipeline/pipeline-board'
 
 const PipelinePage = () => {
   return (
-    <div className="h-full p-6">
+    <div className="flex flex-col h-full overflow-hidden">
       <PipelineBoard />
     </div>
   )

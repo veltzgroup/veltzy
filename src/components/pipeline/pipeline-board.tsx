@@ -118,18 +118,20 @@ const PipelineBoard = () => {
 
   if (stagesLoading || leadsLoading) {
     return (
-      <div className="flex h-[60vh] items-center justify-center">
+      <div className="flex h-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     )
   }
 
   return (
-    <div className="space-y-4 animate-fade-in">
-      <PipelineHeader
-        onAddLead={() => handleAddLead()}
-        onManageStages={() => setStageManagerOpen(true)}
-      />
+    <div className="flex flex-col h-full animate-fade-in">
+      <div className="shrink-0 p-6 pb-4">
+        <PipelineHeader
+          onAddLead={() => handleAddLead()}
+          onManageStages={() => setStageManagerOpen(true)}
+        />
+      </div>
 
       <DndContext
         sensors={sensors}
@@ -137,7 +139,7 @@ const PipelineBoard = () => {
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex gap-4 overflow-x-auto pb-4">
+        <div className="flex-1 flex gap-4 overflow-x-auto overflow-y-hidden px-6 pb-4">
           {stages?.map((stage) => (
             <StageColumn
               key={stage.id}

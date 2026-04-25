@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth.store'
 import { usePipelineStore } from '@/stores/pipeline.store'
 import * as leadsService from '@/services/leads.service'
+import * as teamService from '@/services/team.service'
 import type { CreateLeadInput, UpdateLeadInput, LeadWithDetails } from '@/types/database'
 
 export const useLeads = () => {
@@ -11,12 +12,21 @@ export const useLeads = () => {
 
   return useQuery({
     queryKey: ['leads', companyId, filters.sourceId, filters.temperature, filters.assignedTo],
-    queryFn: () =>
-      leadsService.getLeadsByCompany(companyId!, {
-        sourceId: filters.sourceId,
-        temperature: filters.temperature,
-        assignedTo: filters.assignedTo,
-      }),
+    queryFn: async () => {
+      const [leads, members] = await Promise.all([
+        leadsService.getLeadsByCompany(companyId!, {
+          sourceId: filters.sourceId,
+          temperature: filters.temperature,
+          assignedTo: filters.assignedTo,
+        }),
+        teamService.getMembers(companyId!),
+      ])
+      const profileMap = new Map(members.map((m) => [m.id, { id: m.id, name: m.name, email: m.email }]))
+      return leads.map((lead) => ({
+        ...lead,
+        profiles: lead.assigned_to ? profileMap.get(lead.assigned_to) ?? null : null,
+      }))
+    },
     enabled: !!companyId,
   })
 }

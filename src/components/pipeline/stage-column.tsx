@@ -19,7 +19,7 @@ const StageColumn = ({ stage, leads, onAddLead, onTransferLead }: StageColumnPro
   const leadIds = leads.map((l) => l.id)
 
   return (
-    <div className="flex w-[300px] min-w-[280px] max-w-[320px] flex-shrink-0 flex-col">
+    <div className="flex w-[300px] min-w-[280px] max-w-[320px] flex-shrink-0 flex-col h-full">
       <div
         className="mb-2 rounded-t-xl px-3 py-2"
         style={{ borderTop: `4px solid ${stage.color}` }}
@@ -39,7 +39,7 @@ const StageColumn = ({ stage, leads, onAddLead, onTransferLead }: StageColumnPro
         <div
           ref={setNodeRef}
           className={cn(
-            'kanban-column flex-1 space-y-2 rounded-xl p-2 transition-colors',
+            'kanban-column flex-1 space-y-2 rounded-xl p-2 transition-colors overflow-y-auto scrollbar-minimal',
             isOver && 'bg-primary/5 ring-2 ring-primary/20'
           )}
         >

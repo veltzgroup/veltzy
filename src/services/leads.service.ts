@@ -3,7 +3,6 @@ import type { Lead, LeadWithDetails, CreateLeadInput, UpdateLeadInput } from '@/
 
 const LEAD_WITH_DETAILS_SELECT = `
   *,
-  profiles:assigned_to(id, name, email),
   lead_sources:source_id(*),
   pipeline_stages:stage_id(*)
 `
