@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { IntegrationsTab } from '@/components/admin/integrations-tab'
+import { PipelineTab } from '@/components/admin/pipeline-tab'
 import { ThemeCustomizer } from '@/components/company/theme-customizer'
 import { ActivityLogsDashboard } from '@/components/admin/activity-logs-dashboard'
 import { SdrTab } from '@/components/admin/sdr-tab'
@@ -96,6 +97,7 @@ const AdminPage = () => {
         <TabsList className="flex-wrap h-auto gap-1">
           <TabsTrigger value="permissoes">Permissões</TabsTrigger>
           <TabsTrigger value="integracoes">Integrações</TabsTrigger>
+          <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
           <TabsTrigger value="empresa">Empresa</TabsTrigger>
           <TabsTrigger value="aparencia">Aparência</TabsTrigger>
           <TabsTrigger value="logs-avancados">Logs avançados</TabsTrigger>
@@ -104,6 +106,7 @@ const AdminPage = () => {
         </TabsList>
         <TabsContent value="permissoes" className="mt-4"><PermissoesPlaceholder /></TabsContent>
         <TabsContent value="integracoes" className="mt-4"><IntegrationsTab /></TabsContent>
+        <TabsContent value="pipeline" className="mt-4"><PipelineTab /></TabsContent>
         <TabsContent value="empresa" className="mt-4"><EmpresaTab /></TabsContent>
         <TabsContent value="aparencia" className="mt-4"><ThemeCustomizer /></TabsContent>
         <TabsContent value="logs-avancados" className="mt-4"><ActivityLogsDashboard /></TabsContent>
