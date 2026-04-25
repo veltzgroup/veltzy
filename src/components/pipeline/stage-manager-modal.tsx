@@ -5,6 +5,7 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { toast } from 'sonner'
 import {
   usePipelineStages, useCreateStage, useUpdateStage, useDeleteStage,
 } from '@/hooks/use-pipeline-stages'
@@ -37,10 +38,17 @@ const StageRow = ({
     }
   }
 
-  const handleDelete = () => {
-    if (leadCount > 0) return
+  const handleDelete = async () => {
+    if (leadCount > 0) {
+      toast.error('Esta etapa possui leads. Mova-os antes de excluir.')
+      return
+    }
     if (!confirm(`Remover a fase "${stage.name}"?`)) return
-    deleteStage.mutate(stage.id)
+    try {
+      await deleteStage.mutateAsync(stage.id)
+    } catch {
+      toast.error('Esta etapa possui leads. Mova-os antes de excluir.')
+    }
   }
 
   return (

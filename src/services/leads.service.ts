@@ -13,14 +13,23 @@ interface LeadFilters {
   temperature?: string | null
   assignedTo?: string | null
   search?: string
+  limit?: number
+  offset?: number
 }
 
+const sanitizeSearch = (search: string) =>
+  search.replace(/[%_\\]/g, '\\$&')
+
 export const getLeadsByCompany = async (companyId: string, filters?: LeadFilters): Promise<LeadWithDetails[]> => {
+  const limit = filters?.limit ?? 100
+  const offset = filters?.offset ?? 0
+
   let query = veltzy()
     .from('leads')
     .select(LEAD_WITH_DETAILS_SELECT)
     .eq('company_id', companyId)
     .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1)
 
   if (filters?.stageId) {
     query = query.eq('stage_id', filters.stageId)
@@ -35,7 +44,8 @@ export const getLeadsByCompany = async (companyId: string, filters?: LeadFilters
     query = query.eq('assigned_to', filters.assignedTo)
   }
   if (filters?.search) {
-    query = query.or(`name.ilike.%${filters.search}%,phone.ilike.%${filters.search}%,email.ilike.%${filters.search}%`)
+    const sanitized = sanitizeSearch(filters.search)
+    query = query.or(`name.ilike.%${sanitized}%,phone.ilike.%${sanitized}%,email.ilike.%${sanitized}%`)
   }
 
   const { data, error } = await query

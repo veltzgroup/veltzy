@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Loader2 } from 'lucide-react'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
@@ -8,9 +8,7 @@ import {
 } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { useUpdateLead } from '@/hooks/use-leads'
-import { useAuthStore } from '@/stores/auth.store'
-import { getCompanyMembers } from '@/services/profile.service'
-import { useQuery } from '@tanstack/react-query'
+import { useTeamMembers } from '@/hooks/use-team-members'
 
 interface TransferLeadModalProps {
   leadId: string | null
@@ -18,16 +16,19 @@ interface TransferLeadModalProps {
   onClose: () => void
 }
 
+const ALLOWED_ROLES = ['seller', 'manager']
+
 const TransferLeadModal = ({ leadId, open, onClose }: TransferLeadModalProps) => {
-  const companyId = useAuthStore((s) => s.company?.id)
   const updateLead = useUpdateLead()
+  const { data: members } = useTeamMembers()
   const [selectedUserId, setSelectedUserId] = useState<string>('')
 
-  const { data: members } = useQuery({
-    queryKey: ['company-members', companyId],
-    queryFn: () => getCompanyMembers(companyId!),
-    enabled: !!companyId && open,
-  })
+  const eligibleMembers = useMemo(() => {
+    if (!members) return []
+    return members.filter((m) =>
+      m.user_roles?.some((r) => ALLOWED_ROLES.includes(r.role))
+    )
+  }, [members])
 
   const handleTransfer = async () => {
     if (!leadId || !selectedUserId) return
@@ -53,7 +54,7 @@ const TransferLeadModal = ({ leadId, open, onClose }: TransferLeadModalProps) =>
               <SelectValue placeholder="Selecione um vendedor" />
             </SelectTrigger>
             <SelectContent>
-              {members?.map((m) => (
+              {eligibleMembers.map((m) => (
                 <SelectItem key={m.id} value={m.id}>
                   {m.name} ({m.email})
                 </SelectItem>

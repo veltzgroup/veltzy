@@ -9,6 +9,7 @@ import {
   type DragStartEvent,
   type DragEndEvent,
 } from '@dnd-kit/core'
+import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
 import { StageColumn } from '@/components/pipeline/stage-column'
@@ -25,6 +26,7 @@ import { triggerCelebration } from '@/lib/celebration'
 import type { LeadWithDetails } from '@/types/database'
 
 const PipelineBoard = () => {
+  const queryClient = useQueryClient()
   const { data: stages, isLoading: stagesLoading } = usePipelineStages()
   const { data: leads, isLoading: leadsLoading } = useLeads()
   const moveLeadToStage = useMoveLeadToStage()
@@ -88,28 +90,33 @@ const PipelineBoard = () => {
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     setActiveLeadId(null)
-    const { active, over } = event
-    if (!over) return
+    try {
+      const { active, over } = event
+      if (!over) return
 
-    const leadId = active.id as string
-    const overId = over.id as string
+      const leadId = active.id as string
+      const overId = over.id as string
 
-    const targetStage = stages?.find((s) => s.id === overId)
-    const lead = leads?.find((l) => l.id === leadId)
+      const targetStage = stages?.find((s) => s.id === overId)
+      const lead = leads?.find((l) => l.id === leadId)
 
-    if (!lead) return
+      if (!lead) return
 
-    const stageId = targetStage ? targetStage.id : leads?.find((l) => l.id === overId)?.stage_id
-    if (!stageId || stageId === lead.stage_id) return
+      const stageId = targetStage ? targetStage.id : leads?.find((l) => l.id === overId)?.stage_id
+      if (!stageId || stageId === lead.stage_id) return
 
-    moveLeadToStage.mutate({ leadId, stageId })
+      moveLeadToStage.mutate({ leadId, stageId })
 
-    const finalStage = stages?.find((s) => s.id === stageId)
-    if (finalStage?.is_final && finalStage?.is_positive) {
-      triggerCelebration()
-      toast.success('Negocio fechado! 🎉')
+      const finalStage = stages?.find((s) => s.id === stageId)
+      if (finalStage?.is_final && finalStage?.is_positive) {
+        triggerCelebration()
+        toast.success('Negocio fechado! 🎉')
+      }
+    } catch {
+      queryClient.invalidateQueries({ queryKey: ['leads'] })
+      toast.error('Erro ao mover lead. Tente novamente.')
     }
-  }, [leads, stages, moveLeadToStage, setActiveLeadId])
+  }, [leads, stages, moveLeadToStage, setActiveLeadId, queryClient])
 
   const handleAddLead = useCallback((stageId?: string) => {
     setCreateModalStageId(stageId)
