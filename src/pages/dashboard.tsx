@@ -80,7 +80,7 @@ const DashboardPage = () => {
   const cardBase = 'bg-card border border-border/30 rounded-2xl p-5'
 
   return (
-    <div className="min-h-[calc(100vh-3rem)] -mx-8 -my-6 px-8 py-6">
+    <div className="min-h-full p-6">
       <div className="space-y-8 animate-fade-in">
 
         {/* HEADER */}

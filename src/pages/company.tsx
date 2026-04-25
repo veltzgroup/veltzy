@@ -73,7 +73,7 @@ const CompanyPage = () => {
   const tab = searchParams.get('tab') ?? 'data'
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in p-6">
       <h1 className="text-2xl font-bold">Empresa</h1>
 
       <Tabs value={tab} onValueChange={(v) => setSearchParams({ tab: v })}>

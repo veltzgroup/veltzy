@@ -89,7 +89,7 @@ const AdminPage = () => {
   const tab = searchParams.get('tab') ?? 'permissoes'
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in p-6">
       <h1 className="text-2xl font-bold">Admin</h1>
 
       <Tabs value={tab} onValueChange={(v) => setSearchParams({ tab: v })}>

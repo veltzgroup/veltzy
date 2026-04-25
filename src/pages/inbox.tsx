@@ -21,7 +21,7 @@ const InboxPage = () => {
   const selectedLead = conversations?.find((l) => l.id === selectedLeadId) ?? null
 
   return (
-    <div className="flex h-[calc(100vh-3rem)] -my-6 -mx-8">
+    <div className="flex h-full">
       <div className="w-[340px] min-w-[300px] shrink-0">
         <ConversationList />
       </div>
