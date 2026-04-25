@@ -8,8 +8,7 @@ import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { createCompany } from '@/services/company.service'
-import { updateProfile } from '@/services/profile.service'
+import { supabasePublic } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/auth.store'
 
 const slugify = (text: string) =>
@@ -29,7 +28,9 @@ type CompanyValues = z.infer<typeof companySchema>
 
 const CompanyForm = () => {
   const navigate = useNavigate()
+  const user = useAuthStore((s) => s.user)
   const profile = useAuthStore((s) => s.profile)
+  const setProfile = useAuthStore((s) => s.setProfile)
   const setCompany = useAuthStore((s) => s.setCompany)
   const [isLoading, setIsLoading] = useState(false)
 
@@ -46,12 +47,45 @@ const CompanyForm = () => {
   }, [name, setValue])
 
   const onSubmit = async (values: CompanyValues) => {
-    if (!profile) return
-
     setIsLoading(true)
     try {
-      const company = await createCompany(values.name, values.slug)
-      await updateProfile(profile.id, { company_id: company.id })
+      // Buscar profile se nao esta no store
+      let currentProfile = profile
+      if (!currentProfile && user) {
+        const { data } = await supabasePublic
+          .from('profiles')
+          .select('*')
+          .eq('user_id', user.id)
+          .single()
+        if (data) {
+          currentProfile = data
+          setProfile(data)
+        }
+      }
+
+      if (!currentProfile) {
+        toast.error('Perfil nao encontrado. Tente fazer login novamente.')
+        setIsLoading(false)
+        return
+      }
+
+      // Criar empresa
+      const { data: company, error: companyError } = await supabasePublic
+        .from('companies')
+        .insert({ name: values.name, slug: values.slug })
+        .select()
+        .single()
+
+      if (companyError) throw companyError
+
+      // Vincular profile a empresa
+      const { error: profileError } = await supabasePublic
+        .from('profiles')
+        .update({ company_id: company.id })
+        .eq('id', currentProfile.id)
+
+      if (profileError) throw profileError
+
       setCompany(company)
       toast.success('Empresa criada com sucesso!')
       navigate('/')
