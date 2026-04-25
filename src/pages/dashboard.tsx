@@ -177,7 +177,7 @@ const DashboardPage = () => {
 
           {/* LINHA 2 - Cards com breakdown */}
 
-          {/* Negocios */}
+          {/* Negócios */}
           <div className={cardBase}>
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">Negócios</span>
