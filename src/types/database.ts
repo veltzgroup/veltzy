@@ -1,4 +1,4 @@
-export type AppRole = 'super_admin' | 'admin' | 'manager' | 'seller'
+export type AppRole = 'super_admin' | 'admin' | 'manager' | 'seller' | 'representative'
 export type LeadStatus = 'new' | 'qualifying' | 'open' | 'deal' | 'lost'
 export type LeadTemperature = 'cold' | 'warm' | 'hot' | 'fire'
 export type SenderType = 'ai' | 'human' | 'lead'

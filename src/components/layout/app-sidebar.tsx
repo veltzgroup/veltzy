@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard,
@@ -6,9 +7,21 @@ import {
   Handshake,
   Settings,
   Shield,
-  Building2,
   Crown,
   LogOut,
+  ChevronDown,
+  Users,
+  FileText,
+  MessageCircleReply,
+  Bot,
+  BarChart3,
+  ScrollText,
+  Lock,
+  Plug,
+  Building2,
+  Palette,
+  ClipboardList,
+  BrainCircuit,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/use-auth'
@@ -23,25 +36,59 @@ interface NavItem {
   label: string
   href: string
   icon: React.ComponentType<{ className?: string }>
-  disabled?: boolean
-  adminOnly?: boolean
-  managerOnly?: boolean
-  superAdminOnly?: boolean
 }
 
-const navItems: NavItem[] = [
+interface NavGroup {
+  label: string
+  icon: React.ComponentType<{ className?: string }>
+  visible: boolean
+  children: NavItem[]
+}
+
+const directItems: NavItem[] = [
   { label: 'Dashboard', href: '/', icon: LayoutDashboard },
   { label: 'Pipeline', href: '/pipeline', icon: Kanban },
   { label: 'Inbox', href: '/inbox', icon: MessageSquare },
-  { label: 'Deals', href: '/deals', icon: Handshake, disabled: true },
-  { label: 'Admin', href: '/admin', icon: Shield, managerOnly: true },
-  { label: 'Empresa', href: '/company', icon: Building2, adminOnly: true },
-  { label: 'Super Admin', href: '/super-admin', icon: Crown, superAdminOnly: true },
+  { label: 'Negocios', href: '/deals', icon: Handshake },
 ]
 
 const AppSidebar = () => {
   const { profile, company, signOut } = useAuth()
-  const { isAdmin, isManager, isSuperAdmin } = useRoles()
+  const { canAccessGestao, canAccessAdmin, isSuperAdmin } = useRoles()
+
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({})
+
+  const toggleGroup = (key: string) =>
+    setOpenGroups((prev) => ({ ...prev, [key]: !prev[key] }))
+
+  const navGroups: NavGroup[] = [
+    {
+      label: 'Gestao',
+      icon: Users,
+      visible: canAccessGestao,
+      children: [
+        { label: 'Vendedores', href: '/gestao?tab=vendedores', icon: Users },
+        { label: 'Scripts', href: '/gestao?tab=scripts', icon: FileText },
+        { label: 'Auto-Reply', href: '/gestao?tab=auto-reply', icon: MessageCircleReply },
+        { label: 'IA SDR', href: '/gestao?tab=ia-sdr', icon: Bot },
+        { label: 'Relatorios', href: '/gestao?tab=relatorios', icon: BarChart3 },
+        { label: 'Logs comerciais', href: '/gestao?tab=logs-comerciais', icon: ScrollText },
+      ],
+    },
+    {
+      label: 'Admin',
+      icon: Shield,
+      visible: canAccessAdmin,
+      children: [
+        { label: 'Permissoes', href: '/admin?tab=permissoes', icon: Lock },
+        { label: 'Integracoes', href: '/admin?tab=integracoes', icon: Plug },
+        { label: 'Empresa', href: '/admin?tab=empresa', icon: Building2 },
+        { label: 'Aparencia', href: '/admin?tab=aparencia', icon: Palette },
+        { label: 'Logs avancados', href: '/admin?tab=logs-avancados', icon: ClipboardList },
+        { label: 'IA SDR avancado', href: '/admin?tab=ia-sdr-avancado', icon: BrainCircuit },
+      ],
+    },
+  ]
 
   const initials = profile?.name
     ?.split(' ')
@@ -66,32 +113,86 @@ const AppSidebar = () => {
 
       <Separator className="bg-sidebar-border" />
 
-      <nav className="flex-1 space-y-1 px-3 py-4">
-        {navItems.map((item) => {
-          if (item.superAdminOnly && !isSuperAdmin) return null
-          if (item.adminOnly && !isAdmin) return null
-          if (item.managerOnly && !isManager) return null
+      <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto scrollbar-minimal">
+        {directItems.map((item) => (
+          <NavLink
+            key={item.href}
+            to={item.href}
+            className={({ isActive }) =>
+              cn(
+                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-smooth',
+                isActive
+                  ? 'bg-sidebar-accent text-sidebar-primary font-medium'
+                  : 'text-sidebar-foreground hover:bg-sidebar-accent'
+              )
+            }
+          >
+            <item.icon className="h-4 w-4" />
+            {item.label}
+          </NavLink>
+        ))}
+
+        {navGroups.map((group) => {
+          if (!group.visible) return null
+          const isOpen = !!openGroups[group.label]
 
           return (
-            <NavLink
-              key={item.href}
-              to={item.disabled ? '#' : item.href}
-              onClick={(e) => item.disabled && e.preventDefault()}
-              className={({ isActive }) =>
-                cn(
-                  'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-smooth',
-                  isActive && !item.disabled
-                    ? 'bg-sidebar-accent text-sidebar-primary font-medium'
-                    : 'text-sidebar-foreground hover:bg-sidebar-accent',
-                  item.disabled && 'opacity-40 cursor-not-allowed'
-                )
-              }
-            >
-              <item.icon className="h-4 w-4" />
-              {item.label}
-            </NavLink>
+            <div key={group.label}>
+              <button
+                onClick={() => toggleGroup(group.label)}
+                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent transition-smooth"
+              >
+                <group.icon className="h-4 w-4" />
+                <span className="flex-1 text-left">{group.label}</span>
+                <ChevronDown
+                  className={cn(
+                    'h-3.5 w-3.5 transition-transform duration-200',
+                    isOpen && 'rotate-180'
+                  )}
+                />
+              </button>
+
+              {isOpen && (
+                <div className="ml-4 space-y-0.5 mt-0.5">
+                  {group.children.map((child) => (
+                    <NavLink
+                      key={child.href}
+                      to={child.href}
+                      className={({ isActive }) =>
+                        cn(
+                          'flex items-center gap-3 rounded-lg px-3 py-1.5 text-sm transition-smooth',
+                          isActive
+                            ? 'bg-sidebar-accent text-sidebar-primary font-medium'
+                            : 'text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground'
+                        )
+                      }
+                    >
+                      <child.icon className="h-3.5 w-3.5" />
+                      {child.label}
+                    </NavLink>
+                  ))}
+                </div>
+              )}
+            </div>
           )
         })}
+
+        {isSuperAdmin && (
+          <NavLink
+            to="/super-admin"
+            className={({ isActive }) =>
+              cn(
+                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-smooth',
+                isActive
+                  ? 'bg-sidebar-accent text-sidebar-primary font-medium'
+                  : 'text-sidebar-foreground hover:bg-sidebar-accent'
+              )
+            }
+          >
+            <Crown className="h-4 w-4" />
+            Super Admin
+          </NavLink>
+        )}
       </nav>
 
       <Separator className="bg-sidebar-border" />

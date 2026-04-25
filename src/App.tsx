@@ -20,6 +20,8 @@ const SettingsPage = lazy(() => import('@/pages/settings'))
 const AdminPage = lazy(() => import('@/pages/admin'))
 const CompanyPage = lazy(() => import('@/pages/company'))
 const SuperAdminPage = lazy(() => import('@/pages/super-admin'))
+const GestaoPage = lazy(() => import('@/pages/gestao'))
+const DealsPage = lazy(() => import('@/pages/deals'))
 const NotFoundPage = lazy(() => import('@/pages/not-found'))
 
 const queryClient = new QueryClient({
@@ -79,7 +81,9 @@ const App = () => {
                 <Route path="/" element={<DashboardPage />} />
                 <Route path="/pipeline" element={<PipelinePage />} />
                 <Route path="/inbox" element={<InboxPage />} />
-                <Route path="/sellers" element={<Navigate to="/admin?tab=sellers" replace />} />
+                <Route path="/deals" element={<DealsPage />} />
+                <Route path="/gestao" element={<GestaoPage />} />
+                <Route path="/sellers" element={<Navigate to="/gestao?tab=vendedores" replace />} />
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/admin" element={<AdminPage />} />
                 <Route path="/company" element={<CompanyPage />} />
