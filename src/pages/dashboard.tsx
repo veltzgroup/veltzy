@@ -15,7 +15,7 @@ const curveData = [5, 8, 15, 35, 60, 75, 60, 35, 15, 8, 5].map((v, i) => ({ x: i
 const periodOptions = [
   { label: 'Hoje', icon: Clock, days: 1 },
   { label: 'Semana', icon: Calendar, days: 7 },
-  { label: 'Mes', icon: CalendarDays, days: 30 },
+  { label: 'Mês', icon: CalendarDays, days: 30 },
   { label: 'Total', icon: BarChart3, days: undefined },
 ] as const
 
@@ -77,7 +77,7 @@ const DashboardPage = () => {
   const [selectedDays, setSelectedDays] = useState<number | undefined>(30)
   const { data: kpis } = useDashboardKpis(selectedDays)
 
-  const cardBase = 'bg-[hsl(240_10%_4%)] border border-border/30 rounded-2xl p-5'
+  const cardBase = 'bg-card border border-border/30 rounded-2xl p-5'
 
   return (
     <div className="min-h-[calc(100vh-3rem)] -mx-8 -my-6 px-8 py-6">
@@ -91,10 +91,10 @@ const DashboardPage = () => {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-foreground">
-                Ola, {company?.name}!
+                Olá, {company?.name}!
               </h1>
               <p className="text-sm text-muted-foreground mt-0.5">
-                Bem-vindo ao seu painel de gestao
+                Bem-vindo ao seu painel de gestão
               </p>
             </div>
           </div>
@@ -130,10 +130,10 @@ const DashboardPage = () => {
 
           {/* LINHA 1 - Cards com grafico decorativo */}
 
-          {/* Taxa de Conversao */}
+          {/* Taxa de Conversão */}
           <div className={cardBase}>
             <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Taxa de Conversao</span>
+              <span className="text-sm text-muted-foreground">Taxa de Conversão</span>
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15">
                 <TrendingUp className="h-5 w-5 text-primary" />
               </div>
@@ -145,10 +145,10 @@ const DashboardPage = () => {
             <DecorativeLine />
           </div>
 
-          {/* Score Medio IA */}
+          {/* Score Médio IA */}
           <div className={cardBase}>
             <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Score Medio IA</span>
+              <span className="text-sm text-muted-foreground">Score Médio IA</span>
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15">
                 <Target className="h-5 w-5 text-primary" />
               </div>
@@ -156,7 +156,7 @@ const DashboardPage = () => {
             <p className="text-3xl font-bold text-foreground mt-2">
               {kpis?.avgAiScore ?? 0}%
             </p>
-            <p className="text-sm text-muted-foreground mt-1">Qualificacao media dos leads</p>
+            <p className="text-sm text-muted-foreground mt-1">Qualificação média dos leads</p>
             <DecorativeLine />
           </div>
 
@@ -171,7 +171,7 @@ const DashboardPage = () => {
             <p className="text-3xl font-bold text-foreground mt-2">
               {kpis?.dealsClosed ?? 0}
             </p>
-            <p className="text-sm text-muted-foreground mt-1">Negocios concluidos com sucesso</p>
+            <p className="text-sm text-muted-foreground mt-1">Negócios concluídos com sucesso</p>
             <DecorativeLine />
           </div>
 
@@ -180,7 +180,7 @@ const DashboardPage = () => {
           {/* Negocios */}
           <div className={cardBase}>
             <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Negocios</span>
+              <span className="text-sm text-muted-foreground">Negócios</span>
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15">
                 <Users className="h-5 w-5 text-primary" />
               </div>
@@ -195,10 +195,10 @@ const DashboardPage = () => {
             ]} />
           </div>
 
-          {/* Ticket Medio */}
+          {/* Ticket Médio */}
           <div className={cardBase}>
             <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Ticket Medio</span>
+              <span className="text-sm text-muted-foreground">Ticket Médio</span>
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15">
                 <TrendingUp className="h-5 w-5 text-primary" />
               </div>
