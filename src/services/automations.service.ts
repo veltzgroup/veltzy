@@ -1,8 +1,8 @@
-import { supabase } from '@/lib/supabase'
+import { veltzy as db } from '@/lib/supabase'
 import type { AutomationRule, AutomationLog } from '@/types/database'
 
 export const getRules = async (companyId: string): Promise<AutomationRule[]> => {
-  const { data, error } = await supabase
+  const { data, error } = await db()
     .from('automation_rules')
     .select('*')
     .eq('company_id', companyId)
@@ -15,7 +15,7 @@ export const createRule = async (
   companyId: string,
   input: Omit<AutomationRule, 'id' | 'company_id' | 'created_at' | 'updated_at'>
 ): Promise<AutomationRule> => {
-  const { data, error } = await supabase
+  const { data, error } = await db()
     .from('automation_rules')
     .insert({ ...input, company_id: companyId })
     .select()
@@ -28,7 +28,7 @@ export const updateRule = async (
   id: string,
   input: Partial<Pick<AutomationRule, 'name' | 'trigger_type' | 'conditions' | 'action_type' | 'action_data' | 'priority' | 'is_enabled'>>
 ): Promise<AutomationRule> => {
-  const { data, error } = await supabase
+  const { data, error } = await db()
     .from('automation_rules')
     .update(input)
     .eq('id', id)
@@ -39,7 +39,7 @@ export const updateRule = async (
 }
 
 export const deleteRule = async (id: string): Promise<void> => {
-  const { error } = await supabase
+  const { error } = await db()
     .from('automation_rules')
     .delete()
     .eq('id', id)
@@ -47,7 +47,7 @@ export const deleteRule = async (id: string): Promise<void> => {
 }
 
 export const toggleRule = async (id: string, enabled: boolean): Promise<void> => {
-  const { error } = await supabase
+  const { error } = await db()
     .from('automation_rules')
     .update({ is_enabled: enabled })
     .eq('id', id)
@@ -55,7 +55,7 @@ export const toggleRule = async (id: string, enabled: boolean): Promise<void> =>
 }
 
 export const getLogs = async (companyId: string, limit = 50): Promise<AutomationLog[]> => {
-  const { data, error } = await supabase
+  const { data, error } = await db()
     .from('automation_logs')
     .select('*')
     .eq('company_id', companyId)

@@ -1,8 +1,8 @@
-import { supabase } from '@/lib/supabase'
+import { veltzy } from '@/lib/supabase'
 import type { SourceIntegration, IntegrationType } from '@/types/database'
 
 export const getIntegrations = async (companyId: string): Promise<SourceIntegration[]> => {
-  const { data, error } = await supabase
+  const { data, error } = await veltzy()
     .from('source_integrations')
     .select('*')
     .eq('company_id', companyId)
@@ -16,7 +16,7 @@ export const saveIntegration = async (
   type: IntegrationType,
   config: Record<string, unknown>
 ): Promise<SourceIntegration> => {
-  const { data, error } = await supabase
+  const { data, error } = await veltzy()
     .from('source_integrations')
     .upsert(
       { company_id: companyId, source_id: sourceId, integration_type: type, config },
@@ -29,6 +29,6 @@ export const saveIntegration = async (
 }
 
 export const deleteIntegration = async (id: string): Promise<void> => {
-  const { error } = await supabase.from('source_integrations').delete().eq('id', id)
+  const { error } = await veltzy().from('source_integrations').delete().eq('id', id)
   if (error) throw error
 }

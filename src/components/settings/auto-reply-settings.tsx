@@ -34,7 +34,7 @@ const AutoReplySettings = () => {
   const { data: config, isLoading } = useQuery({
     queryKey: ['auto-reply-config', companyId],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data } = await supabase.schema('veltzy')
         .from('system_settings')
         .select('value')
         .eq('company_id', companyId!)
@@ -58,7 +58,7 @@ const AutoReplySettings = () => {
 
   const saveMutation = useMutation({
     mutationFn: async (values: AutoReplyConfig) => {
-      const { error } = await supabase
+      const { error } = await supabase.schema('veltzy')
         .from('system_settings')
         .upsert(
           { company_id: companyId!, key: 'auto_reply_config', value: values as unknown as Record<string, unknown> },

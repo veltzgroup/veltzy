@@ -20,7 +20,7 @@ export const useNotificationPreferences = () => {
   const query = useQuery({
     queryKey: ['notification-prefs', userId],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data } = await supabase.schema('veltzy')
         .from('system_settings')
         .select('value')
         .eq('company_id', companyId!)
@@ -33,7 +33,7 @@ export const useNotificationPreferences = () => {
 
   const save = useMutation({
     mutationFn: async (prefs: NotificationPreferences) => {
-      const { error } = await supabase
+      const { error } = await supabase.schema('veltzy')
         .from('system_settings')
         .upsert(
           { company_id: companyId!, key: `notification_prefs_${userId}`, value: prefs as unknown as Record<string, unknown> },

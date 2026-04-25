@@ -7,26 +7,12 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Variaveis de ambiente VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY sao obrigatorias')
 }
 
-const STORAGE_KEY = 'veltzy-auth-token'
+// Client unico - schema public por default (auth, companies, profiles, user_roles)
+// Para tabelas veltzy.*, usar supabase.schema('veltzy').from('tabela')
+export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
-// Client principal para tabelas do produto (schema veltzy) + auth
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  db: { schema: 'veltzy' },
-  auth: {
-    storageKey: STORAGE_KEY,
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true,
-  },
-})
+// Helper para queries no schema veltzy
+export const veltzy = () => supabase.schema('veltzy')
 
-// Client para tabelas compartilhadas (schema public) - compartilha a mesma session de auth
-export const supabasePublic = createClient(supabaseUrl, supabaseAnonKey, {
-  db: { schema: 'public' },
-  auth: {
-    storageKey: STORAGE_KEY,
-    autoRefreshToken: false,
-    persistSession: true,
-    detectSessionInUrl: false,
-  },
-})
+// Alias para manter compatibilidade com imports existentes
+export const supabasePublic = supabase

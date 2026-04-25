@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { useLeadSources } from '@/hooks/use-lead-sources'
-import { supabase } from '@/lib/supabase'
+import { veltzy } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/auth.store'
 import { useQueryClient } from '@tanstack/react-query'
 
@@ -19,7 +19,7 @@ const LeadSourcesManager = () => {
   const handleAdd = async () => {
     if (!newName.trim() || !companyId) return
     const slug = newName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
-    const { error } = await supabase.from('lead_sources').insert({ company_id: companyId, name: newName, slug, color: newColor, icon_name: 'Globe' })
+    const { error } = await veltzy().from('lead_sources').insert({ company_id: companyId, name: newName, slug, color: newColor, icon_name: 'Globe' })
     if (error) { toast.error(error.message); return }
     queryClient.invalidateQueries({ queryKey: ['lead-sources'] })
     setNewName('')
@@ -27,14 +27,14 @@ const LeadSourcesManager = () => {
   }
 
   const toggleActive = async (id: string, active: boolean) => {
-    await supabase.from('lead_sources').update({ is_active: active }).eq('id', id)
+    await veltzy().from('lead_sources').update({ is_active: active }).eq('id', id)
     queryClient.invalidateQueries({ queryKey: ['lead-sources'] })
   }
 
   const handleDelete = async (id: string, isSystem: boolean) => {
     if (isSystem) { toast.error('Origens do sistema nao podem ser removidas'); return }
     if (!confirm('Remover esta origem?')) return
-    await supabase.from('lead_sources').delete().eq('id', id)
+    await veltzy().from('lead_sources').delete().eq('id', id)
     queryClient.invalidateQueries({ queryKey: ['lead-sources'] })
     toast.success('Origem removida!')
   }

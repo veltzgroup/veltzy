@@ -1,8 +1,8 @@
-import { supabase } from '@/lib/supabase'
+import { supabase, veltzy } from '@/lib/supabase'
 import type { WhatsAppConfig } from '@/types/database'
 
 export const getConfig = async (companyId: string): Promise<WhatsAppConfig | null> => {
-  const { data, error } = await supabase
+  const { data, error } = await veltzy()
     .from('whatsapp_configs')
     .select('*')
     .eq('company_id', companyId)
@@ -15,7 +15,7 @@ export const saveConfig = async (
   companyId: string,
   config: { instance_id: string; instance_token: string; client_token: string }
 ): Promise<WhatsAppConfig> => {
-  const { data, error } = await supabase
+  const { data, error } = await veltzy()
     .from('whatsapp_configs')
     .upsert({ ...config, company_id: companyId }, { onConflict: 'company_id' })
     .select()

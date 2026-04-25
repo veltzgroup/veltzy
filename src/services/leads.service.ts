@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { veltzy } from '@/lib/supabase'
 import type { Lead, LeadWithDetails, CreateLeadInput, UpdateLeadInput } from '@/types/database'
 
 const LEAD_WITH_DETAILS_SELECT = `
@@ -17,7 +17,7 @@ interface LeadFilters {
 }
 
 export const getLeadsByCompany = async (companyId: string, filters?: LeadFilters): Promise<LeadWithDetails[]> => {
-  let query = supabase
+  let query = veltzy()
     .from('leads')
     .select(LEAD_WITH_DETAILS_SELECT)
     .eq('company_id', companyId)
@@ -45,7 +45,7 @@ export const getLeadsByCompany = async (companyId: string, filters?: LeadFilters
 }
 
 export const getLeadById = async (leadId: string): Promise<LeadWithDetails> => {
-  const { data, error } = await supabase
+  const { data, error } = await veltzy()
     .from('leads')
     .select(LEAD_WITH_DETAILS_SELECT)
     .eq('id', leadId)
@@ -55,7 +55,7 @@ export const getLeadById = async (leadId: string): Promise<LeadWithDetails> => {
 }
 
 export const createLead = async (companyId: string, input: CreateLeadInput): Promise<Lead> => {
-  const { data, error } = await supabase
+  const { data, error } = await veltzy()
     .from('leads')
     .insert({ ...input, company_id: companyId })
     .select()
@@ -65,7 +65,7 @@ export const createLead = async (companyId: string, input: CreateLeadInput): Pro
 }
 
 export const updateLead = async (leadId: string, input: UpdateLeadInput): Promise<Lead> => {
-  const { data, error } = await supabase
+  const { data, error } = await veltzy()
     .from('leads')
     .update(input)
     .eq('id', leadId)
@@ -76,7 +76,7 @@ export const updateLead = async (leadId: string, input: UpdateLeadInput): Promis
 }
 
 export const deleteLead = async (leadId: string): Promise<void> => {
-  const { error } = await supabase
+  const { error } = await veltzy()
     .from('leads')
     .delete()
     .eq('id', leadId)
@@ -84,7 +84,7 @@ export const deleteLead = async (leadId: string): Promise<void> => {
 }
 
 export const moveLeadToStage = async (leadId: string, stageId: string): Promise<Lead> => {
-  const { data, error } = await supabase
+  const { data, error } = await veltzy()
     .from('leads')
     .update({ stage_id: stageId })
     .eq('id', leadId)

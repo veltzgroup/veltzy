@@ -1,4 +1,4 @@
-import { supabase, supabasePublic } from '@/lib/supabase'
+import { supabase, veltzy } from '@/lib/supabase'
 import type { ConversionMetrics, SourceMetrics, StageMetrics, SellerMetrics, MonthlyData } from '@/types/database'
 
 const getPeriodDates = (days: number) => {
@@ -18,8 +18,8 @@ const getPeriodDates = (days: number) => {
 export const getConversionMetrics = async (companyId: string, days = 30): Promise<ConversionMetrics> => {
   const { start, prevStart, prevEnd } = getPeriodDates(days)
 
-  const { data: current } = await supabase.from('leads').select('status, deal_value').eq('company_id', companyId).gte('created_at', start)
-  const { data: prev } = await supabase.from('leads').select('status, deal_value').eq('company_id', companyId).gte('created_at', prevStart).lt('created_at', prevEnd)
+  const { data: current } = await veltzy().from('leads').select('status, deal_value').eq('company_id', companyId).gte('created_at', start)
+  const { data: prev } = await veltzy().from('leads').select('status, deal_value').eq('company_id', companyId).gte('created_at', prevStart).lt('created_at', prevEnd)
 
   const calc = (leads: typeof current) => {
     const total = leads?.length ?? 0
@@ -53,7 +53,7 @@ export interface DashboardKpis {
 }
 
 export const getDashboardKpis = async (companyId: string, days?: number): Promise<DashboardKpis> => {
-  let query = supabase.from('leads').select('status, deal_value, ai_score').eq('company_id', companyId)
+  let query = veltzy().from('leads').select('status, deal_value, ai_score').eq('company_id', companyId)
   if (days) {
     const start = new Date()
     start.setDate(start.getDate() - days)
@@ -94,8 +94,8 @@ export const getDashboardKpis = async (companyId: string, days?: number): Promis
 }
 
 export const getLeadsBySource = async (companyId: string): Promise<SourceMetrics[]> => {
-  const { data: leads } = await supabase.from('leads').select('source_id').eq('company_id', companyId)
-  const { data: sources } = await supabase.from('lead_sources').select('id, name, color').eq('company_id', companyId)
+  const { data: leads } = await veltzy().from('leads').select('source_id').eq('company_id', companyId)
+  const { data: sources } = await veltzy().from('lead_sources').select('id, name, color').eq('company_id', companyId)
 
   const counts: Record<string, number> = {}
   leads?.forEach((l) => { if (l.source_id) counts[l.source_id] = (counts[l.source_id] ?? 0) + 1 })
@@ -104,8 +104,8 @@ export const getLeadsBySource = async (companyId: string): Promise<SourceMetrics
 }
 
 export const getPipelineOverview = async (companyId: string): Promise<StageMetrics[]> => {
-  const { data: stages } = await supabase.from('pipeline_stages').select('id, name, color, position').eq('company_id', companyId).order('position')
-  const { data: leads } = await supabase.from('leads').select('stage_id, deal_value').eq('company_id', companyId)
+  const { data: stages } = await veltzy().from('pipeline_stages').select('id, name, color, position').eq('company_id', companyId).order('position')
+  const { data: leads } = await veltzy().from('leads').select('stage_id, deal_value').eq('company_id', companyId)
 
   const map: Record<string, { count: number; value: number }> = {}
   leads?.forEach((l) => {
@@ -124,7 +124,7 @@ export const getMonthlyComparison = async (companyId: string): Promise<MonthlyDa
   const sixMonthsAgo = new Date()
   sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
 
-  const { data: leads } = await supabase.from('leads').select('status, created_at').eq('company_id', companyId).gte('created_at', sixMonthsAgo.toISOString())
+  const { data: leads } = await veltzy().from('leads').select('status, created_at').eq('company_id', companyId).gte('created_at', sixMonthsAgo.toISOString())
 
   const months: Record<string, { leads: number; deals: number }> = {}
   leads?.forEach((l) => {
@@ -142,9 +142,9 @@ export const getMonthlyComparison = async (companyId: string): Promise<MonthlyDa
 }
 
 export const getSellerPerformance = async (companyId: string): Promise<SellerMetrics[]> => {
-  const { data: profiles } = await supabasePublic.from('profiles').select('id, name, is_available').eq('company_id', companyId)
-  const { data: leads } = await supabase.from('leads').select('assigned_to, status, deal_value').eq('company_id', companyId)
-  const { data: responseTimes } = await supabase.rpc('get_seller_avg_response_times', { _company_id: companyId })
+  const { data: profiles } = await supabase.from('profiles').select('id, name, is_available').eq('company_id', companyId)
+  const { data: leads } = await veltzy().from('leads').select('assigned_to, status, deal_value').eq('company_id', companyId)
+  const { data: responseTimes } = await veltzy().rpc('get_seller_avg_response_times', { _company_id: companyId })
 
   const responseMap: Record<string, number> = {}
   ;(responseTimes ?? []).forEach((r: { profile_id: string; avg_response_minutes: number }) => {

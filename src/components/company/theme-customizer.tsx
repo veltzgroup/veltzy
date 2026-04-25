@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { useAuthStore } from '@/stores/auth.store'
 import { useThemeConfig } from '@/hooks/use-theme-config'
-import { supabase, supabasePublic } from '@/lib/supabase'
+import { supabase, veltzy } from '@/lib/supabase'
 import { useQueryClient } from '@tanstack/react-query'
 
 const swatches = [
@@ -58,8 +58,8 @@ const ThemeCustomizer = () => {
     if (!companyId) return
     setSaving(true)
     try {
-      await supabasePublic.from('companies').update({ primary_color: primaryHsl }).eq('id', companyId)
-      await supabase.from('system_settings').upsert(
+      await supabase.from('companies').update({ primary_color: primaryHsl }).eq('id', companyId)
+      await veltzy().from('system_settings').upsert(
         { company_id: companyId, key: 'theme_config', value: { card_style: cardStyle, sidebar_style: sidebarStyle } },
         { onConflict: 'company_id,key' }
       )

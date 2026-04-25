@@ -8,7 +8,7 @@ import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { supabasePublic } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/auth.store'
 
 const slugify = (text: string) =>
@@ -52,7 +52,7 @@ const CompanyForm = () => {
       // Buscar profile se nao esta no store
       let currentProfile = profile
       if (!currentProfile && user) {
-        const { data } = await supabasePublic
+        const { data } = await supabase
           .from('profiles')
           .select('*')
           .eq('user_id', user.id)
@@ -70,7 +70,7 @@ const CompanyForm = () => {
       }
 
       // Criar empresa
-      const { data: company, error: companyError } = await supabasePublic
+      const { data: company, error: companyError } = await supabase
         .from('companies')
         .insert({ name: values.name, slug: values.slug })
         .select()
@@ -79,7 +79,7 @@ const CompanyForm = () => {
       if (companyError) throw companyError
 
       // Vincular profile a empresa
-      const { error: profileError } = await supabasePublic
+      const { error: profileError } = await supabase
         .from('profiles')
         .update({ company_id: company.id })
         .eq('id', currentProfile.id)

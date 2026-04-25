@@ -1,8 +1,8 @@
-import { supabase } from '@/lib/supabase'
+import { veltzy as db } from '@/lib/supabase'
 import type { LeadSourceRecord } from '@/types/database'
 
 export const getLeadSources = async (companyId: string): Promise<LeadSourceRecord[]> => {
-  const { data, error } = await supabase
+  const { data, error } = await db()
     .from('lead_sources')
     .select('*')
     .eq('company_id', companyId)

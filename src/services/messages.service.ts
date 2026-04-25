@@ -1,8 +1,8 @@
-import { supabase } from '@/lib/supabase'
+import { veltzy as db } from '@/lib/supabase'
 import type { Message, SendMessagePayload, LeadWithLastMessage } from '@/types/database'
 
 export const getMessages = async (leadId: string): Promise<Message[]> => {
-  const { data, error } = await supabase
+  const { data, error } = await db()
     .from('messages')
     .select('*')
     .eq('lead_id', leadId)
@@ -12,7 +12,7 @@ export const getMessages = async (leadId: string): Promise<Message[]> => {
 }
 
 export const sendMessage = async (companyId: string, payload: SendMessagePayload): Promise<Message> => {
-  const { data, error } = await supabase
+  const { data, error } = await db()
     .from('messages')
     .insert({
       lead_id: payload.leadId,
@@ -30,7 +30,7 @@ export const sendMessage = async (companyId: string, payload: SendMessagePayload
     .single()
   if (error) throw error
 
-  await supabase
+  await db()
     .from('leads')
     .update({ conversation_status: 'replied' })
     .eq('id', payload.leadId)
@@ -39,7 +39,7 @@ export const sendMessage = async (companyId: string, payload: SendMessagePayload
 }
 
 export const markAsRead = async (leadId: string): Promise<void> => {
-  const { error } = await supabase
+  const { error } = await db()
     .from('leads')
     .update({ conversation_status: 'read' })
     .eq('id', leadId)
@@ -47,7 +47,7 @@ export const markAsRead = async (leadId: string): Promise<void> => {
 }
 
 export const getConversationList = async (companyId: string): Promise<LeadWithLastMessage[]> => {
-  const { data: leads, error } = await supabase
+  const { data: leads, error } = await db()
     .from('leads')
     .select(`
       *,
@@ -60,7 +60,7 @@ export const getConversationList = async (companyId: string): Promise<LeadWithLa
 
   const leadsWithMessages = await Promise.all(
     (leads ?? []).map(async (lead) => {
-      const { data: lastMsg } = await supabase
+      const { data: lastMsg } = await db()
         .from('messages')
         .select('content, sender_type, created_at, message_type')
         .eq('lead_id', lead.id)
@@ -68,7 +68,7 @@ export const getConversationList = async (companyId: string): Promise<LeadWithLa
         .limit(1)
         .maybeSingle()
 
-      const { count } = await supabase
+      const { count } = await db()
         .from('messages')
         .select('*', { count: 'exact', head: true })
         .eq('lead_id', lead.id)

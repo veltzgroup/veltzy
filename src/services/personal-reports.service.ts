@@ -1,11 +1,11 @@
-import { supabase } from '@/lib/supabase'
+import { veltzy as db } from '@/lib/supabase'
 import type { PersonalReport } from '@/types/database'
 
 export const getPersonalReport = async (profileId: string, days = 30): Promise<PersonalReport> => {
   const start = new Date()
   start.setDate(start.getDate() - days)
 
-  const { data: leads } = await supabase
+  const { data: leads } = await db()
     .from('leads')
     .select('status, deal_value')
     .eq('assigned_to', profileId)

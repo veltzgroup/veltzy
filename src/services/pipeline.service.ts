@@ -1,8 +1,8 @@
-import { supabase } from '@/lib/supabase'
+import { veltzy } from '@/lib/supabase'
 import type { PipelineStage } from '@/types/database'
 
 export const getPipelineStages = async (companyId: string): Promise<PipelineStage[]> => {
-  const { data, error } = await supabase
+  const { data, error } = await veltzy()
     .from('pipeline_stages')
     .select('*')
     .eq('company_id', companyId)
@@ -15,7 +15,7 @@ export const createStage = async (
   companyId: string,
   input: { name: string; slug: string; color: string; position: number }
 ): Promise<PipelineStage> => {
-  const { data, error } = await supabase
+  const { data, error } = await veltzy()
     .from('pipeline_stages')
     .insert({ ...input, company_id: companyId })
     .select()
@@ -28,7 +28,7 @@ export const updateStage = async (
   stageId: string,
   input: Partial<Pick<PipelineStage, 'name' | 'color' | 'position' | 'is_final' | 'is_positive'>>
 ): Promise<PipelineStage> => {
-  const { data, error } = await supabase
+  const { data, error } = await veltzy()
     .from('pipeline_stages')
     .update(input)
     .eq('id', stageId)
@@ -39,7 +39,7 @@ export const updateStage = async (
 }
 
 export const deleteStage = async (stageId: string): Promise<void> => {
-  const { error } = await supabase
+  const { error } = await veltzy()
     .from('pipeline_stages')
     .delete()
     .eq('id', stageId)
@@ -48,12 +48,12 @@ export const deleteStage = async (stageId: string): Promise<void> => {
 
 export const reorderStages = async (stages: { id: string; position: number }[]): Promise<void> => {
   const updates = stages.map((s) =>
-    supabase
+    veltzy()
       .from('pipeline_stages')
       .update({ position: s.position })
       .eq('id', s.id)
   )
   const results = await Promise.all(updates)
-  const error = results.find((r) => r.error)?.error
+  const error = results.find((r: { error: unknown }) => r.error)?.error
   if (error) throw error
 }

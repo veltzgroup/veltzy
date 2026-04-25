@@ -1,8 +1,8 @@
-import { supabase } from '@/lib/supabase'
+import { veltzy as db } from '@/lib/supabase'
 import type { Notification } from '@/types/database'
 
 export const getNotifications = async (userId: string): Promise<Notification[]> => {
-  const { data, error } = await supabase
+  const { data, error } = await db()
     .from('notifications')
     .select('*')
     .eq('user_id', userId)
@@ -13,7 +13,7 @@ export const getNotifications = async (userId: string): Promise<Notification[]> 
 }
 
 export const markAsRead = async (notificationId: string): Promise<void> => {
-  const { error } = await supabase
+  const { error } = await db()
     .from('notifications')
     .update({ is_read: true })
     .eq('id', notificationId)
@@ -21,7 +21,7 @@ export const markAsRead = async (notificationId: string): Promise<void> => {
 }
 
 export const markAllAsRead = async (userId: string): Promise<void> => {
-  const { error } = await supabase
+  const { error } = await db()
     .from('notifications')
     .update({ is_read: true })
     .eq('user_id', userId)
@@ -30,7 +30,7 @@ export const markAllAsRead = async (userId: string): Promise<void> => {
 }
 
 export const getUnreadCount = async (userId: string): Promise<number> => {
-  const { count, error } = await supabase
+  const { count, error } = await db()
     .from('notifications')
     .select('*', { count: 'exact', head: true })
     .eq('user_id', userId)

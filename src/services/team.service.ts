@@ -1,8 +1,8 @@
-import { supabase, supabasePublic } from '@/lib/supabase'
+import { supabase, veltzy } from '@/lib/supabase'
 import type { ProfileWithRole, CompanyInvite, AppRole } from '@/types/database'
 
 export const getMembers = async (companyId: string): Promise<ProfileWithRole[]> => {
-  const { data, error } = await supabasePublic
+  const { data, error } = await supabase
     .from('profiles')
     .select('*, user_roles(*)')
     .eq('company_id', companyId)
@@ -12,7 +12,7 @@ export const getMembers = async (companyId: string): Promise<ProfileWithRole[]> 
 }
 
 export const inviteMember = async (companyId: string, email: string, role: AppRole, invitedBy: string): Promise<CompanyInvite> => {
-  const { data, error } = await supabase
+  const { data, error } = await veltzy()
     .from('company_invites')
     .insert({ company_id: companyId, email, role, invited_by: invitedBy })
     .select()
@@ -22,7 +22,7 @@ export const inviteMember = async (companyId: string, email: string, role: AppRo
 }
 
 export const getInvites = async (companyId: string): Promise<CompanyInvite[]> => {
-  const { data, error } = await supabase
+  const { data, error } = await veltzy()
     .from('company_invites')
     .select('*')
     .eq('company_id', companyId)
@@ -33,7 +33,7 @@ export const getInvites = async (companyId: string): Promise<CompanyInvite[]> =>
 }
 
 export const cancelInvite = async (inviteId: string): Promise<void> => {
-  const { error } = await supabase
+  const { error } = await veltzy()
     .from('company_invites')
     .delete()
     .eq('id', inviteId)
@@ -41,8 +41,8 @@ export const cancelInvite = async (inviteId: string): Promise<void> => {
 }
 
 export const updateMemberRole = async (userId: string, role: AppRole): Promise<void> => {
-  await supabasePublic.from('user_roles').delete().eq('user_id', userId).neq('role', 'super_admin')
-  const { error } = await supabasePublic.from('user_roles').insert({ user_id: userId, role })
+  await supabase.from('user_roles').delete().eq('user_id', userId).neq('role', 'super_admin')
+  const { error } = await supabase.from('user_roles').insert({ user_id: userId, role })
   if (error) throw error
 }
 
@@ -65,7 +65,7 @@ export const resetMemberPassword = async (email: string): Promise<void> => {
 }
 
 export const setFallbackLeadOwner = async (companyId: string, profileId: string | null): Promise<void> => {
-  const { data: existing } = await supabase
+  const { data: existing } = await veltzy()
     .from('system_settings')
     .select('value')
     .eq('company_id', companyId)
@@ -73,7 +73,7 @@ export const setFallbackLeadOwner = async (companyId: string, profileId: string 
     .single()
 
   const value = { ...(existing?.value as Record<string, unknown> ?? {}), fallback_lead_owner: profileId }
-  const { error } = await supabase
+  const { error } = await veltzy()
     .from('system_settings')
     .update({ value })
     .eq('company_id', companyId)
@@ -82,7 +82,7 @@ export const setFallbackLeadOwner = async (companyId: string, profileId: string 
 }
 
 export const getFallbackLeadOwner = async (companyId: string): Promise<string | null> => {
-  const { data } = await supabase
+  const { data } = await veltzy()
     .from('system_settings')
     .select('value')
     .eq('company_id', companyId)

@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { veltzy } from '@/lib/supabase'
 
 export interface ScoreRange {
   range: string
@@ -23,7 +23,7 @@ const RANGES: Omit<ScoreRange, 'count'>[] = [
 ]
 
 export const getScoreDistribution = async (companyId: string, days?: number): Promise<ScoreRange[]> => {
-  let query = supabase.from('leads').select('ai_score').eq('company_id', companyId)
+  let query = veltzy().from('leads').select('ai_score').eq('company_id', companyId)
   if (days) {
     const start = new Date()
     start.setDate(start.getDate() - days)
@@ -38,7 +38,7 @@ export const getScoreDistribution = async (companyId: string, days?: number): Pr
 }
 
 export const getSdrKpis = async (companyId: string, days?: number): Promise<SdrKpis> => {
-  let query = supabase.from('leads').select('ai_score').eq('company_id', companyId)
+  let query = veltzy().from('leads').select('ai_score').eq('company_id', companyId)
   if (days) {
     const start = new Date()
     start.setDate(start.getDate() - days)

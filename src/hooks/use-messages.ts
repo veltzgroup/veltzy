@@ -23,7 +23,7 @@ export const useMessages = (leadId: string | null) => {
       .channel(`messages:${leadId}`)
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'messages', filter: `lead_id=eq.${leadId}` },
+        { event: 'INSERT', schema: 'veltzy', table: 'messages', filter: `lead_id=eq.${leadId}` },
         (payload) => {
           queryClient.setQueryData<Message[]>(['messages', leadId], (old) => {
             if (!old) return [payload.new as Message]

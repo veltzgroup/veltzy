@@ -1,8 +1,8 @@
-import { supabase } from '@/lib/supabase'
+import { veltzy } from '@/lib/supabase'
 import type { PaymentConfig, PaymentProvider, PaymentEnvironment } from '@/types/database'
 
 export const getPaymentConfigs = async (companyId: string): Promise<PaymentConfig[]> => {
-  const { data, error } = await supabase
+  const { data, error } = await veltzy()
     .from('payment_configs')
     .select('*')
     .eq('company_id', companyId)
@@ -16,7 +16,7 @@ export const savePaymentConfig = async (
   provider: PaymentProvider,
   input: { api_key: string; api_secret?: string; webhook_secret?: string; environment: PaymentEnvironment }
 ): Promise<PaymentConfig> => {
-  const { data, error } = await supabase
+  const { data, error } = await veltzy()
     .from('payment_configs')
     .upsert({ company_id: companyId, provider, ...input }, { onConflict: 'company_id,provider' })
     .select()
@@ -26,7 +26,7 @@ export const savePaymentConfig = async (
 }
 
 export const togglePaymentConfig = async (id: string, active: boolean): Promise<void> => {
-  const { error } = await supabase
+  const { error } = await veltzy()
     .from('payment_configs')
     .update({ is_active: active })
     .eq('id', id)
@@ -34,6 +34,6 @@ export const togglePaymentConfig = async (id: string, active: boolean): Promise<
 }
 
 export const deletePaymentConfig = async (id: string): Promise<void> => {
-  const { error } = await supabase.from('payment_configs').delete().eq('id', id)
+  const { error } = await veltzy().from('payment_configs').delete().eq('id', id)
   if (error) throw error
 }
