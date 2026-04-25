@@ -2,13 +2,24 @@ import { supabase, veltzy } from '@/lib/supabase'
 import type { ProfileWithRole, CompanyInvite, AppRole } from '@/types/database'
 
 export const getMembers = async (companyId: string): Promise<ProfileWithRole[]> => {
-  const { data, error } = await supabase
+  const { data: profiles, error: profError } = await supabase
     .from('profiles')
-    .select('*, user_roles(*)')
+    .select('*')
     .eq('company_id', companyId)
     .order('name')
-  if (error) throw error
-  return data
+  if (profError) throw profError
+
+  const userIds = profiles.map((p) => p.user_id)
+  const { data: roles, error: rolesError } = await supabase
+    .from('user_roles')
+    .select('*')
+    .in('user_id', userIds)
+  if (rolesError) throw rolesError
+
+  return profiles.map((p) => ({
+    ...p,
+    user_roles: roles.filter((r) => r.user_id === p.user_id),
+  }))
 }
 
 export const inviteMember = async (companyId: string, email: string, role: AppRole, invitedBy: string): Promise<CompanyInvite> => {
