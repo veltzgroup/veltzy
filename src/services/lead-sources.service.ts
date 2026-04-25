@@ -11,3 +11,13 @@ export const getLeadSources = async (companyId: string): Promise<LeadSourceRecor
   if (error) throw error
   return data
 }
+
+export const getAllLeadSources = async (companyId: string): Promise<LeadSourceRecord[]> => {
+  const { data, error } = await db()
+    .from('lead_sources')
+    .select('*')
+    .eq('company_id', companyId)
+    .order('created_at')
+  if (error) throw error
+  return data
+}
