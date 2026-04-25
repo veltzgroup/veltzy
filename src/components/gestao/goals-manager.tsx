@@ -1,0 +1,427 @@
+import { useState } from 'react'
+import { Plus, Pencil, Trash2, Target } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { useGoals, useCreateGoal, useDeleteGoal } from '@/hooks/use-goals'
+import { useTeamMembers } from '@/hooks/use-team-members'
+import type { CreateGoalInput, MetricType } from '@/services/goals.service'
+
+interface MetricRow {
+  metric_type: MetricType
+  target_value: string
+  applies_to: 'team' | 'individual'
+  profile_id: string | null
+}
+
+const CYCLE_LABELS: Record<string, string> = {
+  monthly: 'Mensal',
+  sprint: 'Sprint',
+  custom: 'Customizado',
+}
+
+const METRIC_LABELS: Record<MetricType, string> = {
+  revenue: 'Valor Fechado',
+  deals_closed: 'Deals Fechados',
+  leads_attended: 'Leads Atendidos',
+  conversion_rate: 'Taxa de Conversao',
+  avg_response_time: 'Tempo de Resposta',
+}
+
+const emptyMetric = (): MetricRow => ({
+  metric_type: 'revenue',
+  target_value: '',
+  applies_to: 'team',
+  profile_id: null,
+})
+
+export const GoalsManager = () => {
+  const { data: goals, isLoading } = useGoals()
+  const { data: members } = useTeamMembers()
+  const createGoal = useCreateGoal()
+  const deleteGoal = useDeleteGoal()
+
+  const [open, setOpen] = useState(false)
+  const [title, setTitle] = useState('')
+  const [cycleType, setCycleType] = useState<'monthly' | 'sprint' | 'custom'>('monthly')
+  const [monthYear, setMonthYear] = useState('')
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
+  const [visibleToSellers, setVisibleToSellers] = useState(true)
+  const [metrics, setMetrics] = useState<MetricRow[]>([emptyMetric()])
+
+  const resetForm = () => {
+    setTitle('')
+    setCycleType('monthly')
+    setMonthYear('')
+    setStartDate('')
+    setEndDate('')
+    setVisibleToSellers(true)
+    setMetrics([emptyMetric()])
+  }
+
+  const handleOpen = () => {
+    resetForm()
+    setOpen(true)
+  }
+
+  const addMetric = () => setMetrics((prev) => [...prev, emptyMetric()])
+
+  const updateMetric = (index: number, field: keyof MetricRow, value: string) => {
+    setMetrics((prev) =>
+      prev.map((m, i) =>
+        i === index
+          ? {
+              ...m,
+              [field]: value,
+              ...(field === 'applies_to' && value === 'team' ? { profile_id: null } : {}),
+            }
+          : m
+      )
+    )
+  }
+
+  const removeMetric = (index: number) => {
+    setMetrics((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const getDates = (): { start_date: string; end_date: string } => {
+    if (cycleType === 'monthly' && monthYear) {
+      const [year, month] = monthYear.split('-')
+      const lastDay = new Date(Number(year), Number(month), 0).getDate()
+      return {
+        start_date: `${monthYear}-01`,
+        end_date: `${monthYear}-${lastDay}`,
+      }
+    }
+    return { start_date: startDate, end_date: endDate }
+  }
+
+  const handleSave = async () => {
+    const dates = getDates()
+    const goalInput: CreateGoalInput = {
+      title,
+      cycle_type: cycleType,
+      start_date: dates.start_date,
+      end_date: dates.end_date,
+      visible_to_sellers: visibleToSellers,
+    }
+
+    try {
+      const goal = await createGoal.mutateAsync(goalInput)
+      // Create metrics sequentially after goal creation
+      const { createGoalMetric } = await import('@/services/goals.service')
+      for (const m of metrics) {
+        if (!m.target_value) continue
+        await createGoalMetric({
+          goal_id: goal.id,
+          metric_type: m.metric_type,
+          target_value: Number(m.target_value),
+          applies_to: m.applies_to,
+          profile_id: m.applies_to === 'individual' ? m.profile_id : null,
+        })
+      }
+      setOpen(false)
+    } catch {
+      // error handled by mutation onError
+    }
+  }
+
+  const formatDate = (date: string) =>
+    new Date(date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+
+  if (isLoading) {
+    return <div className="text-muted-foreground text-sm p-4">Carregando metas...</div>
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-foreground">Metas Comerciais</h2>
+        <Button onClick={handleOpen} size="sm">
+          <Plus className="h-4 w-4 mr-1" />
+          Nova Meta
+        </Button>
+      </div>
+
+      {!goals?.length ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+            <Target className="h-10 w-10 mb-3 opacity-40" />
+            <p className="text-sm">Nenhuma meta cadastrada</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {goals.map((goal) => (
+            <Card key={goal.id}>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-base">{goal.title}</CardTitle>
+                    <span className="inline-flex items-center rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                      {CYCLE_LABELS[goal.cycle_type] ?? goal.cycle_type}
+                    </span>
+                    <span
+                      className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${
+                        goal.is_active
+                          ? 'bg-emerald-500/10 text-emerald-600'
+                          : 'bg-muted text-muted-foreground'
+                      }`}
+                    >
+                      {goal.is_active ? 'Ativa' : 'Inativa'}
+                    </span>
+                  </div>
+                  <div className="flex gap-1">
+                    <Button variant="ghost" size="sm" disabled>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => deleteGoal.mutate(goal.id)}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {formatDate(goal.start_date)} - {formatDate(goal.end_date)}
+                </p>
+              </CardHeader>
+              <CardContent>
+                {goal.goal_metrics?.length ? (
+                  <div className="space-y-1">
+                    {goal.goal_metrics.map((m) => (
+                      <div
+                        key={m.id}
+                        className="flex items-center gap-3 text-sm text-foreground"
+                      >
+                        <span className="font-medium">{METRIC_LABELS[m.metric_type]}</span>
+                        <span className="text-muted-foreground">
+                          Alvo: {m.target_value}
+                          {m.metric_type === 'conversion_rate' ? '%' : ''}
+                        </span>
+                        <span className="inline-flex items-center rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
+                          {m.applies_to === 'team' ? 'Equipe' : 'Individual'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground">Nenhuma metrica configurada</p>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Modal Nova Meta */}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Nova Meta</DialogTitle>
+            <DialogDescription>Configure o titulo, periodo e metricas da meta.</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <Label>Titulo</Label>
+              <Input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Ex: Meta Abril 2026"
+              />
+            </div>
+
+            <div>
+              <Label>Tipo de ciclo</Label>
+              <Select value={cycleType} onValueChange={(v) => setCycleType(v as typeof cycleType)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="monthly">Mensal</SelectItem>
+                  <SelectItem value="sprint">Sprint</SelectItem>
+                  <SelectItem value="custom">Periodo customizado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {cycleType === 'monthly' ? (
+              <div>
+                <Label>Mes/Ano</Label>
+                <Input
+                  type="month"
+                  value={monthYear}
+                  onChange={(e) => setMonthYear(e.target.value)}
+                />
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Inicio</Label>
+                  <Input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label>Fim</Label>
+                  <Input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                role="switch"
+                aria-checked={visibleToSellers}
+                onClick={() => setVisibleToSellers(!visibleToSellers)}
+                className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors ${
+                  visibleToSellers ? 'bg-primary' : 'bg-muted'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none block h-4 w-4 rounded-full bg-background shadow-lg ring-0 transition-transform ${
+                    visibleToSellers ? 'translate-x-4' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+              <Label className="cursor-pointer" onClick={() => setVisibleToSellers(!visibleToSellers)}>
+                Visivel para vendedores
+              </Label>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label>Metricas</Label>
+                <Button variant="outline" size="sm" onClick={addMetric}>
+                  <Plus className="h-3 w-3 mr-1" />
+                  Adicionar Metrica
+                </Button>
+              </div>
+
+              {metrics.map((m, i) => (
+                <div key={i} className="flex items-end gap-2 rounded-md border border-border p-3">
+                  <div className="flex-1 space-y-1">
+                    <Label className="text-xs">Tipo</Label>
+                    <Select
+                      value={m.metric_type}
+                      onValueChange={(v) => updateMetric(i, 'metric_type', v)}
+                    >
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(METRIC_LABELS).map(([key, label]) => (
+                          <SelectItem key={key} value={key}>
+                            {label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="w-24 space-y-1">
+                    <Label className="text-xs">Alvo</Label>
+                    <Input
+                      type="number"
+                      className="h-9"
+                      value={m.target_value}
+                      onChange={(e) => updateMetric(i, 'target_value', e.target.value)}
+                      placeholder="0"
+                    />
+                  </div>
+
+                  <div className="w-32 space-y-1">
+                    <Label className="text-xs">Escopo</Label>
+                    <Select
+                      value={m.applies_to}
+                      onValueChange={(v) => updateMetric(i, 'applies_to', v)}
+                    >
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="team">Equipe toda</SelectItem>
+                        <SelectItem value="individual">Individual</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {m.applies_to === 'individual' && (
+                    <div className="w-40 space-y-1">
+                      <Label className="text-xs">Vendedor</Label>
+                      <Select
+                        value={m.profile_id ?? ''}
+                        onValueChange={(v) => updateMetric(i, 'profile_id', v)}
+                      >
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {members?.map((member) => (
+                            <SelectItem key={member.id} value={member.id}>
+                              {member.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {metrics.length > 1 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-9 px-2"
+                      onClick={() => removeMetric(i)}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleSave}
+              disabled={!title || createGoal.isPending}
+            >
+              {createGoal.isPending ? 'Salvando...' : 'Salvar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}
