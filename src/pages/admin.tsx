@@ -8,7 +8,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { PipelineTab } from '@/components/admin/pipeline-tab'
 import { IntegrationsTab } from '@/components/admin/integrations-tab'
 import { ThemeCustomizer } from '@/components/company/theme-customizer'
 import { ActivityLogsDashboard } from '@/components/admin/activity-logs-dashboard'
