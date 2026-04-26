@@ -60,7 +60,9 @@ export const GoalsManager = () => {
   const [open, setOpen] = useState(false)
   const [title, setTitle] = useState('')
   const [cycleType, setCycleType] = useState<'monthly' | 'sprint' | 'custom'>('monthly')
-  const [monthYear, setMonthYear] = useState('')
+  const currentYear = new Date().getFullYear()
+  const [selectedMonth, setSelectedMonth] = useState('')
+  const [selectedYear, setSelectedYear] = useState('')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [visibleToSellers, setVisibleToSellers] = useState(true)
@@ -69,7 +71,8 @@ export const GoalsManager = () => {
   const resetForm = () => {
     setTitle('')
     setCycleType('monthly')
-    setMonthYear('')
+    setSelectedMonth('')
+    setSelectedYear('')
     setStartDate('')
     setEndDate('')
     setVisibleToSellers(true)
@@ -102,12 +105,11 @@ export const GoalsManager = () => {
   }
 
   const getDates = (): { start_date: string; end_date: string } => {
-    if (cycleType === 'monthly' && monthYear) {
-      const [year, month] = monthYear.split('-')
-      const lastDay = new Date(Number(year), Number(month), 0).getDate()
+    if (cycleType === 'monthly' && selectedMonth && selectedYear) {
+      const lastDay = new Date(Number(selectedYear), Number(selectedMonth), 0).getDate()
       return {
-        start_date: `${monthYear}-01`,
-        end_date: `${monthYear}-${lastDay}`,
+        start_date: `${selectedYear}-${selectedMonth}-01`,
+        end_date: `${selectedYear}-${selectedMonth}-${String(lastDay).padStart(2, '0')}`,
       }
     }
     return { start_date: startDate, end_date: endDate }
@@ -152,7 +154,7 @@ export const GoalsManager = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between pr-4">
         <h2 className="text-lg font-semibold text-foreground">Metas Comerciais</h2>
         <Button onClick={handleOpen} size="sm">
           <Plus className="h-4 w-4 mr-1" />
@@ -266,13 +268,40 @@ export const GoalsManager = () => {
             </div>
 
             {cycleType === 'monthly' ? (
-              <div>
-                <Label>Mes/Ano</Label>
-                <Input
-                  type="month"
-                  value={monthYear}
-                  onChange={(e) => setMonthYear(e.target.value)}
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Mes</Label>
+                  <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o mes" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[
+                        'Janeiro', 'Fevereiro', 'Marco', 'Abril', 'Maio', 'Junho',
+                        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+                      ].map((label, idx) => (
+                        <SelectItem key={idx} value={String(idx + 1).padStart(2, '0')}>
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Ano</Label>
+                  <Select value={selectedYear} onValueChange={setSelectedYear}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o ano" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[currentYear, currentYear + 1, currentYear + 2].map((y) => (
+                        <SelectItem key={y} value={String(y)}>
+                          {y}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-3">
