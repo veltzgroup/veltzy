@@ -69,7 +69,7 @@ const MiniChart = ({ title, icon: Icon, dataKey, gradient, data, formatter }: Mi
           </defs>
           <XAxis
             dataKey="month"
-            tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 9 }}
+            tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
             axisLine={false}
             tickLine={false}
           />
