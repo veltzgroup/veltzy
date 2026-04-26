@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import {
-  AlertCircle, Building2, Clock, Calendar, CalendarDays, BarChart3,
-  TrendingUp, Target, DollarSign, Users,
+  AlertCircle, ArrowUp, ArrowDown, Building2, Clock, Calendar, CalendarDays, BarChart3,
+  TrendingUp, Target, DollarSign, Users, Equal,
 } from 'lucide-react'
 import { ComposedChart, Line, Area, ResponsiveContainer } from 'recharts'
 import { cn } from '@/lib/utils'
@@ -10,11 +10,14 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useAuthStore } from '@/stores/auth.store'
 import { useDashboardKpis } from '@/hooks/use-dashboard-metrics'
 import { useDashboardRealtime } from '@/hooks/use-dashboard-realtime'
+import { calculatePeriodChange } from '@/lib/dashboard-utils'
 import { PipelineOverviewCard } from '@/components/dashboard/pipeline-overview-card'
 import { LeadsBySourceChart } from '@/components/dashboard/leads-by-source-chart'
+import { TeamHighlightCard } from '@/components/dashboard/team-highlight-card'
 import { SellerPerformanceTable } from '@/components/dashboard/seller-performance-table'
 import { FollowUpTips } from '@/components/dashboard/follow-up-tips'
 import { MonthlyComparisonGrid } from '@/components/dashboard/monthly-comparison-grid'
+import { MetricsLineChart } from '@/components/dashboard/metrics-line-chart'
 import { NextActionsCard } from '@/components/dashboard/next-actions-card'
 import { BottleneckDetector } from '@/components/dashboard/bottleneck-detector'
 import { ForecastCard } from '@/components/dashboard/forecast-card'
@@ -90,6 +93,26 @@ const Breakdown = ({ items }: { items: BreakdownItem[] }) => (
     </div>
   </>
 )
+
+const VariationBadge = ({ current, previous }: { current: number; previous: number }) => {
+  const { percentage, isPositive, isNeutral } = calculatePeriodChange(current, previous)
+  if (isNeutral) {
+    return (
+      <span className="inline-flex items-center gap-0.5 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+        <Equal className="h-3 w-3" />
+      </span>
+    )
+  }
+  return (
+    <span className={cn(
+      'inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-medium',
+      isPositive ? 'bg-emerald-500/15 text-emerald-600' : 'bg-red-500/15 text-red-500'
+    )}>
+      {isPositive ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
+      {percentage}%
+    </span>
+  )
+}
 
 const KpiCardSkeleton = ({ hasBreakdown = false }: { hasBreakdown?: boolean }) => (
   <div className="bg-card border border-border/30 rounded-2xl p-5">
@@ -200,9 +223,12 @@ const DashboardPage = () => {
                   <TrendingUp className="h-5 w-5 text-primary" />
                 </div>
               </div>
-              <p className="text-3xl font-bold text-foreground mt-2">
-                {kpis?.conversionRate ?? 0}%
-              </p>
+              <div className="flex items-center gap-2 mt-2">
+                <p className="text-3xl font-bold text-foreground">
+                  {kpis?.conversionRate ?? 0}%
+                </p>
+                {selectedDays && <VariationBadge current={kpis?.conversionRate ?? 0} previous={kpis?.prevConversionRate ?? 0} />}
+              </div>
               <p className="text-sm text-muted-foreground mt-1">Leads convertidos em deals</p>
               <DecorativeLine />
             </div>
@@ -215,9 +241,12 @@ const DashboardPage = () => {
                   <Target className="h-5 w-5 text-primary" />
                 </div>
               </div>
-              <p className="text-3xl font-bold text-foreground mt-2">
-                {kpis?.avgAiScore ?? 0}%
-              </p>
+              <div className="flex items-center gap-2 mt-2">
+                <p className="text-3xl font-bold text-foreground">
+                  {kpis?.avgAiScore ?? 0}%
+                </p>
+                {selectedDays && <VariationBadge current={kpis?.avgAiScore ?? 0} previous={kpis?.prevAvgAiScore ?? 0} />}
+              </div>
               <p className="text-sm text-muted-foreground mt-1">Qualificação média dos leads</p>
               <DecorativeLine />
             </div>
@@ -230,9 +259,12 @@ const DashboardPage = () => {
                   <DollarSign className="h-5 w-5 text-primary" />
                 </div>
               </div>
-              <p className="text-3xl font-bold text-foreground mt-2">
-                {kpis?.dealsClosed ?? 0}
-              </p>
+              <div className="flex items-center gap-2 mt-2">
+                <p className="text-3xl font-bold text-foreground">
+                  {kpis?.dealsClosed ?? 0}
+                </p>
+                {selectedDays && <VariationBadge current={kpis?.dealsClosed ?? 0} previous={kpis?.prevDealsClosed ?? 0} />}
+              </div>
               <p className="text-sm text-muted-foreground mt-1">Negócios concluídos com sucesso</p>
               <DecorativeLine />
             </div>
@@ -303,14 +335,20 @@ const DashboardPage = () => {
           <FollowUpTips />
         </div>
 
-        {/* LEADS POR ORIGEM + PERFORMANCE VENDEDORES */}
+        {/* LEADS POR ORIGEM + EQUIPE EM DESTAQUE */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <LeadsBySourceChart days={selectedDays} />
-          <SellerPerformanceTable days={selectedDays} />
+          <TeamHighlightCard days={selectedDays} />
         </div>
+
+        {/* PERFORMANCE VENDEDORES */}
+        <SellerPerformanceTable days={selectedDays} />
 
         {/* COMPARATIVO MENSAL */}
         <MonthlyComparisonGrid />
+
+        {/* EVOLUCAO DAS METRICAS */}
+        <MetricsLineChart />
 
       </div>
     </div>

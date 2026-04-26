@@ -52,6 +52,9 @@ export interface DashboardKpis {
   lostValue: number
   totalValue: number
   avgTicket: number
+  prevConversionRate: number
+  prevAvgAiScore: number
+  prevDealsClosed: number
 }
 
 export const getDashboardKpis = async (companyId: string, days?: number): Promise<DashboardKpis> => {
@@ -80,6 +83,27 @@ export const getDashboardKpis = async (companyId: string, days?: number): Promis
   const conversionRate = total > 0 ? Math.round((closed.length / total) * 100) : 0
   const avgTicket = closed.length > 0 ? closedValue / closed.length : 0
 
+  let prevConversionRate = 0
+  let prevAvgAiScore = 0
+  let prevDealsClosed = 0
+  if (days) {
+    const prevEnd = new Date()
+    prevEnd.setDate(prevEnd.getDate() - days)
+    const prevStart = new Date(prevEnd)
+    prevStart.setDate(prevStart.getDate() - days)
+    const { data: prevLeads } = await veltzy()
+      .from('leads')
+      .select('status, ai_score')
+      .eq('company_id', companyId)
+      .gte('created_at', prevStart.toISOString())
+      .lt('created_at', prevEnd.toISOString())
+    const pAll = prevLeads ?? []
+    const pClosed = pAll.filter((l) => l.status === 'deal')
+    prevConversionRate = pAll.length > 0 ? Math.round((pClosed.length / pAll.length) * 100) : 0
+    prevAvgAiScore = pAll.length > 0 ? Math.round(pAll.reduce((s, l) => s + (l.ai_score ?? 0), 0) / pAll.length) : 0
+    prevDealsClosed = pClosed.length
+  }
+
   return {
     conversionRate,
     avgAiScore: avgScore,
@@ -93,6 +117,9 @@ export const getDashboardKpis = async (companyId: string, days?: number): Promis
     lostValue,
     totalValue,
     avgTicket,
+    prevConversionRate,
+    prevAvgAiScore,
+    prevDealsClosed,
   }
 }
 

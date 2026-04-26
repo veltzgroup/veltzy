@@ -2,7 +2,7 @@ import { useState } from 'react'
 import {
   BarChart3, Users, TrendingUp, CheckCircle, DollarSign,
 } from 'lucide-react'
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, LabelList } from 'recharts'
+import { BarChart, Bar, Cell, XAxis, YAxis, ResponsiveContainer, Tooltip, LabelList } from 'recharts'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useMonthlyComparisonGrid } from '@/hooks/use-dashboard-metrics'
 import type { MonthlyGridData } from '@/services/dashboard.service'
@@ -13,13 +13,10 @@ const periodOptions = [
   { label: '12 meses', value: 12 },
 ] as const
 
-const barColors = ['#10b981', '#3b82f6', '#10b981', '#f97316']
-
 interface MiniChartProps {
   title: string
   icon: React.ElementType
   dataKey: string
-  color: string
   data: MonthlyGridData[]
   formatter?: (v: number) => string
 }
@@ -71,47 +68,55 @@ const CustomTooltip = ({
   )
 }
 
-const MiniChart = ({ title, icon: Icon, dataKey, color, data, formatter }: MiniChartProps) => (
-  <div className="bg-card border border-border/30 rounded-xl p-3">
-    <div className="flex items-center gap-1.5 mb-2">
-      <Icon className="h-3 w-3 text-muted-foreground" />
-      <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{title}</span>
-    </div>
-    <div className="h-[120px]">
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 16, right: 2, bottom: 0, left: -24 }}>
-          <XAxis
-            dataKey="month"
-            tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-            axisLine={false}
-            tickLine={false}
-          />
-          <YAxis
-            tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 9 }}
-            axisLine={false}
-            tickLine={false}
-            width={32}
-          />
-          <Tooltip
-            content={<CustomTooltip formatter={formatter} />}
-            cursor={{ fill: 'hsl(var(--muted) / 0.3)' }}
-          />
-          <Bar
-            dataKey={dataKey}
-            fill={color}
-            fillOpacity={0.85}
-            radius={[6, 6, 0, 0]}
-            animationDuration={600}
-          >
-            <LabelList
-              content={(props) => <CustomLabel {...(props as { x?: number; y?: number; width?: number; index?: number })} data={data} dataKey={dataKey} />}
+const MiniChart = ({ title, icon: Icon, dataKey, data, formatter }: MiniChartProps) => {
+  const lastIndex = data.length - 1
+  return (
+    <div className="bg-card border border-border/30 rounded-xl p-3">
+      <div className="flex items-center gap-1.5 mb-2">
+        <Icon className="h-3 w-3 text-muted-foreground" />
+        <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{title}</span>
+      </div>
+      <div className="h-[120px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={data} margin={{ top: 16, right: 2, bottom: 0, left: -24 }}>
+            <XAxis
+              dataKey="month"
+              tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+              axisLine={false}
+              tickLine={false}
             />
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
+            <YAxis
+              tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 9 }}
+              axisLine={false}
+              tickLine={false}
+              width={32}
+            />
+            <Tooltip
+              content={<CustomTooltip formatter={formatter} />}
+              cursor={{ fill: 'hsl(var(--muted) / 0.3)' }}
+            />
+            <Bar
+              dataKey={dataKey}
+              radius={[6, 6, 0, 0]}
+              animationDuration={600}
+            >
+              {data.map((_, idx) => (
+                <Cell
+                  key={idx}
+                  fill={idx === lastIndex ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))'}
+                  fillOpacity={idx === lastIndex ? 0.9 : 0.25}
+                />
+              ))}
+              <LabelList
+                content={(props) => <CustomLabel {...(props as { x?: number; y?: number; width?: number; index?: number })} data={data} dataKey={dataKey} />}
+              />
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
     </div>
-  </div>
-)
+  )
+}
 
 const fmtCurrency = (v: number) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(v)
@@ -153,14 +158,12 @@ const MonthlyComparisonGrid = () => {
             title="Negócios"
             icon={Users}
             dataKey="leads"
-            color={barColors[0]}
             data={data ?? []}
           />
           <MiniChart
             title="Conversão %"
             icon={TrendingUp}
             dataKey="conversion"
-            color={barColors[1]}
             data={data ?? []}
             formatter={(v) => `${v}%`}
           />
@@ -168,14 +171,12 @@ const MonthlyComparisonGrid = () => {
             title="Deals Fechados"
             icon={CheckCircle}
             dataKey="deals"
-            color={barColors[2]}
             data={data ?? []}
           />
           <MiniChart
             title="Valor Fechados"
             icon={DollarSign}
             dataKey="value"
-            color={barColors[3]}
             data={data ?? []}
             formatter={fmtCurrency}
           />

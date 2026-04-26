@@ -1,13 +1,14 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import { useLeadsBySource } from '@/hooks/use-dashboard-metrics'
 
-const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ name: string; value: number; payload: { color: string } }> }) => {
+const opacityLevels = [1.0, 0.75, 0.5, 0.3, 0.15]
+
+const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ name: string; value: number }> }) => {
   if (!active || !payload?.[0]) return null
   const d = payload[0]
   return (
     <div className="glass-card rounded-lg px-3 py-2 shadow-lg">
       <div className="flex items-center gap-2 text-[11px]">
-        <span className="h-2 w-2 rounded-full" style={{ backgroundColor: d.payload.color }} />
         <span className="font-medium">{d.name}</span>
         <span className="text-muted-foreground">{d.value} leads</span>
       </div>
@@ -38,19 +39,28 @@ const LeadsBySourceChart = ({ days }: { days?: number }) => {
                 strokeWidth={0}
                 animationDuration={800}
               >
-                {data?.map((s) => <Cell key={s.source_id} fill={s.color} />)}
+                {data?.map((_, idx) => (
+                  <Cell
+                    key={idx}
+                    fill="hsl(var(--primary))"
+                    fillOpacity={opacityLevels[Math.min(idx, opacityLevels.length - 1)]}
+                  />
+                ))}
               </Pie>
               <Tooltip content={<CustomTooltip />} />
             </PieChart>
           </ResponsiveContainer>
         </div>
         <div className="space-y-3 flex-1">
-          {data?.map((s) => (
+          {data?.map((s, idx) => (
             <div key={s.source_id} className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <span
                   className="h-3 w-3 rounded-full shrink-0"
-                  style={{ backgroundColor: s.color, boxShadow: `0 0 6px ${s.color}50` }}
+                  style={{
+                    backgroundColor: 'hsl(var(--primary))',
+                    opacity: opacityLevels[Math.min(idx, opacityLevels.length - 1)],
+                  }}
                 />
                 <span className="text-xs font-medium">{s.name}</span>
               </div>
