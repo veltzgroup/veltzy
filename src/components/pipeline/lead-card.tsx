@@ -22,28 +22,29 @@ import type { LeadTemperature } from '@/types/database'
 interface LeadCardProps {
   lead: LeadWithDetails
   onTransfer?: (leadId: string) => void
+  fireOnly?: boolean
 }
 
-const TEMP_WIDTH: Record<LeadTemperature, string> = {
-  cold: '25%',
-  warm: '50%',
-  hot: '75%',
-  fire: '100%',
+const temperatureConfig: Record<LeadTemperature, { width: string; gradient: string }> = {
+  cold:  { width: '25%',  gradient: 'linear-gradient(to right, #bfdbfe, #3b82f6)' },
+  warm:  { width: '50%',  gradient: 'linear-gradient(to right, #fde68a, #f59e0b)' },
+  hot:   { width: '75%',  gradient: 'linear-gradient(to right, #fed7aa, #f97316)' },
+  fire:  { width: '100%', gradient: 'linear-gradient(to right, #f97316, #ef4444, #dc2626)' },
 }
 
-const TemperatureBar = ({ temperature }: { temperature: LeadTemperature }) => (
-  <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-    <div
-      className="h-full rounded-full transition-all duration-500 ease-out"
-      style={{
-        width: TEMP_WIDTH[temperature],
-        background: 'linear-gradient(to right, #3b82f6, #06b6d4, #f59e0b, #f97316, #ef4444)',
-      }}
-    />
-  </div>
-)
+const TemperatureBar = ({ temperature }: { temperature: LeadTemperature }) => {
+  const config = temperatureConfig[temperature]
+  return (
+    <div className="h-1 w-full rounded-full bg-muted overflow-hidden">
+      <div
+        className="h-full rounded-full transition-all duration-500 ease-out"
+        style={{ width: config.width, background: config.gradient }}
+      />
+    </div>
+  )
+}
 
-const LeadCard = ({ lead, onTransfer }: LeadCardProps) => {
+const LeadCard = ({ lead, onTransfer, fireOnly }: LeadCardProps) => {
   const navigate = useNavigate()
   const setSelectedLeadId = usePipelineStore((s) => s.setSelectedLeadId)
   const { isAdmin, isManager } = useRoles()
@@ -83,7 +84,7 @@ const LeadCard = ({ lead, onTransfer }: LeadCardProps) => {
       className={cn(
         'kanban-card glass-card rounded-lg p-3 cursor-grab active:cursor-grabbing animate-fade-in',
         isDragging && 'opacity-50 scale-105 shadow-xl z-50',
-        lead.temperature === 'fire' && 'fire-card'
+        lead.temperature === 'fire' && fireOnly && 'fire-card overflow-hidden'
       )}
       onClick={() => setSelectedLeadId(lead.id)}
     >

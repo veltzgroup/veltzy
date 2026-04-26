@@ -327,8 +327,8 @@
 
 /* Fire card glow */
 @keyframes fire-border {
-  0%, 100% { box-shadow: 0 0 8px 2px rgba(249,115,22,0.4), 0 0 16px 4px rgba(239,68,68,0.2); }
-  50% { box-shadow: 0 0 12px 4px rgba(239,68,68,0.6), 0 0 24px 8px rgba(249,115,22,0.3); }
+  0%, 100% { box-shadow: 0 0 4px 1px rgba(239,68,68,0.15); }
+  50% { box-shadow: 0 0 6px 1px rgba(239,68,68,0.35); }
 }
 
 .fire-card {

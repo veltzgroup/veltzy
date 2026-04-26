@@ -37,6 +37,7 @@ const PipelineBoard = () => {
   const [createModalStageId, setCreateModalStageId] = useState<string>()
   const [stageManagerOpen, setStageManagerOpen] = useState(false)
   const [transferLeadId, setTransferLeadId] = useState<string | null>(null)
+  const [fireOnly, setFireOnly] = useState(false)
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -54,8 +55,11 @@ const PipelineBoard = () => {
           l.email?.toLowerCase().includes(q)
       )
     }
+    if (fireOnly) {
+      result = result.filter((l) => l.temperature === 'fire')
+    }
     return result
-  }, [leads, filters.search])
+  }, [leads, filters.search, fireOnly])
 
   const leadsByStage = useMemo(() => {
     const map: Record<string, LeadWithDetails[]> = {}
@@ -137,6 +141,8 @@ const PipelineBoard = () => {
         <PipelineHeader
           onAddLead={() => handleAddLead()}
           onManageStages={() => setStageManagerOpen(true)}
+          fireOnly={fireOnly}
+          onToggleFireOnly={() => setFireOnly((v) => !v)}
         />
       </div>
 
@@ -154,6 +160,7 @@ const PipelineBoard = () => {
               leads={leadsByStage[stage.id] ?? []}
               onAddLead={handleAddLead}
               onTransferLead={setTransferLeadId}
+              fireOnly={fireOnly}
             />
           ))}
         </div>
@@ -161,7 +168,7 @@ const PipelineBoard = () => {
         <DragOverlay>
           {activeLead ? (
             <div className="w-[280px] rotate-2 scale-105 opacity-90 shadow-2xl">
-              <LeadCard lead={activeLead} />
+              <LeadCard lead={activeLead} fireOnly={fireOnly} />
             </div>
           ) : null}
         </DragOverlay>

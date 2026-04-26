@@ -188,7 +188,7 @@ const EditLeadModal = ({ lead, open, onClose }: EditLeadModalProps) => {
                         <SelectContent>
                           {(Object.keys(leadTemperatureConfig) as LeadTemperature[]).map((t) => (
                             <SelectItem key={t} value={t}>
-                              {leadTemperatureConfig[t].emoji} {leadTemperatureConfig[t].label}
+                              {leadTemperatureConfig[t].label}
                             </SelectItem>
                           ))}
                         </SelectContent>

@@ -149,7 +149,7 @@ const CreateLeadModal = ({ open, onClose, defaultStageId }: CreateLeadModalProps
                     <SelectContent>
                       {(Object.keys(leadTemperatureConfig) as LeadTemperature[]).map((t) => (
                         <SelectItem key={t} value={t}>
-                          {leadTemperatureConfig[t].emoji} {leadTemperatureConfig[t].label}
+                          {leadTemperatureConfig[t].label}
                         </SelectItem>
                       ))}
                     </SelectContent>
