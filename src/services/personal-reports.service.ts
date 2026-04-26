@@ -5,11 +5,12 @@ export const getPersonalReport = async (profileId: string, days = 30): Promise<P
   const start = new Date()
   start.setDate(start.getDate() - days)
 
-  const { data: leads } = await db()
+  const { data: leads, error } = await db()
     .from('leads')
     .select('status, deal_value')
     .eq('assigned_to', profileId)
     .gte('created_at', start.toISOString())
+  if (error) throw error
 
   const all = leads ?? []
   const deals = all.filter((l) => l.status === 'deal')

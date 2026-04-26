@@ -25,6 +25,7 @@ export const createRule = async (
 }
 
 export const updateRule = async (
+  companyId: string,
   id: string,
   input: Partial<Pick<AutomationRule, 'name' | 'trigger_type' | 'conditions' | 'action_type' | 'action_data' | 'priority' | 'is_enabled'>>
 ): Promise<AutomationRule> => {
@@ -32,25 +33,28 @@ export const updateRule = async (
     .from('automation_rules')
     .update(input)
     .eq('id', id)
+    .eq('company_id', companyId)
     .select()
     .single()
   if (error) throw error
   return data
 }
 
-export const deleteRule = async (id: string): Promise<void> => {
+export const deleteRule = async (companyId: string, id: string): Promise<void> => {
   const { error } = await db()
     .from('automation_rules')
     .delete()
     .eq('id', id)
+    .eq('company_id', companyId)
   if (error) throw error
 }
 
-export const toggleRule = async (id: string, enabled: boolean): Promise<void> => {
+export const toggleRule = async (companyId: string, id: string, enabled: boolean): Promise<void> => {
   const { error } = await db()
     .from('automation_rules')
     .update({ is_enabled: enabled })
     .eq('id', id)
+    .eq('company_id', companyId)
   if (error) throw error
 }
 

@@ -27,6 +27,7 @@ export const createTemplate = async (
 }
 
 export const updateTemplate = async (
+  companyId: string,
   id: string,
   input: Partial<Pick<ReplyTemplate, 'title' | 'content' | 'category' | 'is_active'>>
 ): Promise<ReplyTemplate> => {
@@ -34,16 +35,18 @@ export const updateTemplate = async (
     .from('reply_templates')
     .update(input)
     .eq('id', id)
+    .eq('company_id', companyId)
     .select()
     .single()
   if (error) throw error
   return data
 }
 
-export const deleteTemplate = async (id: string): Promise<void> => {
+export const deleteTemplate = async (companyId: string, id: string): Promise<void> => {
   const { error } = await db()
     .from('reply_templates')
     .delete()
     .eq('id', id)
+    .eq('company_id', companyId)
   if (error) throw error
 }

@@ -53,11 +53,12 @@ export const getLeadsByCompany = async (companyId: string, filters?: LeadFilters
   return data
 }
 
-export const getLeadById = async (leadId: string): Promise<LeadWithDetails> => {
+export const getLeadById = async (companyId: string, leadId: string): Promise<LeadWithDetails> => {
   const { data, error } = await veltzy()
     .from('leads')
     .select(LEAD_WITH_DETAILS_SELECT)
     .eq('id', leadId)
+    .eq('company_id', companyId)
     .single()
   if (error) throw error
   return data
@@ -73,30 +74,33 @@ export const createLead = async (companyId: string, input: CreateLeadInput): Pro
   return data
 }
 
-export const updateLead = async (leadId: string, input: UpdateLeadInput): Promise<Lead> => {
+export const updateLead = async (companyId: string, leadId: string, input: UpdateLeadInput): Promise<Lead> => {
   const { data, error } = await veltzy()
     .from('leads')
     .update(input)
     .eq('id', leadId)
+    .eq('company_id', companyId)
     .select()
     .single()
   if (error) throw error
   return data
 }
 
-export const deleteLead = async (leadId: string): Promise<void> => {
+export const deleteLead = async (companyId: string, leadId: string): Promise<void> => {
   const { error } = await veltzy()
     .from('leads')
     .delete()
     .eq('id', leadId)
+    .eq('company_id', companyId)
   if (error) throw error
 }
 
-export const moveLeadToStage = async (leadId: string, stageId: string): Promise<Lead> => {
+export const moveLeadToStage = async (companyId: string, leadId: string, stageId: string): Promise<Lead> => {
   const { data, error } = await veltzy()
     .from('leads')
     .update({ stage_id: stageId })
     .eq('id', leadId)
+    .eq('company_id', companyId)
     .select()
     .single()
   if (error) throw error

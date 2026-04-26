@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth.store'
 import { usePipelineStore } from '@/stores/pipeline.store'
-import { useTeamMembers } from '@/hooks/use-team-members'
+import { useTeamMembers } from '@/hooks/use-team'
 import * as leadsService from '@/services/leads.service'
 import type { CreateLeadInput, UpdateLeadInput, LeadWithDetails } from '@/types/database'
 
@@ -56,10 +56,11 @@ export const useCreateLead = () => {
 
 export const useUpdateLead = () => {
   const queryClient = useQueryClient()
+  const companyId = useAuthStore((s) => s.company?.id)
 
   return useMutation({
     mutationFn: ({ leadId, data }: { leadId: string; data: UpdateLeadInput }) =>
-      leadsService.updateLead(leadId, data),
+      leadsService.updateLead(companyId!, leadId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leads'] })
       toast.success('Lead atualizado!')
@@ -72,9 +73,10 @@ export const useUpdateLead = () => {
 
 export const useDeleteLead = () => {
   const queryClient = useQueryClient()
+  const companyId = useAuthStore((s) => s.company?.id)
 
   return useMutation({
-    mutationFn: (leadId: string) => leadsService.deleteLead(leadId),
+    mutationFn: (leadId: string) => leadsService.deleteLead(companyId!, leadId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leads'] })
       toast.success('Lead removido!')
@@ -87,11 +89,12 @@ export const useDeleteLead = () => {
 
 export const useMoveLeadToStage = () => {
   const queryClient = useQueryClient()
+  const companyId = useAuthStore((s) => s.company?.id)
   const queryKey = useLeadsQueryKey()
 
   return useMutation({
     mutationFn: ({ leadId, stageId }: { leadId: string; stageId: string }) =>
-      leadsService.moveLeadToStage(leadId, stageId),
+      leadsService.moveLeadToStage(companyId!, leadId, stageId),
     onMutate: async ({ leadId, stageId }) => {
       await queryClient.cancelQueries({ queryKey })
       const previousLeads = queryClient.getQueryData<LeadWithDetails[]>(queryKey)

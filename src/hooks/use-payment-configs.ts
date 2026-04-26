@@ -29,9 +29,10 @@ export const useSavePaymentConfig = () => {
 
 export const useTogglePaymentConfig = () => {
   const queryClient = useQueryClient()
+  const companyId = useAuthStore((s) => s.company?.id)
   return useMutation({
     mutationFn: ({ id, active }: { id: string; active: boolean }) =>
-      paymentsService.togglePaymentConfig(id, active),
+      paymentsService.togglePaymentConfig(companyId!, id, active),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['payment-configs'] }),
   })
 }

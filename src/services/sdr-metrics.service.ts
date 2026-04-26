@@ -29,7 +29,8 @@ export const getScoreDistribution = async (companyId: string, days?: number): Pr
     start.setDate(start.getDate() - days)
     query = query.gte('created_at', start.toISOString())
   }
-  const { data } = await query
+  const { data, error } = await query
+  if (error) throw error
 
   return RANGES.map((r) => ({
     ...r,
@@ -44,7 +45,8 @@ export const getSdrKpis = async (companyId: string, days?: number): Promise<SdrK
     start.setDate(start.getDate() - days)
     query = query.gte('created_at', start.toISOString())
   }
-  const { data } = await query
+  const { data, error: kpiError } = await query
+  if (kpiError) throw kpiError
 
   const all = data ?? []
   const total = all.length

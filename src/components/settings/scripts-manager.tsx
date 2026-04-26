@@ -7,10 +7,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useReplyTemplates, useCreateTemplate, useDeleteTemplate } from '@/hooks/use-reply-templates'
 import { updateTemplate } from '@/services/reply-templates.service'
 import { useQueryClient } from '@tanstack/react-query'
+import { useAuthStore } from '@/stores/auth.store'
 import { toast } from 'sonner'
 import type { ReplyTemplate } from '@/types/database'
 
 const ScriptsManager = () => {
+  const companyId = useAuthStore((s) => s.company?.id)
   const { data: templates, isLoading } = useReplyTemplates()
   const createTemplate = useCreateTemplate()
   const deleteTemplate = useDeleteTemplate()
@@ -53,7 +55,7 @@ const ScriptsManager = () => {
 
   const saveEdit = async () => {
     if (!editingId) return
-    await updateTemplate(editingId, { title: editTitle, content: editContent, category: editCategory })
+    await updateTemplate(companyId!, editingId, { title: editTitle, content: editContent, category: editCategory })
     queryClient.invalidateQueries({ queryKey: ['reply-templates'] })
     setEditingId(null)
     toast.success('Template atualizado!')

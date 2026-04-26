@@ -51,9 +51,10 @@ export const useCancelInvite = () => {
 
 export const useUpdateMemberRole = () => {
   const queryClient = useQueryClient()
+  const companyId = useAuthStore((s) => s.company?.id)
   return useMutation({
     mutationFn: ({ userId, role }: { userId: string; role: AppRole }) =>
-      teamService.updateMemberRole(userId, role),
+      teamService.updateMemberRole(companyId!, userId, role),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['team-members'] })
       toast.success('Role atualizada!')
@@ -64,8 +65,9 @@ export const useUpdateMemberRole = () => {
 
 export const useRemoveMember = () => {
   const queryClient = useQueryClient()
+  const companyId = useAuthStore((s) => s.company?.id)
   return useMutation({
-    mutationFn: (userId: string) => teamService.removeMember(userId),
+    mutationFn: (userId: string) => teamService.removeMember(companyId!, userId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['team-members'] })
       toast.success('Membro removido!')

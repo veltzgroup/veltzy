@@ -32,10 +32,11 @@ export const useSaveSdrConfig = () => {
 
 export const useToggleSdrForLead = () => {
   const queryClient = useQueryClient()
+  const companyId = useAuthStore((s) => s.company?.id)
 
   return useMutation({
     mutationFn: ({ leadId, enabled }: { leadId: string; enabled: boolean }) =>
-      sdrService.toggleSdrForLead(leadId, enabled),
+      sdrService.toggleSdrForLead(companyId!, leadId, enabled),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leads'] })
     },

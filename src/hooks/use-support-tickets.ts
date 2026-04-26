@@ -33,9 +33,10 @@ export const useAllTickets = () => {
 
 export const useUpdateTicketStatus = () => {
   const queryClient = useQueryClient()
+  const companyId = useAuthStore((s) => s.company?.id)
   return useMutation({
-    mutationFn: ({ id, status }: { id: string; status: Parameters<typeof supportService.updateTicketStatus>[1] }) =>
-      supportService.updateTicketStatus(id, status),
+    mutationFn: ({ id, status }: { id: string; status: Parameters<typeof supportService.updateTicketStatus>[2] }) =>
+      supportService.updateTicketStatus(companyId!, id, status),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['support-tickets'] })
       queryClient.invalidateQueries({ queryKey: ['all-support-tickets'] })

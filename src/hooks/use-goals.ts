@@ -32,10 +32,11 @@ export const useCreateGoal = () => {
 
 export const useUpdateGoal = () => {
   const queryClient = useQueryClient()
+  const companyId = useAuthStore((s) => s.company?.id)
 
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateGoalInput }) =>
-      goalsService.updateGoal(id, data),
+      goalsService.updateGoal(companyId!, id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['goals'] })
       toast.success('Meta atualizada!')
@@ -46,9 +47,10 @@ export const useUpdateGoal = () => {
 
 export const useDeleteGoal = () => {
   const queryClient = useQueryClient()
+  const companyId = useAuthStore((s) => s.company?.id)
 
   return useMutation({
-    mutationFn: (id: string) => goalsService.deleteGoal(id),
+    mutationFn: (id: string) => goalsService.deleteGoal(companyId!, id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['goals'] })
       toast.success('Meta removida!')

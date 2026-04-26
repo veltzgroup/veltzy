@@ -51,26 +51,36 @@ export const createGoal = async (companyId: string, input: CreateGoalInput): Pro
   return data
 }
 
-export const updateGoal = async (id: string, input: UpdateGoalInput): Promise<Goal> => {
+export const updateGoal = async (companyId: string, id: string, input: UpdateGoalInput): Promise<Goal> => {
   const { data, error } = await veltzy()
     .from('goals')
     .update(input)
     .eq('id', id)
+    .eq('company_id', companyId)
     .select('*, goal_metrics(*)')
     .single()
   if (error) throw error
   return data
 }
 
-export const deleteGoal = async (id: string): Promise<void> => {
+export const deleteGoal = async (companyId: string, id: string): Promise<void> => {
   const { error } = await veltzy()
     .from('goals')
     .delete()
     .eq('id', id)
+    .eq('company_id', companyId)
   if (error) throw error
 }
 
-export const createGoalMetric = async (input: CreateGoalMetricInput): Promise<GoalMetric> => {
+export const createGoalMetric = async (companyId: string, input: CreateGoalMetricInput): Promise<GoalMetric> => {
+  const { data: goal } = await veltzy()
+    .from('goals')
+    .select('id')
+    .eq('id', input.goal_id)
+    .eq('company_id', companyId)
+    .single()
+  if (!goal) throw new Error('Meta nao encontrada')
+
   const { data, error } = await veltzy()
     .from('goal_metrics')
     .insert(input)
@@ -80,7 +90,22 @@ export const createGoalMetric = async (input: CreateGoalMetricInput): Promise<Go
   return data
 }
 
-export const updateGoalMetric = async (id: string, input: UpdateGoalMetricInput): Promise<GoalMetric> => {
+export const updateGoalMetric = async (companyId: string, id: string, input: UpdateGoalMetricInput): Promise<GoalMetric> => {
+  const { data: metric } = await veltzy()
+    .from('goal_metrics')
+    .select('goal_id')
+    .eq('id', id)
+    .single()
+  if (!metric) throw new Error('Metrica nao encontrada')
+
+  const { data: goal } = await veltzy()
+    .from('goals')
+    .select('id')
+    .eq('id', metric.goal_id)
+    .eq('company_id', companyId)
+    .single()
+  if (!goal) throw new Error('Meta nao pertence a esta empresa')
+
   const { data, error } = await veltzy()
     .from('goal_metrics')
     .update(input)
@@ -91,7 +116,22 @@ export const updateGoalMetric = async (id: string, input: UpdateGoalMetricInput)
   return data
 }
 
-export const deleteGoalMetric = async (id: string): Promise<void> => {
+export const deleteGoalMetric = async (companyId: string, id: string): Promise<void> => {
+  const { data: metric } = await veltzy()
+    .from('goal_metrics')
+    .select('goal_id')
+    .eq('id', id)
+    .single()
+  if (!metric) throw new Error('Metrica nao encontrada')
+
+  const { data: goal } = await veltzy()
+    .from('goals')
+    .select('id')
+    .eq('id', metric.goal_id)
+    .eq('company_id', companyId)
+    .single()
+  if (!goal) throw new Error('Meta nao pertence a esta empresa')
+
   const { error } = await veltzy()
     .from('goal_metrics')
     .delete()

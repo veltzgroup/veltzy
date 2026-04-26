@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { useUpdateLead } from '@/hooks/use-leads'
-import { useTeamMembers } from '@/hooks/use-team-members'
+import { useTeamMembers } from '@/hooks/use-team'
 
 interface TransferLeadModalProps {
   leadId: string | null

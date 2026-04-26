@@ -8,11 +8,12 @@ import type { SendMessagePayload, Message } from '@/types/database'
 
 export const useMessages = (leadId: string | null) => {
   const queryClient = useQueryClient()
+  const companyId = useAuthStore((s) => s.company?.id)
 
   const query = useQuery({
     queryKey: ['messages', leadId],
-    queryFn: () => messagesService.getMessages(leadId!),
-    enabled: !!leadId,
+    queryFn: () => messagesService.getMessages(companyId!, leadId!),
+    enabled: !!leadId && !!companyId,
     refetchInterval: false,
   })
 
@@ -62,9 +63,10 @@ export const useSendMessage = () => {
 
 export const useMarkAsRead = () => {
   const queryClient = useQueryClient()
+  const companyId = useAuthStore((s) => s.company?.id)
 
   return useMutation({
-    mutationFn: (leadId: string) => messagesService.markAsRead(leadId),
+    mutationFn: (leadId: string) => messagesService.markAsRead(companyId!, leadId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['conversations'] })
     },

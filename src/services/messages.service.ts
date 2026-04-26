@@ -1,11 +1,12 @@
 import { veltzy as db } from '@/lib/supabase'
 import type { Message, SendMessagePayload, LeadWithLastMessage } from '@/types/database'
 
-export const getMessages = async (leadId: string): Promise<Message[]> => {
+export const getMessages = async (companyId: string, leadId: string): Promise<Message[]> => {
   const { data, error } = await db()
     .from('messages')
     .select('*')
     .eq('lead_id', leadId)
+    .eq('company_id', companyId)
     .order('created_at', { ascending: true })
   if (error) throw error
   return data
@@ -38,11 +39,12 @@ export const sendMessage = async (companyId: string, payload: SendMessagePayload
   return data
 }
 
-export const markAsRead = async (leadId: string): Promise<void> => {
+export const markAsRead = async (companyId: string, leadId: string): Promise<void> => {
   const { error } = await db()
     .from('leads')
     .update({ conversation_status: 'read' })
     .eq('id', leadId)
+    .eq('company_id', companyId)
   if (error) throw error
 }
 

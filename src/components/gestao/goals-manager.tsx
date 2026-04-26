@@ -20,7 +20,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useGoals, useCreateGoal, useDeleteGoal } from '@/hooks/use-goals'
-import { useTeamMembers } from '@/hooks/use-team-members'
+import { useTeamMembers } from '@/hooks/use-team'
+import { useAuthStore } from '@/stores/auth.store'
 import type { CreateGoalInput, MetricType } from '@/services/goals.service'
 
 interface MetricRow {
@@ -52,6 +53,7 @@ const emptyMetric = (): MetricRow => ({
 })
 
 export const GoalsManager = () => {
+  const companyId = useAuthStore((s) => s.company?.id)
   const { data: goals, isLoading } = useGoals()
   const { data: members } = useTeamMembers()
   const createGoal = useCreateGoal()
@@ -131,7 +133,7 @@ export const GoalsManager = () => {
       const { createGoalMetric } = await import('@/services/goals.service')
       for (const m of metrics) {
         if (!m.target_value) continue
-        await createGoalMetric({
+        await createGoalMetric(companyId!, {
           goal_id: goal.id,
           metric_type: m.metric_type,
           target_value: Number(m.target_value),

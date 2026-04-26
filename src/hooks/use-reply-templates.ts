@@ -29,11 +29,13 @@ export const useCreateTemplate = () => {
 
 export const useDeleteTemplate = () => {
   const queryClient = useQueryClient()
+  const companyId = useAuthStore((s) => s.company?.id)
 
   return useMutation({
-    mutationFn: (id: string) => templatesService.deleteTemplate(id),
+    mutationFn: (id: string) => templatesService.deleteTemplate(companyId!, id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reply-templates'] })
     },
+    onError: () => toast.error('Erro ao deletar template'),
   })
 }

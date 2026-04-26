@@ -25,15 +25,16 @@ export const savePaymentConfig = async (
   return data
 }
 
-export const togglePaymentConfig = async (id: string, active: boolean): Promise<void> => {
+export const togglePaymentConfig = async (companyId: string, id: string, active: boolean): Promise<void> => {
   const { error } = await veltzy()
     .from('payment_configs')
     .update({ is_active: active })
     .eq('id', id)
+    .eq('company_id', companyId)
   if (error) throw error
 }
 
-export const deletePaymentConfig = async (id: string): Promise<void> => {
-  const { error } = await veltzy().from('payment_configs').delete().eq('id', id)
+export const deletePaymentConfig = async (companyId: string, id: string): Promise<void> => {
+  const { error } = await veltzy().from('payment_configs').delete().eq('id', id).eq('company_id', companyId)
   if (error) throw error
 }

@@ -28,7 +28,7 @@ export const saveIntegration = async (
   return data
 }
 
-export const deleteIntegration = async (id: string): Promise<void> => {
-  const { error } = await veltzy().from('source_integrations').delete().eq('id', id)
+export const deleteIntegration = async (companyId: string, id: string): Promise<void> => {
+  const { error } = await veltzy().from('source_integrations').delete().eq('id', id).eq('company_id', companyId)
   if (error) throw error
 }

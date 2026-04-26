@@ -31,10 +31,11 @@ export const useCreateRule = () => {
 
 export const useUpdateRule = () => {
   const queryClient = useQueryClient()
+  const companyId = useAuthStore((s) => s.company?.id)
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Parameters<typeof automationsService.updateRule>[1] }) =>
-      automationsService.updateRule(id, data),
+    mutationFn: ({ id, data }: { id: string; data: Parameters<typeof automationsService.updateRule>[2] }) =>
+      automationsService.updateRule(companyId!, id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['automation-rules'] })
     },
@@ -44,9 +45,10 @@ export const useUpdateRule = () => {
 
 export const useDeleteRule = () => {
   const queryClient = useQueryClient()
+  const companyId = useAuthStore((s) => s.company?.id)
 
   return useMutation({
-    mutationFn: (id: string) => automationsService.deleteRule(id),
+    mutationFn: (id: string) => automationsService.deleteRule(companyId!, id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['automation-rules'] })
       toast.success('Regra removida!')
@@ -57,12 +59,14 @@ export const useDeleteRule = () => {
 
 export const useToggleRule = () => {
   const queryClient = useQueryClient()
+  const companyId = useAuthStore((s) => s.company?.id)
 
   return useMutation({
     mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) =>
-      automationsService.toggleRule(id, enabled),
+      automationsService.toggleRule(companyId!, id, enabled),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['automation-rules'] })
     },
+    onError: (err: Error) => toast.error(err.message),
   })
 }

@@ -10,14 +10,16 @@ export const createTicket = async (input: {
   user_agent?: string
 }): Promise<SupportTicket> => {
   const { data: { user } } = await supabase.auth.getUser()
-  const { data: profile } = await supabase.from('profiles').select('company_id').eq('user_id', user!.id).single()
+  if (!user?.id) throw new Error('Usuario nao autenticado')
+
+  const { data: profile } = await supabase.from('profiles').select('company_id').eq('user_id', user.id).single()
 
   const { data, error } = await veltzy()
     .from('support_tickets')
     .insert({
       ...input,
       company_id: profile?.company_id,
-      user_id: user!.id,
+      user_id: user.id,
     })
     .select()
     .single()
@@ -33,13 +35,14 @@ export const getTickets = async (companyId?: string): Promise<SupportTicket[]> =
   return data
 }
 
-export const updateTicketStatus = async (id: string, status: TicketStatus): Promise<SupportTicket> => {
+export const updateTicketStatus = async (companyId: string, id: string, status: TicketStatus): Promise<SupportTicket> => {
   const updates: Record<string, unknown> = { status }
   if (status === 'resolved') updates.resolved_at = new Date().toISOString()
   const { data, error } = await veltzy()
     .from('support_tickets')
     .update(updates)
     .eq('id', id)
+    .eq('company_id', companyId)
     .select()
     .single()
   if (error) throw error

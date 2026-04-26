@@ -32,10 +32,11 @@ export const useCreateStage = () => {
 
 export const useUpdateStage = () => {
   const queryClient = useQueryClient()
+  const companyId = useAuthStore((s) => s.company?.id)
 
   return useMutation({
-    mutationFn: ({ stageId, data }: { stageId: string; data: Parameters<typeof pipelineService.updateStage>[1] }) =>
-      pipelineService.updateStage(stageId, data),
+    mutationFn: ({ stageId, data }: { stageId: string; data: Parameters<typeof pipelineService.updateStage>[2] }) =>
+      pipelineService.updateStage(companyId!, stageId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pipeline-stages'] })
     },
@@ -47,9 +48,10 @@ export const useUpdateStage = () => {
 
 export const useDeleteStage = () => {
   const queryClient = useQueryClient()
+  const companyId = useAuthStore((s) => s.company?.id)
 
   return useMutation({
-    mutationFn: (stageId: string) => pipelineService.deleteStage(stageId),
+    mutationFn: (stageId: string) => pipelineService.deleteStage(companyId!, stageId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pipeline-stages'] })
       toast.success('Fase removida!')
@@ -62,10 +64,11 @@ export const useDeleteStage = () => {
 
 export const useReorderStages = () => {
   const queryClient = useQueryClient()
+  const companyId = useAuthStore((s) => s.company?.id)
 
   return useMutation({
     mutationFn: (stages: { id: string; position: number }[]) =>
-      pipelineService.reorderStages(stages),
+      pipelineService.reorderStages(companyId!, stages),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pipeline-stages'] })
     },

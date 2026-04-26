@@ -51,13 +51,29 @@ export const cancelInvite = async (inviteId: string): Promise<void> => {
   if (error) throw error
 }
 
-export const updateMemberRole = async (userId: string, role: AppRole): Promise<void> => {
+export const updateMemberRole = async (companyId: string, userId: string, role: AppRole): Promise<void> => {
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('company_id', companyId)
+    .single()
+  if (!profile) throw new Error('Membro nao pertence a esta empresa')
+
   await supabase.from('user_roles').delete().eq('user_id', userId).neq('role', 'super_admin')
   const { error } = await supabase.from('user_roles').insert({ user_id: userId, role })
   if (error) throw error
 }
 
-export const removeMember = async (targetUserId: string): Promise<void> => {
+export const removeMember = async (companyId: string, targetUserId: string): Promise<void> => {
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('user_id', targetUserId)
+    .eq('company_id', companyId)
+    .single()
+  if (!profile) throw new Error('Membro nao pertence a esta empresa')
+
   const { error } = await supabase.rpc('remove_user_from_company', { p_target_user_id: targetUserId })
   if (error) throw error
 }

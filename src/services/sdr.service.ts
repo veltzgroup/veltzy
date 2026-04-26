@@ -21,10 +21,11 @@ export const saveSdrConfig = async (companyId: string, config: SdrConfig): Promi
   if (error) throw error
 }
 
-export const toggleSdrForLead = async (leadId: string, enabled: boolean): Promise<void> => {
+export const toggleSdrForLead = async (companyId: string, leadId: string, enabled: boolean): Promise<void> => {
   const { error } = await db()
     .from('leads')
     .update({ is_ai_active: enabled })
     .eq('id', leadId)
+    .eq('company_id', companyId)
   if (error) throw error
 }
