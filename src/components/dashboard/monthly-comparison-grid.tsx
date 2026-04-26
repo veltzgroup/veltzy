@@ -2,7 +2,7 @@ import { useState } from 'react'
 import {
   BarChart3, Users, TrendingUp, CheckCircle, DollarSign,
 } from 'lucide-react'
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell, LabelList } from 'recharts'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useMonthlyComparisonGrid } from '@/hooks/use-dashboard-metrics'
 import type { MonthlyGridData } from '@/services/dashboard.service'
@@ -34,6 +34,35 @@ interface MiniChartProps {
   formatter?: (v: number) => string
 }
 
+const CustomLabel = ({ x, y, width, index, data, dataKey }: {
+  x?: number
+  y?: number
+  width?: number
+  index?: number
+  data: MonthlyGridData[]
+  dataKey: string
+}) => {
+  if (index === undefined || x === undefined || y === undefined || width === undefined) return null
+  if (index === 0 || !data[index - 1]) return null
+  const prev = (data[index - 1] as Record<string, unknown>)[dataKey] as number
+  const curr = (data[index] as Record<string, unknown>)[dataKey] as number
+  if (!prev || prev === 0) return null
+  const pct = ((curr - prev) / prev * 100).toFixed(0)
+  const isPositive = curr >= prev
+  return (
+    <text
+      x={x + width / 2}
+      y={y - 6}
+      textAnchor="middle"
+      fontSize={11}
+      fontWeight={500}
+      fill={isPositive ? '#10b981' : '#ef4444'}
+    >
+      {isPositive ? '+' : ''}{pct}%
+    </text>
+  )
+}
+
 const CustomTooltip = ({
   active,
   payload,
@@ -60,10 +89,10 @@ const MiniChart = ({ title, icon: Icon, dataKey, gradient, data, formatter }: Mi
     </div>
     <div className="h-[120px]">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 4, right: 2, bottom: 0, left: -24 }}>
+        <BarChart data={data} margin={{ top: 16, right: 2, bottom: 0, left: -24 }}>
           <defs>
             <linearGradient id={gradient.id} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={gradient.color} stopOpacity={0.8} />
+              <stop offset="0%" stopColor={gradient.color} stopOpacity={0.9} />
               <stop offset="100%" stopColor={gradient.color} stopOpacity={0.1} />
             </linearGradient>
           </defs>
@@ -86,7 +115,7 @@ const MiniChart = ({ title, icon: Icon, dataKey, gradient, data, formatter }: Mi
           <Bar
             dataKey={dataKey}
             fill={`url(#${gradient.id})`}
-            radius={[3, 3, 0, 0]}
+            radius={[6, 6, 0, 0]}
             animationDuration={600}
             stroke={gradient.color}
             strokeWidth={1.5}
@@ -95,6 +124,9 @@ const MiniChart = ({ title, icon: Icon, dataKey, gradient, data, formatter }: Mi
             {data.map((_, idx) => (
               <Cell key={idx} strokeDasharray="" />
             ))}
+            <LabelList
+              content={(props) => <CustomLabel {...(props as { x?: number; y?: number; width?: number; index?: number })} data={data} dataKey={dataKey} />}
+            />
           </Bar>
         </BarChart>
       </ResponsiveContainer>

@@ -3,7 +3,7 @@ import {
   Building2, Clock, Calendar, CalendarDays, BarChart3,
   TrendingUp, Target, DollarSign, Users,
 } from 'lucide-react'
-import { LineChart, Line, ResponsiveContainer } from 'recharts'
+import { ComposedChart, Line, Area, ResponsiveContainer } from 'recharts'
 import { cn } from '@/lib/utils'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAuthStore } from '@/stores/auth.store'
@@ -31,8 +31,12 @@ const fmt = (value: number) =>
 const DecorativeLine = () => (
   <div className="h-[80px] mt-4 opacity-60">
     <ResponsiveContainer width="100%" height="100%">
-      <LineChart data={curveData} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+      <ComposedChart data={curveData} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
         <defs>
+          <linearGradient id="kpiGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+            <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+          </linearGradient>
           <filter id="glow">
             <feGaussianBlur stdDeviation="3" result="blur" />
             <feMerge>
@@ -41,15 +45,21 @@ const DecorativeLine = () => (
             </feMerge>
           </filter>
         </defs>
+        <Area
+          type="monotone"
+          dataKey="y"
+          fill="url(#kpiGradient)"
+          stroke="none"
+        />
         <Line
           type="monotone"
           dataKey="y"
           stroke="hsl(var(--primary))"
-          strokeWidth={2}
+          strokeWidth={2.5}
           dot={false}
           filter="url(#glow)"
         />
-      </LineChart>
+      </ComposedChart>
     </ResponsiveContainer>
   </div>
 )
