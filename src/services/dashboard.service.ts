@@ -150,6 +150,51 @@ export const getMonthlyComparison = async (companyId: string, days?: number): Pr
   }))
 }
 
+export interface MonthlyGridData {
+  month: string
+  leads: number
+  conversion: number
+  deals: number
+  value: number
+}
+
+export const getMonthlyComparisonGrid = async (companyId: string, months = 6): Promise<MonthlyGridData[]> => {
+  const startDate = new Date()
+  startDate.setMonth(startDate.getMonth() - months)
+
+  const { data: leads, error } = await veltzy()
+    .from('leads')
+    .select('status, deal_value, created_at')
+    .eq('company_id', companyId)
+    .gte('created_at', startDate.toISOString())
+  if (error) throw error
+
+  const buckets: Record<string, { leads: number; deals: number; value: number }> = {}
+  leads?.forEach((l) => {
+    const d = new Date(l.created_at)
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    if (!buckets[key]) buckets[key] = { leads: 0, deals: 0, value: 0 }
+    buckets[key].leads++
+    if (l.status === 'deal') {
+      buckets[key].deals++
+      buckets[key].value += Number(l.deal_value) || 0
+    }
+  })
+
+  return Object.entries(buckets)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([month, data]) => {
+      const label = new Date(month + '-15').toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })
+      return {
+        month: label,
+        leads: data.leads,
+        conversion: data.leads > 0 ? Math.round((data.deals / data.leads) * 100) : 0,
+        deals: data.deals,
+        value: data.value,
+      }
+    })
+}
+
 export const getSellerPerformance = async (companyId: string, days?: number): Promise<SellerMetrics[]> => {
   const { data: profiles, error: profilesError } = await supabase.from('profiles').select('id, name, is_available').eq('company_id', companyId)
   if (profilesError) throw profilesError

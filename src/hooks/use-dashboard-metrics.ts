@@ -52,6 +52,16 @@ export const useMonthlyComparison = (days?: number) => {
   })
 }
 
+export const useMonthlyComparisonGrid = (months = 6) => {
+  const companyId = useAuthStore((s) => s.company?.id)
+  return useQuery({
+    queryKey: ['monthly-comparison-grid', companyId, months],
+    queryFn: () => dashboardService.getMonthlyComparisonGrid(companyId!, months),
+    enabled: !!companyId,
+    staleTime: 1000 * 60 * 5,
+  })
+}
+
 export const useSellerPerformance = (days?: number) => {
   const companyId = useAuthStore((s) => s.company?.id)
   return useQuery({

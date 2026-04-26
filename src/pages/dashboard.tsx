@@ -8,8 +8,9 @@ import { cn } from '@/lib/utils'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAuthStore } from '@/stores/auth.store'
 import { useDashboardKpis } from '@/hooks/use-dashboard-metrics'
-import { MonthlyComparisonChart } from '@/components/dashboard/monthly-comparison-chart'
-import { SellerPerformanceTable } from '@/components/dashboard/seller-performance-table'
+import { PipelineOverviewCard } from '@/components/dashboard/pipeline-overview-card'
+import { FollowUpTips } from '@/components/dashboard/follow-up-tips'
+import { MonthlyComparisonGrid } from '@/components/dashboard/monthly-comparison-grid'
 
 const curveData = [5, 8, 15, 35, 60, 75, 60, 35, 15, 8, 5].map((v, i) => ({ x: i, y: v }))
 
@@ -260,11 +261,14 @@ const DashboardPage = () => {
           </div>
         )}
 
-        {/* COMPARATIVO MENSAL */}
-        <MonthlyComparisonChart days={selectedDays} />
+        {/* VISAO DO PIPELINE + DICAS DE FOLLOW-UP */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <PipelineOverviewCard />
+          <FollowUpTips />
+        </div>
 
-        {/* PERFORMANCE VENDEDORES */}
-        <SellerPerformanceTable days={selectedDays} />
+        {/* COMPARATIVO MENSAL */}
+        <MonthlyComparisonGrid />
 
       </div>
     </div>
