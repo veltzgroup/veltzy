@@ -1,30 +1,30 @@
 # DESIGN_SYSTEM - Veltzy CRM
 
-> Design System V2 — Inspirado no estilo **Ticto**: dark, sofisticado, com efeitos de **ambient glow**. Base neutra que permite que cores de destaque customizáveis (white-label) brilhem.
+> Design System V2 -- Inspirado no estilo **Ticto**: dark, sofisticado, com efeitos de **ambient glow**. Base neutra que permite que cores de destaque customizaveis (white-label) brilhem.
 
 ---
 
 ## 1. FILOSOFIA VISUAL
 
 - **Tom:** Sofisticado, premium, imersivo
-- **Densidade:** Equilibrada — espaço negativo generoso em áreas de leitura, densidade controlada em dashboards
+- **Densidade:** Equilibrada -- espaco negativo generoso em areas de leitura, densidade controlada em dashboards
 - **Profundidade:** Camadas com glassmorphism, blur, gradientes radiais e ambient glow
-- **White-label:** Base neutra que se adapta às cores primária/secundária definidas por cada empresa
+- **White-label:** Base neutra que se adapta as cores primaria/secundaria definidas por cada empresa
 - **Acessibilidade:** Contraste preservado em light, dark e sand modes
 
 ---
 
-## 2. TEMAS DISPONÍVEIS
+## 2. TEMAS DISPONIVEIS
 
-O sistema possui **3 temas** alternáveis pelo usuário:
+O sistema possui **3 temas** alternaveis pelo usuario:
 
-| Tema | Classe CSS | Inspiração |
+| Tema | Classe CSS | Inspiracao |
 |---|---|---|
 | Light | `:root` (default) | Clean e minimalista |
 | Dark | `.dark` | Profundo e imersivo (Ticto-style) |
 | Sand | `.sand` | Tons quentes bege (Claude-style) |
 
-Inicialização via `ThemeInitializer` e alternância via `ThemeToggleButton`. Persistência por usuário através de `useThemeConfig`.
+Inicializacao via `ThemeInitializer` e alternancia via `ThemeToggle`. Persistencia por usuario atraves de `useThemeConfig`. Ambos em `src/components/layout/`.
 
 ---
 
@@ -41,18 +41,18 @@ Inicialização via `ThemeInitializer` e alternância via `ThemeToggleButton`. P
 | `--popover` | `0 0% 100%` | Fundo de popovers |
 | `--primary` | `158 64% 42%` | Cor de destaque (verde Veltzy) |
 | `--primary-foreground` | `0 0% 100%` | Texto sobre primary |
-| `--secondary` | `240 5% 92%` | Botões secundários |
-| `--secondary-foreground` | `240 10% 20%` | Texto secundário |
+| `--secondary` | `240 5% 92%` | Botoes secundarios |
+| `--secondary-foreground` | `240 10% 20%` | Texto secundario |
 | `--muted` | `240 5% 96%` | Fundos sutis |
 | `--muted-foreground` | `240 4% 46%` | Texto muted |
 | `--accent` | `158 40% 94%` | Acento suave |
 | `--accent-foreground` | `158 64% 32%` | Texto sobre accent |
-| `--destructive` | `0 72% 51%` | Erros e ações destrutivas |
+| `--destructive` | `0 72% 51%` | Erros e acoes destrutivas |
 | `--destructive-foreground` | `0 0% 100%` | Texto sobre destructive |
 | `--border` | `240 6% 90%` | Bordas |
 | `--input` | `240 6% 90%` | Bordas de inputs |
 | `--ring` | `158 64% 42%` | Focus ring |
-| `--radius` | `0.75rem` | Raio padrão de bordas |
+| `--radius` | `0.75rem` | Raio padrao de bordas |
 
 ### Tema Dark (`.dark`)
 
@@ -91,7 +91,7 @@ Inicialização via `ThemeInitializer` e alternância via `ThemeToggleButton`. P
 
 ## 4. SIDEBAR (TOKENS DEDICADOS)
 
-A sidebar possui paleta própria para permitir contraste independente do conteúdo.
+A sidebar possui paleta propria para permitir contraste independente do conteudo.
 
 | Token | Light | Dark | Sand |
 |---|---|---|---|
@@ -112,16 +112,16 @@ Mapeadas para os `lead_status` do banco de dados.
 | Novo | `--status-new` | `217 91% 60%` | `217 85% 65%` |
 | Qualificando | `--status-qualifying` | `43 96% 56%` | `43 90% 58%` |
 | Aberto | `--status-open` | `271 81% 56%` | `271 75% 62%` |
-| Negócio | `--status-deal` | `158 64% 42%` | `158 72% 46%` |
+| Negocio | `--status-deal` | `158 64% 42%` | `158 72% 46%` |
 | Perdido | `--status-lost` | `0 72% 51%` | `0 58% 56%` |
 
-Aplicados via classes utilitárias: `.status-new`, `.status-qualifying`, `.status-open`, `.status-deal`, `.status-lost`.
+Aplicados via classes utilitarias: `.status-new`, `.status-qualifying`, `.status-open`, `.status-deal`, `.status-lost`.
 
 ---
 
 ## 6. AMBIENT GLOW (EFEITOS DE LUZ)
 
-Tokens de glow para criar atmosfera imersiva no fundo das páginas.
+Tokens de glow para criar atmosfera imersiva no fundo das paginas.
 
 | Token | Light | Dark | Sand |
 |---|---|---|---|
@@ -129,19 +129,19 @@ Tokens de glow para criar atmosfera imersiva no fundo das páginas.
 | `--glow-secondary` | `280 70% 50%` | `280 70% 50%` | `30 40% 60%` |
 | `--glow-tertiary` | `30 90% 55%` | `30 90% 55%` | `35 50% 55%` |
 
-### Classes de aplicação
+### Classes de aplicacao
 
-- **`.ambient-bg`** — Fundo com 2 orbs radiais (secondary + tertiary) com blur 60-80px
-- **`.glow-orb-primary`** — Orb individual de primary, posicionável
-- **`.glow-primary`** — `box-shadow: 0 0 30px -5px hsl(var(--primary) / 0.3)`
-- **`.glow-primary-intense`** — Glow duplo de primary (20px + 60px)
-- **`.glow-success`** — Glow verde para confirmações de negócio fechado
+- **`.ambient-bg`** -- Fundo com 2 orbs radiais (secondary + tertiary) com blur 60-80px
+- **`.glow-orb-primary`** -- Orb individual de primary, posicionavel
+- **`.glow-primary`** -- `box-shadow: 0 0 30px -5px hsl(var(--primary) / 0.3)`
+- **`.glow-primary-intense`** -- Glow duplo de primary (20px + 60px)
+- **`.glow-success`** -- Glow verde para confirmacoes de negocio fechado
 
 ---
 
 ## 7. GLASSMORPHISM
 
-Cards com efeito glass (vidro fosco) — assinatura visual do Veltzy.
+Cards com efeito glass (vidro fosco) -- assinatura visual do Veltzy.
 
 ### `.glass-card`
 ```css
@@ -153,7 +153,7 @@ bg-card/80 + backdrop-blur-xl + border-border/50
 Opacidade reduzida (`bg-card/60`) e shadow mais intensa para profundidade.
 
 ### `.glass-premium`
-Versão reforçada com tint de primary nas bordas e shadow — usado em elementos de destaque (modais importantes, dashboards).
+Versao reforcada com tint de primary nas bordas e shadow -- usado em elementos de destaque (modais importantes, dashboards).
 
 ---
 
@@ -161,7 +161,7 @@ Versão reforçada com tint de primary nas bordas e shadow — usado em elemento
 
 ### Mensagens de Chat
 
-| Classe | Aparência | Uso |
+| Classe | Aparencia | Uso |
 |---|---|---|
 | `.message-bubble-lead` | `bg-secondary` + `rounded-bl-md` | Mensagens recebidas do lead |
 | `.message-bubble-human` | `bg-primary` + `rounded-br-md` | Mensagens enviadas pelo vendedor |
@@ -169,57 +169,73 @@ Versão reforçada com tint de primary nas bordas e shadow — usado em elemento
 
 ### Kanban (Pipeline)
 
-| Classe | Descrição |
+| Classe | Descricao |
 |---|---|
 | `.kanban-column` | Coluna com `bg-muted/30`, `rounded-xl`, `min-h-[500px]` |
 | `.kanban-card` | Card com hover elevado (shadow + border primary/30) |
 
-### AI Score Indicator
+### Lead Card -- Barra de Temperatura
+Gradiente linear de frio a quente aplicado inline:
+```css
+background: linear-gradient(to right, #3b82f6, #06b6d4, #f59e0b, #f97316, #ef4444)
 ```
-.score-indicator         → barra de progresso h-1.5
-.score-indicator-fill    → preenchimento animado (500ms ease-out)
+Largura clipada por wrapper: cold=25%, warm=50%, hot=75%, fire=100%.
+Altura: `h-1.5`, bordas arredondadas, transicao 500ms ease-out.
+
+### Lead Card -- Efeito Fire
+```css
+@keyframes fire-border {
+  0%, 100% { box-shadow: 0 0 8px 2px rgba(249,115,22,0.4), 0 0 16px 4px rgba(239,68,68,0.2); }
+  50% { box-shadow: 0 0 12px 4px rgba(239,68,68,0.6), 0 0 24px 8px rgba(249,115,22,0.3); }
+}
+
+.fire-card {
+  animation: fire-border 5s ease-in-out infinite;
+}
 ```
+Respeita `prefers-reduced-motion: reduce` (animation: none).
 
 ### Inputs
 ```
-.input-clean → bg-secondary/50, foco transita para bg-background
+.input-clean -> bg-secondary/50, foco transita para bg-background
 ```
 
-### Botões com Glow
+### Botoes com Glow
 ```
-.btn-glow → pseudo-elemento ::before com gradient blur,
-            opacity 0 → 1 no hover
+.btn-glow -> pseudo-elemento ::before com gradient blur,
+            opacity 0 -> 1 no hover
 ```
 
 ---
 
-## 9. UTILITÁRIOS DE TIPOGRAFIA
+## 9. UTILITARIOS DE TIPOGRAFIA
 
 | Classe | Efeito |
 |---|---|
-| `.text-gradient-primary` | Gradiente horizontal `primary → accent-foreground` |
+| `.text-gradient-primary` | Gradiente horizontal `primary -> accent-foreground` |
 | `.text-gradient-shine` | Gradiente vertical sutil sobre `foreground` (efeito brilho) |
 
 Tipografia usa stack default do sistema com `font-feature-settings: "rlig" 1, "calt" 1` (ligaduras e alternativas contextuais habilitadas).
 
 ---
 
-## 10. ANIMAÇÕES
+## 10. ANIMACOES
 
-### Transições
-- **`.transition-smooth`** — `transition-all duration-200 ease-out` (padrão da casa)
+### Transicoes
+- **`.transition-smooth`** -- `transition-all duration-200 ease-out` (padrao da casa)
 
 ### Keyframes Globais
 
-| Animação | Duração | Uso |
+| Animacao | Duracao | Uso |
 |---|---|---|
-| `.animate-fade-in` | 0.3s ease-out | Entrada de elementos (translateY 8px → 0) |
+| `.animate-fade-in` | 0.3s ease-out | Entrada de elementos (translateY 8px -> 0) |
 | `.animate-float` | 20s infinito | Movimento sutil de orbs ambientes |
-| `.animate-pulse-glow` | 4s infinito | Pulsação de glow (opacity + blur) |
+| `.animate-pulse-glow` | 4s infinito | Pulsacao de glow (opacity + blur) |
+| `.fire-card` | 5s infinito | Efeito fogo pulsante nas bordas de leads fire |
 | `accordion-down/up` | 0.2s ease-out | Radix Accordion (do tailwindcss-animate) |
 
-### Bypass de animações
-Classe `.no-animations` no root desabilita todas as animações e transições (preferência de usuário/acessibilidade).
+### Bypass de animacoes
+Classe `.no-animations` no root desabilita todas as animacoes e transicoes (preferencia de usuario/acessibilidade).
 
 ---
 
@@ -228,10 +244,10 @@ Classe `.no-animations` no root desabilita todas as animações e transições (
 Scrollbars premium customizadas:
 - Largura 6px
 - Track transparente
-- Thumb `bg-muted-foreground/20` → `40` no hover
+- Thumb `bg-muted-foreground/20` -> `40` no hover
 - Bordas arredondadas
 
-Variante `.scrollbar-minimal` esconde o thumb até hover (útil em painéis densos).
+Variante `.scrollbar-minimal` esconde o thumb ate hover (util em paineis densos).
 
 ---
 
@@ -239,13 +255,13 @@ Variante `.scrollbar-minimal` esconde o thumb até hover (útil em painéis dens
 
 Sistema baseado em `--radius: 0.75rem`:
 
-| Token Tailwind | Cálculo | Valor |
+| Token Tailwind | Calculo | Valor |
 |---|---|---|
 | `rounded-lg` | `var(--radius)` | 12px |
 | `rounded-md` | `calc(var(--radius) - 2px)` | 10px |
 | `rounded-sm` | `calc(var(--radius) - 4px)` | 8px |
 
-Bubbles de chat usam `rounded-2xl` (16px) com cantos assimétricos.
+Bubbles de chat usam `rounded-2xl` (16px) com cantos assimetricos.
 
 ---
 
@@ -259,21 +275,21 @@ container: {
 }
 ```
 
-Breakpoints padrão do Tailwind: `sm` (640px), `md` (768px), `lg` (1024px), `xl` (1280px), `2xl` (1400px customizado).
+Breakpoints padrao do Tailwind: `sm` (640px), `md` (768px), `lg` (1024px), `xl` (1280px), `2xl` (1400px customizado).
 
 ---
 
 ## 14. WHITE-LABEL POR EMPRESA
 
 Cada `company` no banco possui:
-- `primary_color` — sobrescreve `--primary` em runtime
-- `secondary_color` — sobrescreve `--secondary` em runtime
-- `logo_url` — logo customizado na sidebar e auth
+- `primary_color` -- sobrescreve `--primary` em runtime
+- `secondary_color` -- sobrescreve `--secondary` em runtime
+- `logo_url` -- logo customizado na sidebar e auth
 
-Aplicação dinâmica via hook `useThemeConfig` que injeta variáveis CSS no `:root` ao carregar a empresa do usuário.
+Aplicacao dinamica via hook `useThemeConfig` que injeta variaveis CSS no `:root` ao carregar a empresa do usuario.
 
-Configurações salvas em `system_settings.theme_config`:
-- Cores primária/secundária
+Configuracoes salvas em `system_settings.theme_config`:
+- Cores primaria/secundaria
 - Estilo de card (glass, flat, elevated)
 - Estilo de sidebar (compact, expanded)
 
@@ -283,30 +299,30 @@ Configurações salvas em `system_settings.theme_config`:
 
 - **Base:** Radix UI (acessibilidade nativa, keyboard navigation)
 - **Wrappers:** shadcn/ui customizados em `src/components/ui/`
-- **Ícones:** Lucide Icons (consistência visual)
-- **Animações complexas:** framer-motion (`PageTransition`, micro-interações)
+- **Icones:** Lucide Icons (consistencia visual)
+- **Animacoes complexas:** framer-motion (`PageTransition`, micro-interacoes)
 - **Toasts:** sonner
 
 ---
 
 ## 16. REGRAS DE OURO
 
-✅ **Sempre use tokens semânticos** (`bg-primary`, `text-foreground`)
-❌ **Nunca use cores diretas** (`bg-blue-500`, `text-white`) em componentes
-✅ **Todas as cores em HSL** — facilita transformações (opacity, lightness)
-✅ **Variantes via `cva`** — não condicionais inline de classes
-✅ **Glow e glass com moderação** — apenas em elementos de destaque
-✅ **Contraste validado** nos 3 temas (light/dark/sand)
+- **Sempre use tokens semanticos** (`bg-primary`, `text-foreground`)
+- **Nunca use cores diretas** (`bg-blue-500`, `text-white`) em componentes
+- **Todas as cores em HSL** -- facilita transformacoes (opacity, lightness)
+- **Variantes via `cva`** -- nao condicionais inline de classes
+- **Glow e glass com moderacao** -- apenas em elementos de destaque
+- **Contraste validado** nos 3 temas (light/dark/sand)
 
 ---
 
-## 17. ARQUIVOS DE REFERÊNCIA
+## 17. ARQUIVOS DE REFERENCIA
 
-| Arquivo | Conteúdo |
+| Arquivo | Conteudo |
 |---|---|
-| `src/index.css` | Tokens CSS, classes utilitárias, animações |
+| `src/styles/globals.css` | Tokens CSS, classes utilitarias, animacoes, fire-card |
 | `tailwind.config.ts` | Mapeamento de tokens para classes Tailwind |
 | `src/components/ui/*` | Componentes shadcn customizados |
-| `src/components/ThemeInitializer.tsx` | Carrega tema na inicialização |
-| `src/components/ThemeToggleButton.tsx` | Alternância light/dark/sand |
-| `src/hooks/useThemeConfig.ts` | Persistência e aplicação de tema por empresa |
+| `src/components/layout/theme-initializer.tsx` | Carrega tema na inicializacao |
+| `src/components/layout/theme-toggle.tsx` | Alternancia light/dark/sand |
+| `src/hooks/use-theme-config.ts` | Persistencia e aplicacao de tema por empresa |

@@ -1,16 +1,39 @@
 # CLAUDE.md - Veltz Group Ecosystem
 
-## O QUE É O VELTZ GROUP
-Ecossistema SaaS multi-produto da Daxen Labs com identidade unificada. Cada produto é uma aplicação independente com domínio próprio, mas compartilha autenticação, tenants e dados via Supabase Central.
+## O QUE E O VELTZ GROUP
+Ecossistema SaaS multi-produto da Daxen Labs com identidade unificada. Cada produto e uma aplicacao independente com dominio proprio, mas compartilha autenticacao, tenants e dados via Supabase Central (quando migrado).
 
 ## PRODUTOS DO ECOSSISTEMA
 
-| Produto | Descrição | Domínio App | Domínio Landing | Status |
+| Produto | Descricao | Dominio App | Dominio Landing | Status |
 |---|---|---|---|---|
-| **Veltzy** | CRM com IA SDR, pipeline, inbox multicanal | app.veltzy.com | veltzy.com | Em produção |
-| **Leadbaze** | Marketing: campanhas WhatsApp/SMS/email, automações | app.leadbaze.com | leadbaze.com | Em desenvolvimento |
-| **PowerV** | Governança corporativa para PMEs (POWER V framework) | app.[dominio].com | [dominio].com | Planejado |
+| **Veltzy** | CRM com IA SDR, pipeline, inbox multicanal, metas comerciais | app.veltzy.com | veltzy.com | Em producao (Supabase proprio, pre-migracao Central) |
+| **Leadbaze** | Marketing: campanhas WhatsApp/SMS/email, automacoes | app.leadbaze.com | leadbaze.com | Em desenvolvimento |
+| **PowerV** | Governanca corporativa para PMEs (POWER V framework) | app.[dominio].com | [dominio].com | Planejado |
 | **Portal Hub** | Acesso unificado a todos os produtos contratados | app.veltz.group | veltz.group | A construir |
+
+## ESTADO ATUAL DO VELTZY
+
+O Veltzy opera em **Supabase proprio** (projeto `frwzyfnrztotkggvksci`, regiao Sao Paulo), ainda nao migrado para o Supabase Central. Deploy via Vercel (app.veltzy.com). GitHub: veltzgroup/veltzy.
+
+Feature-complete com 8 fases implementadas:
+1. Foundation (auth, multi-tenant, onboarding, layout)
+2. Pipeline Kanban (drag & drop, leads, modais)
+3. Inbox (chat multicanal, Z-API, realtime)
+4. IA SDR + Automacoes (qualificacao, distribuicao, auto-reply)
+5. Dashboard + Equipe (KPIs, graficos, sellers, convites, exportacao)
+6. Admin + SuperAdmin (integracoes, support tickets, impersonacao)
+7. Deploy + Polish (code splitting, SEO, error boundary, indices)
+8. Settings Reorg (/minha-conta pessoal, /admin operacao, /company marca)
+
+Funcionalidades adicionais pos-fases:
+- Modulo de Metas Comerciais (goals + goal_metrics)
+- Pagina de Negocios (/deals) com KPIs e tabela
+- Gestao Comercial (/gestao) com 7 abas
+- Lead card com barra de temperatura gradiente, efeito fire, icone Bot IA
+- Sidebar com branding Veltzy + nome do tenant
+
+10 Edge Functions deployadas. 9 migrations SQL aplicadas.
 
 ## SUPABASE CENTRAL
 
@@ -18,18 +41,18 @@ Ecossistema SaaS multi-produto da Daxen Labs com identidade unificada. Cada prod
 Project: veltz-group
 Ref: zxefzegggntfjlfsdgvw
 URL: https://zxefzegggntfjlfsdgvw.supabase.co
-Região: us-east-1 (North Virginia)
+Regiao: us-east-1 (North Virginia)
 ```
 
 ### Responsabilidades do Central
-- Autenticação unificada (um login para todos os produtos)
+- Autenticacao unificada (um login para todos os produtos)
 - Tabela de companies (tenants compartilhados)
 - Tabela de subscriptions (controle de acesso por produto)
-- Profiles básicos compartilhados
+- Profiles basicos compartilhados
 - Schema por produto: `veltzy.*`, `leadbaze.*`, `powerv.*`
 
 ### Responsabilidade de cada produto
-- Dados específicos do produto ficam no schema do produto
+- Dados especificos do produto ficam no schema do produto
 - Toda query filtra por `company_id` vindo do Central
 - RLS em todas as tabelas com `company_id`
 
@@ -37,55 +60,57 @@ Região: us-east-1 (North Virginia)
 
 ```
 Supabase Central (veltz-group)
-├── schema: public
-│   ├── companies          → tenants (um por cliente, compartilhado entre produtos)
-│   ├── profiles           → dados básicos do usuário
-│   ├── user_roles         → roles globais (super_admin, admin, manager, seller)
-│   ├── subscriptions      → qual company tem acesso a qual produto/plano
-│   └── auth.users         → Supabase Auth nativo
-│
-├── schema: veltzy
-│   ├── leads, messages, pipeline_stages, lead_sources...
-│   └── Todos os dados específicos do Veltzy
-│
-├── schema: leadbaze
-│   ├── campaigns, contacts, broadcasts, automations...
-│   └── Todos os dados específicos do Leadbaze
-│
-└── schema: powerv
-    ├── governance_modules, okrs, valuations...
-    └── Todos os dados específicos do PowerV
+|-- schema: public
+|   |-- companies          -> tenants (um por cliente, compartilhado entre produtos)
+|   |-- profiles           -> dados basicos do usuario
+|   |-- user_roles         -> roles globais (super_admin, admin, manager, seller)
+|   |-- subscriptions      -> qual company tem acesso a qual produto/plano
+|   |-- auth.users         -> Supabase Auth nativo
+|
+|-- schema: veltzy
+|   |-- leads, messages, pipeline_stages, lead_sources, goals, goal_metrics...
+|   |-- Todos os dados especificos do Veltzy
+|
+|-- schema: leadbaze
+|   |-- campaigns, contacts, broadcasts, automations...
+|   |-- Todos os dados especificos do Leadbaze
+|
+|-- schema: powerv
+    |-- governance_modules, okrs, valuations...
+    |-- Todos os dados especificos do PowerV
 
 Frontend (Vercel)
-├── app.veltzy.com     → React app do Veltzy
-├── app.leadbaze.com   → React app do Leadbaze
-├── app.veltz.group    → Portal hub
-└── app.[powerv].com   → React app do PowerV
+|-- app.veltzy.com     -> React app do Veltzy
+|-- app.leadbaze.com   -> React app do Leadbaze
+|-- app.veltz.group    -> Portal hub
+|-- app.[powerv].com   -> React app do PowerV
 
 Landing Pages (Vercel)
-├── veltzy.com         → Site de vendas do Veltzy
-├── leadbaze.com       → Site de vendas do Leadbaze
-└── veltz.group        → Site institucional do grupo
+|-- veltzy.com         -> Site de vendas do Veltzy
+|-- leadbaze.com       -> Site de vendas do Leadbaze
+|-- veltz.group        -> Site institucional do grupo
 ```
 
 ## FLUXO DE VALOR ENTRE PRODUTOS
 
 ```
-Leadbaze → captura lead via tráfego pago → dispara campanha WhatsApp/email
-    ↓
-Lead responde → passa para Veltzy → vendedor atende em tempo real → fecha negócio
-    ↓
-Empresa cresce → contrata PowerV → estrutura governança para escalar ou vender
+Leadbaze -> captura lead via trafego pago -> dispara campanha WhatsApp/email
+    |
+Lead responde -> passa para Veltzy -> vendedor atende em tempo real -> fecha negocio
+    |
+Empresa cresce -> contrata PowerV -> estrutura governanca para escalar ou vender
 ```
 
-## AUTENTICAÇÃO (SSO)
+## AUTENTICACAO (SSO)
 
-Um único JWT do Supabase Central é aceito em todos os produtos.
+Um unico JWT do Supabase Central e aceito em todos os produtos.
 
 Fluxos de acesso:
-1. **Produto avulso**: usuário acessa `app.veltzy.com` → faz login → vê só o Veltzy
-2. **Portal hub**: usuário acessa `app.veltz.group` → faz login → vê todos os produtos contratados → clica em um → entra sem novo login (SSO via token compartilhado)
+1. **Produto avulso**: usuario acessa `app.veltzy.com` -> faz login -> ve so o Veltzy
+2. **Portal hub**: usuario acessa `app.veltz.group` -> faz login -> ve todos os produtos contratados -> clica em um -> entra sem novo login (SSO via token compartilhado)
 3. **Upgrade**: dentro de qualquer produto, banner discreto oferece outros produtos do ecossistema
+
+**Nota:** Enquanto o Veltzy nao migrar para o Central, auth e feito via Supabase proprio.
 
 ## SUBSCRIPTIONS (CONTROLE DE ACESSO)
 
@@ -102,25 +127,18 @@ subscriptions (
 ```
 
 Cada produto verifica no boot se existe `subscription` ativa para aquele `company_id + product`.
-Se não existir → redireciona para página de upgrade.
+Se nao existir -> redireciona para pagina de upgrade.
 
-## STACK PADRÃO (TODOS OS PRODUTOS)
+## STACK PADRAO (TODOS OS PRODUTOS)
 
 - **Frontend:** React 18 + Vite 5 + TypeScript 5 + Tailwind CSS 3 + shadcn/ui
 - **State:** TanStack React Query v5 + Zustand
-- **Backend:** Supabase Central (Auth, DB, Realtime, Storage, Edge Functions)
+- **Backend:** Supabase (Auth, DB, Realtime, Storage, Edge Functions)
 - **Deploy:** Vercel
-- **Idiomas:** PT-BR + EN (i18n via react-i18next)
-- **Fuso:** America/Sao_Paulo (BR) / America/New_York (US)
+- **Idioma:** PT-BR (i18n planejado para futuro)
+- **Fuso:** America/Sao_Paulo
 
-## INTERNACIONALIZAÇÃO
-
-Todos os produtos suportam PT-BR e EN.
-Detecção automática via browser language.
-Strings em `src/locales/pt-BR.json` e `src/locales/en.json`.
-Hook: `useTranslation()` do react-i18next.
-
-## CONVENÇÕES GLOBAIS
+## CONVENCOES GLOBAIS
 
 ### Multi-tenant
 - TODA query filtra por `company_id`
@@ -128,24 +146,24 @@ Hook: `useTranslation()` do react-i18next.
 - RLS em todas as tabelas: `company_id = get_current_company_id() OR is_super_admin()`
 
 ### Schemas
-- Dados compartilhados → schema `public`
-- Dados do Veltzy → schema `veltzy`
-- Dados do Leadbaze → schema `leadbaze`
-- Dados do PowerV → schema `powerv`
+- Dados compartilhados -> schema `public`
+- Dados do Veltzy -> schema `veltzy`
+- Dados do Leadbaze -> schema `leadbaze`
+- Dados do PowerV -> schema `powerv`
 - Nunca misturar dados de produto no schema `public`
 
 ### Subscriptions
 - Todo produto verifica subscription no boot
-- Hook: `useSubscription(product)` → `{ isActive, plan, trialDaysLeft }`
-- Se não ativo → componente `<UpgradePrompt product="veltzy" />`
+- Hook: `useSubscription(product)` -> `{ isActive, plan, trialDaysLeft }`
+- Se nao ativo -> componente `<UpgradePrompt product="veltzy" />`
 
-### Naming de variáveis de ambiente
+### Naming de variaveis de ambiente
 ```
 # Supabase Central (igual em todos os produtos)
 VITE_SUPABASE_URL=https://zxefzegggntfjlfsdgvw.supabase.co
 VITE_SUPABASE_ANON_KEY=
 
-# Produto específico
+# Produto especifico
 VITE_PRODUCT=veltzy          # 'veltzy' | 'leadbaze' | 'powerv'
 VITE_APP_URL=https://app.veltzy.com
 VITE_APP_NAME=Veltzy
@@ -154,14 +172,14 @@ VITE_APP_NAME=Veltzy
 ## SUPER ADMIN (Daxen Labs)
 
 - Acesso em `app.veltz.group/super-admin`
-- Visão global de TODOS os tenants de TODOS os produtos
+- Visao global de TODOS os tenants de TODOS os produtos
 - Gerencia subscriptions (ativar, cancelar, alterar plano)
-- Impersonação de qualquer empresa em qualquer produto
+- Impersonacao de qualquer empresa em qualquer produto
 - Dashboard de receita consolidada do ecossistema
 
-## PRODUTOS E SLUGS (IMUTÁVEIS)
+## PRODUTOS E SLUGS (IMUTAVEIS)
 
-Os slugs abaixo são definitivos e não devem ser alterados pois são usados em subscriptions, logs e integrações:
+Os slugs abaixo sao definitivos e nao devem ser alterados pois sao usados em subscriptions, logs e integracoes:
 
 | Produto | Slug |
 |---|---|
@@ -170,11 +188,11 @@ Os slugs abaixo são definitivos e não devem ser alterados pois são usados em 
 | PowerV | `powerv` |
 | Portal Hub | `hub` |
 
-## ROADMAP DE INTEGRAÇÃO
+## ROADMAP DE INTEGRACAO
 
 ```
-Fase atual:  Veltzy standalone (Supabase próprio)
-Próximo:     Supabase Central criado + schema veltzy migrado
+Fase atual:  Veltzy standalone (Supabase proprio, frwzyfnrztotkggvksci)
+Proximo:     Supabase Central criado + schema veltzy migrado
 Depois:      Leadbaze migrado para Central
 Depois:      Portal hub app.veltz.group
 Depois:      PowerV entra no ecossistema
@@ -182,10 +200,11 @@ Futuro:      Billing integrado (Asaas/Stripe)
 Futuro:      IA cross-produto (Leadbaze + Veltzy vendo o mesmo lead)
 ```
 
-## O QUE NÃO FAZER
+## O QUE NAO FAZER
 
-- NÃO criar projetos Supabase separados por produto (tudo no Central)
-- NÃO duplicar tabela de `companies` em cada produto
-- NÃO usar auth diferente por produto (sempre Supabase Central)
-- NÃO hardcodar slugs de produto (sempre usar `VITE_PRODUCT`)
-- NÃO criar schemas com nome genérico (sempre prefixar com o produto)
+- NAO criar projetos Supabase separados por produto (tudo no Central, quando migrado)
+- NAO duplicar tabela de `companies` em cada produto
+- NAO usar auth diferente por produto (sempre Supabase Central)
+- NAO hardcodar slugs de produto (sempre usar `VITE_PRODUCT`)
+- NAO criar schemas com nome generico (sempre prefixar com o produto)
+- NAO usar Lovable AI Gateway ou qualquer dependencia Lovable (removido)
