@@ -44,7 +44,7 @@ const MiniChart = ({ title, icon: Icon, dataKey, color, data, formatter }: MiniC
   <div className="bg-card border border-border/30 rounded-xl p-4">
     <div className="flex items-center gap-2 mb-3">
       <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-      <span className="text-xs font-medium text-muted-foreground">{title}</span>
+      <span className="text-sm font-medium text-muted-foreground">{title}</span>
     </div>
     <div className="h-[180px]">
       <ResponsiveContainer width="100%" height="100%">
@@ -89,7 +89,7 @@ const MonthlyComparisonGrid = () => {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <BarChart3 className="h-4 w-4 text-primary" />
-          <h3 className="text-sm font-semibold text-foreground">Comparativo Mensal</h3>
+          <h3 className="text-xl font-semibold text-foreground">Comparativo Mensal</h3>
         </div>
         <select
           value={months}
