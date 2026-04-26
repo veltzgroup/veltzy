@@ -16,6 +16,8 @@ export const useAuthInit = () => {
   useEffect(() => {
     const loadUserData = async (userId: string) => {
       try {
+        setIsLoading(true)
+
         const [profile, roles] = await Promise.all([
           getProfile(userId),
           getUserRoles(userId),
@@ -30,9 +32,9 @@ export const useAuthInit = () => {
         }
       } catch (err) {
         console.error('Erro ao carregar dados do usuario:', err)
-      } finally {
-        setIsLoading(false)
       }
+
+      setIsLoading(false)
     }
 
     supabase.auth.getSession().then(({ data: { session } }) => {

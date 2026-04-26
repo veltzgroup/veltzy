@@ -29,7 +29,7 @@ const ProtectedRoute = ({ children, skipCompanyCheck = false, requireRole }: Pro
   }
 
   if (requireRole && !requireRole.some((r) => roles.includes(r))) {
-    return <Navigate to="/settings" replace />
+    return <Navigate to="/" replace />
   }
 
   return <>{children}</>
