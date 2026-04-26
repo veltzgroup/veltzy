@@ -34,7 +34,9 @@ const StageRow = ({ stage }: { stage: PipelineStage }) => {
       <Input value={name} onChange={(e) => setName(e.target.value)} onBlur={handleBlur} className="h-7 flex-1 text-xs" />
       <span className="text-[10px] text-muted-foreground whitespace-nowrap">pos {stage.position}</span>
       {stage.is_final && (
-        <span className="text-[10px] text-muted-foreground">{stage.is_positive ? 'Ganho' : 'Perdido'}</span>
+        <span className="text-[10px] text-muted-foreground" title="Fase de conclusao - leads nesta fase nao contam como ativos para o limite do vendedor">
+          {stage.is_positive ? 'Ganho' : 'Perdido'}
+        </span>
       )}
       <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => confirm(`Remover "${stage.name}"?`) && deleteStage.mutate(stage.id)}>
         <Trash2 className="h-3 w-3" />

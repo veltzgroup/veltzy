@@ -13,6 +13,7 @@ import { PipelineTab } from '@/components/admin/pipeline-tab'
 import { ThemeCustomizer } from '@/components/company/theme-customizer'
 import { ActivityLogsDashboard } from '@/components/admin/activity-logs-dashboard'
 import { SdrTab } from '@/components/admin/sdr-tab'
+import { BusinessRulesTab } from '@/components/admin/business-rules-tab'
 import { useAuthStore } from '@/stores/auth.store'
 import { updateCompany } from '@/services/company.service'
 
@@ -97,6 +98,7 @@ const AdminPage = () => {
           <TabsTrigger value="permissoes">Permissões</TabsTrigger>
           <TabsTrigger value="integracoes">Integrações</TabsTrigger>
           <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
+          <TabsTrigger value="regras">Regras</TabsTrigger>
           <TabsTrigger value="empresa">Empresa</TabsTrigger>
           <TabsTrigger value="aparencia">Aparência</TabsTrigger>
           <TabsTrigger value="logs-avancados">Logs avançados</TabsTrigger>
@@ -105,6 +107,7 @@ const AdminPage = () => {
         <TabsContent value="permissoes" className="mt-4"><PermissoesPlaceholder /></TabsContent>
         <TabsContent value="integracoes" className="mt-4"><IntegrationsTab /></TabsContent>
         <TabsContent value="pipeline" className="mt-4"><PipelineTab /></TabsContent>
+        <TabsContent value="regras" className="mt-4"><BusinessRulesTab /></TabsContent>
         <TabsContent value="empresa" className="mt-4"><EmpresaTab /></TabsContent>
         <TabsContent value="aparencia" className="mt-4"><ThemeCustomizer /></TabsContent>
         <TabsContent value="logs-avancados" className="mt-4"><ActivityLogsDashboard /></TabsContent>
