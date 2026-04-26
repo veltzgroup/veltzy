@@ -11,7 +11,8 @@ import {
 } from '@dnd-kit/core'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Loader2 } from 'lucide-react'
+import { AlertCircle, Loader2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { StageColumn } from '@/components/pipeline/stage-column'
 import { LeadCard } from '@/components/pipeline/lead-card'
 import { CreateLeadModal } from '@/components/pipeline/create-lead-modal'
@@ -27,8 +28,8 @@ import type { LeadWithDetails } from '@/types/database'
 
 const PipelineBoard = () => {
   const queryClient = useQueryClient()
-  const { data: stages, isLoading: stagesLoading } = usePipelineStages()
-  const { data: leads, isLoading: leadsLoading } = useLeads()
+  const { data: stages, isLoading: stagesLoading, isError: stagesError, refetch: refetchStages } = usePipelineStages()
+  const { data: leads, isLoading: leadsLoading, isError: leadsError, refetch: refetchLeads } = useLeads()
   const moveLeadToStage = useMoveLeadToStage()
 
   const { activeLeadId, setActiveLeadId, selectedLeadId, setSelectedLeadId, filters } = usePipelineStore()
@@ -134,6 +135,18 @@ const PipelineBoard = () => {
     return (
       <div className="flex h-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  if (stagesError || leadsError) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-3">
+        <AlertCircle className="h-8 w-8 text-destructive" />
+        <p className="text-sm text-muted-foreground">Erro ao carregar o pipeline</p>
+        <Button variant="outline" size="sm" onClick={() => { refetchStages(); refetchLeads() }}>
+          Tentar novamente
+        </Button>
       </div>
     )
   }
