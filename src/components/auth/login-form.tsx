@@ -11,7 +11,7 @@ import { useAuth } from '@/hooks/use-auth'
 
 const loginSchema = z.object({
   email: z.string().email('Email invalido'),
-  password: z.string().min(6, 'Minimo 6 caracteres'),
+  password: z.string().min(8, 'Minimo 8 caracteres'),
 })
 
 type LoginValues = z.infer<typeof loginSchema>

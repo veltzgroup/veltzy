@@ -12,8 +12,12 @@ import { useAuth } from '@/hooks/use-auth'
 const registerSchema = z.object({
   name: z.string().min(2, 'Minimo 2 caracteres'),
   email: z.string().email('Email invalido'),
-  password: z.string().min(6, 'Minimo 6 caracteres'),
-  confirmPassword: z.string().min(6, 'Minimo 6 caracteres'),
+  password: z.string()
+    .min(8, 'Minimo 8 caracteres')
+    .regex(/[A-Z]/, 'Deve conter letra maiuscula')
+    .regex(/[a-z]/, 'Deve conter letra minuscula')
+    .regex(/\d/, 'Deve conter numero'),
+  confirmPassword: z.string().min(8, 'Minimo 8 caracteres'),
 }).refine((data) => data.password === data.confirmPassword, {
   message: 'Senhas nao conferem',
   path: ['confirmPassword'],

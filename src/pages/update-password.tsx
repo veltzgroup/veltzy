@@ -12,8 +12,12 @@ import { Label } from '@/components/ui/label'
 import { updatePassword } from '@/services/auth.service'
 
 const passwordSchema = z.object({
-  password: z.string().min(6, 'Minimo 6 caracteres'),
-  confirmPassword: z.string().min(6, 'Minimo 6 caracteres'),
+  password: z.string()
+    .min(8, 'Minimo 8 caracteres')
+    .regex(/[A-Z]/, 'Deve conter letra maiuscula')
+    .regex(/[a-z]/, 'Deve conter letra minuscula')
+    .regex(/\d/, 'Deve conter numero'),
+  confirmPassword: z.string().min(8, 'Minimo 8 caracteres'),
 }).refine((data) => data.password === data.confirmPassword, {
   message: 'Senhas nao conferem',
   path: ['confirmPassword'],

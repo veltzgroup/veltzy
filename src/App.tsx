@@ -81,13 +81,13 @@ const App = () => {
                 <Route path="/pipeline" element={<PipelinePage />} />
                 <Route path="/inbox" element={<InboxPage />} />
                 <Route path="/deals" element={<DealsPage />} />
-                <Route path="/gestao" element={<GestaoPage />} />
+                <Route path="/gestao" element={<ProtectedRoute requireRole={['manager', 'admin', 'super_admin']}><GestaoPage /></ProtectedRoute>} />
                 <Route path="/sellers" element={<Navigate to="/gestao?tab=vendedores" replace />} />
                 <Route path="/settings" element={<Navigate to="/minha-conta" replace />} />
                 <Route path="/minha-conta" element={<MinhaContaPage />} />
-                <Route path="/admin" element={<AdminPage />} />
+                <Route path="/admin" element={<ProtectedRoute requireRole={['admin', 'super_admin']}><AdminPage /></ProtectedRoute>} />
                 <Route path="/company" element={<Navigate to="/admin?tab=empresa" replace />} />
-                <Route path="/super-admin" element={<SuperAdminPage />} />
+                <Route path="/super-admin" element={<ProtectedRoute requireRole={['super_admin']}><SuperAdminPage /></ProtectedRoute>} />
               </Route>
 
               <Route path="*" element={<NotFoundPage />} />
