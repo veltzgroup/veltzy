@@ -178,13 +178,13 @@ const DealsPage = () => {
               <thead>
                 <tr className="border-b border-border/30">
                   <th className={cn(thClass, 'text-left w-[22%]')}>Contato</th>
-                  <th className={cn(thClass, 'text-center w-[5%]')}>Chat</th>
-                  <th className={cn(thClass, 'text-right w-[12%]')}>Valor</th>
-                  <th className={cn(thClass, 'text-center w-[12%]')}>Etapa</th>
-                  <th className={cn(thClass, 'text-center w-[14%]')}>Temperatura</th>
-                  <th className={cn(thClass, 'text-center w-[11%]')}>Origem</th>
-                  <th className={cn(thClass, 'text-center w-[12%]')}>Responsavel</th>
-                  <th className={cn(thClass, 'text-right w-[10%]')}>Criado em</th>
+                  <th className={cn(thClass, 'text-left w-[5%]')}>Chat</th>
+                  <th className={cn(thClass, 'text-left w-[12%]')}>Valor</th>
+                  <th className={cn(thClass, 'text-left w-[12%]')}>Etapa</th>
+                  <th className={cn(thClass, 'text-left w-[14%]')}>Temperatura</th>
+                  <th className={cn(thClass, 'text-left w-[11%]')}>Origem</th>
+                  <th className={cn(thClass, 'text-left w-[12%]')}>Responsavel</th>
+                  <th className={cn(thClass, 'text-left w-[10%]')}>Criado em</th>
                 </tr>
               </thead>
               <tbody>
@@ -220,22 +220,22 @@ const DealsPage = () => {
                       </td>
 
                       {/* Chat */}
-                      <td className="py-3 text-center">
+                      <td className="py-3 text-left">
                         <button
                           onClick={() => navigate(`/inbox?lead=${lead.id}`)}
-                          className="inline-flex items-center justify-center text-muted-foreground hover:text-primary transition-smooth cursor-pointer"
+                          className="inline-flex items-center text-muted-foreground hover:text-primary transition-smooth cursor-pointer"
                         >
                           <MessageSquare className="h-4 w-4" />
                         </button>
                       </td>
 
                       {/* Valor */}
-                      <td className="py-3 text-right font-semibold text-primary">
+                      <td className="py-3 text-left font-semibold text-primary">
                         {lead.deal_value ? fmt(lead.deal_value) : '-'}
                       </td>
 
                       {/* Etapa */}
-                      <td className="py-3 text-center">
+                      <td className="py-3 text-left">
                         {stage && (
                           <span className="inline-flex items-center gap-1.5 text-xs">
                             <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: stage.color }} />
@@ -245,7 +245,7 @@ const DealsPage = () => {
                       </td>
 
                       {/* Temperatura */}
-                      <td className="py-3 text-center">
+                      <td className="py-3 text-left">
                         <span className="inline-flex items-center gap-1.5 text-xs">
                           <span className={cn('h-2 w-2 rounded-full shrink-0', temp.dotColor)} />
                           {temp.label}
@@ -253,7 +253,7 @@ const DealsPage = () => {
                       </td>
 
                       {/* Origem */}
-                      <td className="py-3 text-center">
+                      <td className="py-3 text-left">
                         {source?.name ? (
                           <span
                             className="inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium"
@@ -270,12 +270,12 @@ const DealsPage = () => {
                       </td>
 
                       {/* Responsavel */}
-                      <td className="py-3 text-center text-xs">
+                      <td className="py-3 text-left text-xs">
                         {assignedName ?? <span className="text-muted-foreground/40">Sem responsavel</span>}
                       </td>
 
                       {/* Criado em */}
-                      <td className="py-3 text-right text-xs text-muted-foreground">
+                      <td className="py-3 text-left text-xs text-muted-foreground">
                         {new Date(lead.created_at).toLocaleDateString('pt-BR')}
                       </td>
                     </tr>
