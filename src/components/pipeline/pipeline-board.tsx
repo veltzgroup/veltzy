@@ -55,11 +55,8 @@ const PipelineBoard = () => {
           l.email?.toLowerCase().includes(q)
       )
     }
-    if (fireOnly) {
-      result = result.filter((l) => l.temperature === 'fire')
-    }
     return result
-  }, [leads, filters.search, fireOnly])
+  }, [leads, filters.search])
 
   const leadsByStage = useMemo(() => {
     const map: Record<string, LeadWithDetails[]> = {}
