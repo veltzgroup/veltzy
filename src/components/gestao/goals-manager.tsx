@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { Plus, Pencil, Trash2, Target } from 'lucide-react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Dialog,
@@ -19,10 +21,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useGoals, useCreateGoal, useDeleteGoal } from '@/hooks/use-goals'
+import { useGoals, useCreateGoal, useUpdateGoal, useDeleteGoal } from '@/hooks/use-goals'
 import { useTeamMembers } from '@/hooks/use-team'
 import { useAuthStore } from '@/stores/auth.store'
-import type { CreateGoalInput, MetricType } from '@/services/goals.service'
+import { createGoalWithMetrics } from '@/services/goals.service'
+import type { CreateGoalInput, MetricType, Goal } from '@/services/goals.service'
 
 interface MetricRow {
   metric_type: MetricType
@@ -57,9 +60,11 @@ export const GoalsManager = () => {
   const { data: goals, isLoading } = useGoals()
   const { data: members } = useTeamMembers()
   const createGoal = useCreateGoal()
+  const updateGoal = useUpdateGoal()
   const deleteGoal = useDeleteGoal()
 
   const [open, setOpen] = useState(false)
+  const [editingGoal, setEditingGoal] = useState<Goal | null>(null)
   const [title, setTitle] = useState('')
   const [cycleType, setCycleType] = useState<'monthly' | 'sprint' | 'custom'>('monthly')
   const currentYear = new Date().getFullYear()
@@ -81,8 +86,36 @@ export const GoalsManager = () => {
     setMetrics([emptyMetric()])
   }
 
-  const handleOpen = () => {
-    resetForm()
+  const handleOpen = (goal?: Goal) => {
+    if (goal) {
+      setEditingGoal(goal)
+      setTitle(goal.title)
+      setCycleType(goal.cycle_type)
+      setVisibleToSellers(goal.visible_to_sellers)
+      if (goal.cycle_type === 'monthly') {
+        const d = new Date(goal.start_date + 'T12:00:00')
+        setSelectedMonth(String(d.getMonth() + 1).padStart(2, '0'))
+        setSelectedYear(String(d.getFullYear()))
+        setStartDate('')
+        setEndDate('')
+      } else {
+        setSelectedMonth('')
+        setSelectedYear('')
+        setStartDate(goal.start_date)
+        setEndDate(goal.end_date)
+      }
+      setMetrics(
+        goal.goal_metrics?.map((m) => ({
+          metric_type: m.metric_type,
+          target_value: String(m.target_value),
+          applies_to: m.applies_to,
+          profile_id: m.profile_id,
+        })) ?? [emptyMetric()]
+      )
+    } else {
+      setEditingGoal(null)
+      resetForm()
+    }
     setOpen(true)
   }
 
@@ -127,23 +160,24 @@ export const GoalsManager = () => {
       visible_to_sellers: visibleToSellers,
     }
 
+    const validMetrics = metrics
+      .filter((m) => m.target_value)
+      .map((m) => ({
+        metric_type: m.metric_type,
+        target_value: Number(m.target_value),
+        applies_to: m.applies_to,
+        profile_id: m.applies_to === 'individual' ? m.profile_id : null,
+      }))
+
     try {
-      const goal = await createGoal.mutateAsync(goalInput)
-      // Create metrics sequentially after goal creation
-      const { createGoalMetric } = await import('@/services/goals.service')
-      for (const m of metrics) {
-        if (!m.target_value) continue
-        await createGoalMetric(companyId!, {
-          goal_id: goal.id,
-          metric_type: m.metric_type,
-          target_value: Number(m.target_value),
-          applies_to: m.applies_to,
-          profile_id: m.applies_to === 'individual' ? m.profile_id : null,
-        })
+      if (editingGoal) {
+        await updateGoal.mutateAsync({ id: editingGoal.id, data: goalInput })
+      } else {
+        await createGoalWithMetrics(companyId!, goalInput, validMetrics)
       }
       setOpen(false)
-    } catch {
-      // error handled by mutation onError
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao salvar meta')
     }
   }
 
@@ -151,14 +185,33 @@ export const GoalsManager = () => {
     new Date(date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
 
   if (isLoading) {
-    return <div className="text-muted-foreground text-sm p-4">Carregando metas...</div>
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between pr-4">
+          <Skeleton className="h-6 w-40" />
+          <Skeleton className="h-9 w-28" />
+        </div>
+        {[1, 2].map((i) => (
+          <Card key={i}>
+            <CardContent className="p-5 space-y-3">
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-5 w-48" />
+                <Skeleton className="h-8 w-20" />
+              </div>
+              <Skeleton className="h-4 w-36" />
+              <Skeleton className="h-4 w-64" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    )
   }
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between pr-4">
         <h2 className="text-lg font-semibold text-foreground">Metas Comerciais</h2>
-        <Button onClick={handleOpen} size="sm">
+        <Button onClick={() => handleOpen()} size="sm">
           <Plus className="h-4 w-4 mr-1" />
           Nova Meta
         </Button>
@@ -193,13 +246,17 @@ export const GoalsManager = () => {
                     </span>
                   </div>
                   <div className="flex gap-1">
-                    <Button variant="ghost" size="sm" disabled>
+                    <Button variant="ghost" size="sm" onClick={() => handleOpen(goal)}>
                       <Pencil className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => deleteGoal.mutate(goal.id)}
+                      onClick={() => {
+                        if (confirm('Tem certeza que deseja excluir esta meta? Todas as metricas configuradas serao removidas.')) {
+                          deleteGoal.mutate(goal.id)
+                        }
+                      }}
                     >
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
@@ -241,7 +298,7 @@ export const GoalsManager = () => {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Nova Meta</DialogTitle>
+            <DialogTitle>{editingGoal ? 'Editar Meta' : 'Nova Meta'}</DialogTitle>
             <DialogDescription>Configure o titulo, periodo e metricas da meta.</DialogDescription>
           </DialogHeader>
 
@@ -446,9 +503,9 @@ export const GoalsManager = () => {
             </Button>
             <Button
               onClick={handleSave}
-              disabled={!title || createGoal.isPending}
+              disabled={!title || createGoal.isPending || updateGoal.isPending}
             >
-              {createGoal.isPending ? 'Salvando...' : 'Salvar'}
+              {(createGoal.isPending || updateGoal.isPending) ? 'Salvando...' : 'Salvar'}
             </Button>
           </DialogFooter>
         </DialogContent>

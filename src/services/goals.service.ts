@@ -72,6 +72,24 @@ export const deleteGoal = async (companyId: string, id: string): Promise<void> =
   if (error) throw error
 }
 
+export const createGoalWithMetrics = async (
+  companyId: string,
+  goalInput: CreateGoalInput,
+  metrics: Omit<CreateGoalMetricInput, 'goal_id'>[]
+): Promise<Goal> => {
+  const goal = await createGoal(companyId, goalInput)
+  try {
+    for (const m of metrics) {
+      await createGoalMetric(companyId, { ...m, goal_id: goal.id })
+    }
+    const updated = await getGoals(companyId)
+    return updated.find((g) => g.id === goal.id) ?? goal
+  } catch (err) {
+    await deleteGoal(companyId, goal.id).catch(() => {})
+    throw err
+  }
+}
+
 export const createGoalMetric = async (companyId: string, input: CreateGoalMetricInput): Promise<GoalMetric> => {
   const { data: goal } = await veltzy()
     .from('goals')
