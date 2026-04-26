@@ -5,6 +5,7 @@ import {
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useMonthlyComparisonGrid } from '@/hooks/use-dashboard-metrics'
+import type { MonthlyGridData } from '@/services/dashboard.service'
 
 const periodOptions = [
   { label: '3 meses', value: 3 },
@@ -17,7 +18,7 @@ interface MiniChartProps {
   icon: React.ElementType
   dataKey: string
   color: string
-  data: Array<Record<string, unknown>>
+  data: MonthlyGridData[]
   formatter?: (v: number) => string
 }
 
