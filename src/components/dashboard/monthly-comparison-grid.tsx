@@ -44,8 +44,8 @@ const CustomLabel = ({ x, y, width, index, data, dataKey }: {
 }) => {
   if (index === undefined || x === undefined || y === undefined || width === undefined) return null
   if (index === 0 || !data[index - 1]) return null
-  const prev = (data[index - 1] as Record<string, unknown>)[dataKey] as number
-  const curr = (data[index] as Record<string, unknown>)[dataKey] as number
+  const prev = (data[index - 1] as unknown as Record<string, number>)[dataKey]
+  const curr = (data[index] as unknown as Record<string, number>)[dataKey]
   if (!prev || prev === 0) return null
   const pct = ((curr - prev) / prev * 100).toFixed(0)
   const isPositive = curr >= prev
