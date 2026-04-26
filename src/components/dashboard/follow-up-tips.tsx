@@ -91,9 +91,9 @@ const FollowUpTips = () => {
     <div className="bg-card border border-border/30 rounded-2xl p-5">
       <div className="flex items-center gap-2 mb-0.5">
         <Lightbulb className="h-4 w-4 text-primary" />
-        <h3 className="text-xl font-semibold text-foreground">Dicas de Follow-up</h3>
+        <h3 className="text-base font-semibold text-foreground">Dicas de Follow-up</h3>
       </div>
-      <p className="text-sm text-muted-foreground mb-5">
+      <p className="text-xs text-muted-foreground mb-5">
         Sugestoes inteligentes baseadas nos seus leads
       </p>
 
@@ -110,12 +110,12 @@ const FollowUpTips = () => {
               <card.icon className={cn('h-4 w-4 mt-0.5 shrink-0', card.iconColor)} />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-base font-medium text-foreground">{card.title}</span>
+                  <span className="text-sm font-medium text-foreground">{card.title}</span>
                   <span className={cn('text-[10px] font-medium px-1.5 py-0.5 rounded-full', card.badgeClass)}>
                     {card.badge}
                   </span>
                 </div>
-                <p className="text-sm text-muted-foreground leading-relaxed">{card.description}</p>
+                <p className="text-xs text-muted-foreground leading-relaxed">{card.description}</p>
               </div>
             </div>
           </div>

@@ -30,8 +30,8 @@ const PipelineOverviewCard = () => {
 
   return (
     <div className="bg-card border border-border/30 rounded-2xl p-5">
-      <h3 className="text-xl font-semibold text-foreground">Visao do Pipeline</h3>
-      <p className="text-sm text-muted-foreground mt-0.5 mb-5">
+      <h3 className="text-base font-semibold text-foreground">Visao do Pipeline</h3>
+      <p className="text-xs text-muted-foreground mt-0.5 mb-5">
         Distribuicao de leads por etapa
       </p>
 
@@ -44,9 +44,9 @@ const PipelineOverviewCard = () => {
                   className="h-2.5 w-2.5 rounded-full shrink-0"
                   style={{ backgroundColor: stage.color }}
                 />
-                <span className="text-base font-medium text-foreground">{stage.name}</span>
+                <span className="text-sm font-medium text-foreground">{stage.name}</span>
               </div>
-              <div className="flex items-center gap-3 text-base">
+              <div className="flex items-center gap-3 text-sm">
                 <span className="text-muted-foreground">{stage.count}</span>
                 {stage.value > 0 && (
                   <span className="font-semibold text-primary">{fmt(stage.value)}</span>
@@ -69,8 +69,8 @@ const PipelineOverviewCard = () => {
 
       <div className="border-t border-border/30 mt-5 pt-4">
         <div className="flex items-center justify-between">
-          <span className="text-base font-medium text-foreground">Total em Pipeline</span>
-          <div className="flex items-center gap-3 text-base">
+          <span className="text-sm font-medium text-foreground">Total em Pipeline</span>
+          <div className="flex items-center gap-3 text-sm">
             <span className="text-muted-foreground">{totalLeads} leads</span>
             <span className="font-semibold text-primary">{fmt(totalValue)}</span>
           </div>
