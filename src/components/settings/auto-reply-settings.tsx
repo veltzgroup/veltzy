@@ -91,7 +91,7 @@ const AutoReplySettings = () => {
           <div className="flex items-center gap-3">
             <label className="relative inline-flex cursor-pointer items-center">
               <input type="checkbox" className="peer sr-only" {...register('enabled')} />
-              <div className="peer h-5 w-9 rounded-full bg-muted after:absolute after:left-[2px] after:top-[2px] after:h-4 after:w-4 after:rounded-full after:bg-background after:transition-all peer-checked:bg-primary peer-checked:after:translate-x-full" />
+              <div className="peer h-5 w-9 rounded-full bg-muted-foreground/40 after:absolute after:left-[2px] after:top-[2px] after:h-4 after:w-4 after:rounded-full after:bg-background after:transition-all peer-checked:bg-primary peer-checked:after:translate-x-full" />
             </label>
             <span className="text-sm">{enabled ? 'Ativo' : 'Desativado'}</span>
           </div>

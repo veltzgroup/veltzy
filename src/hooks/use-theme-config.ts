@@ -13,13 +13,24 @@ const applyTheme = (theme: Theme) => {
   }
 }
 
+function ensureContrastOnDark(hslColor: string, isDark: boolean): string {
+  if (!isDark) return hslColor
+  const match = hslColor.match(/(\d+)\s+(\d+)%?\s+(\d+)%?/)
+  if (!match) return hslColor
+  const [, h, s, l] = match.map(Number)
+  if (l < 20) return `${h} ${s}% 55%`
+  return hslColor
+}
+
 const applyCompanyColors = (primaryColor?: string, secondaryColor?: string) => {
   const root = document.documentElement
+  const isDark = root.classList.contains('dark')
   if (primaryColor) {
-    root.style.setProperty('--primary', primaryColor)
-    root.style.setProperty('--ring', primaryColor)
-    root.style.setProperty('--sidebar-primary', primaryColor)
-    root.style.setProperty('--glow-primary', primaryColor)
+    const adjusted = ensureContrastOnDark(primaryColor, isDark)
+    root.style.setProperty('--primary', adjusted)
+    root.style.setProperty('--ring', adjusted)
+    root.style.setProperty('--sidebar-primary', adjusted)
+    root.style.setProperty('--glow-primary', adjusted)
   }
   if (secondaryColor) {
     root.style.setProperty('--secondary', secondaryColor)
@@ -36,7 +47,10 @@ export const useThemeConfig = () => {
   const setTheme = useCallback((theme: Theme) => {
     localStorage.setItem(THEME_KEY, theme)
     applyTheme(theme)
-  }, [])
+    if (company) {
+      applyCompanyColors(company.primary_color, company.secondary_color)
+    }
+  }, [company])
 
   const cycleTheme = useCallback(() => {
     const current = getTheme()

@@ -42,7 +42,7 @@ const NotificationPreferencesPanel = () => {
                 checked={prefs[t.key]}
                 onChange={() => handleToggle(t.key)}
               />
-              <div className="peer h-5 w-9 rounded-full bg-muted after:absolute after:left-[2px] after:top-[2px] after:h-4 after:w-4 after:rounded-full after:bg-background after:transition-all peer-checked:bg-primary peer-checked:after:translate-x-full" />
+              <div className="peer h-5 w-9 rounded-full bg-muted-foreground/40 after:absolute after:left-[2px] after:top-[2px] after:h-4 after:w-4 after:rounded-full after:bg-background after:transition-all peer-checked:bg-primary peer-checked:after:translate-x-full" />
             </label>
           </div>
         ))}

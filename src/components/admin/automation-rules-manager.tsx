@@ -78,7 +78,7 @@ const AutomationRulesManager = () => {
                   checked={rule.is_enabled}
                   onChange={() => toggleRule.mutate({ id: rule.id, enabled: !rule.is_enabled })}
                 />
-                <div className="peer h-5 w-9 rounded-full bg-muted after:absolute after:left-[2px] after:top-[2px] after:h-4 after:w-4 after:rounded-full after:bg-background after:transition-all peer-checked:bg-primary peer-checked:after:translate-x-full" />
+                <div className="peer h-5 w-9 rounded-full bg-muted-foreground/40 after:absolute after:left-[2px] after:top-[2px] after:h-4 after:w-4 after:rounded-full after:bg-background after:transition-all peer-checked:bg-primary peer-checked:after:translate-x-full" />
               </label>
 
               <div className="flex-1 min-w-0">

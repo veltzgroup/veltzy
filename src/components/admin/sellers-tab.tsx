@@ -131,7 +131,7 @@ const SellersTab = () => {
                             checked={m.is_available}
                             onChange={() => toggleAvailability(m.id, !m.is_available)}
                           />
-                          <div className="peer h-4 w-7 rounded-full bg-muted after:absolute after:left-[2px] after:top-[2px] after:h-3 after:w-3 after:rounded-full after:bg-background after:transition-all peer-checked:bg-primary peer-checked:after:translate-x-3" />
+                          <div className="peer h-4 w-7 rounded-full bg-muted-foreground/40 after:absolute after:left-[2px] after:top-[2px] after:h-3 after:w-3 after:rounded-full after:bg-background after:transition-all peer-checked:bg-primary peer-checked:after:translate-x-3" />
                         </label>
                       </td>
                       {isAdmin && (

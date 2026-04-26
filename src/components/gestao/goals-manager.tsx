@@ -331,7 +331,7 @@ export const GoalsManager = () => {
                 aria-checked={visibleToSellers}
                 onClick={() => setVisibleToSellers(!visibleToSellers)}
                 className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors ${
-                  visibleToSellers ? 'bg-primary' : 'bg-muted'
+                  visibleToSellers ? 'bg-primary' : 'bg-muted-foreground/40'
                 }`}
               >
                 <span
