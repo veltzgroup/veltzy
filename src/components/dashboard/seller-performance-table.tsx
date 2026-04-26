@@ -62,7 +62,7 @@ const SellerPerformanceTable = ({ days }: SellerPerformanceTableProps) => {
                   </td>
                   <td className="py-3 text-right font-medium">{s.leads_count}</td>
                   <td className="py-3 text-right">
-                    <span className="font-semibold text-primary">{s.deals_count}</span>
+                    <span className="font-semibold text-emerald-500">{s.deals_count}</span>
                   </td>
                   <td className="py-3 text-right">{s.conversion_rate}%</td>
                   <td className="py-3 text-right">

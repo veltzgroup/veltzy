@@ -36,35 +36,39 @@ const PipelineOverviewCard = () => {
       </p>
 
       <div className="space-y-4">
-        {stages?.map((stage) => (
-          <div key={stage.stage_id} className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span
-                  className="h-2.5 w-2.5 rounded-full shrink-0"
-                  style={{ backgroundColor: stage.color }}
+        {stages?.map((stage) => {
+          const isClosed = !!stage.is_final
+          const stageColor = isClosed ? '#10b981' : stage.color
+          return (
+            <div key={stage.stage_id} className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span
+                    className="h-2.5 w-2.5 rounded-full shrink-0"
+                    style={{ backgroundColor: stageColor }}
+                  />
+                  <span className={`text-sm font-medium ${isClosed ? 'text-emerald-500' : 'text-foreground'}`}>{stage.name}</span>
+                </div>
+                <div className="flex items-center gap-3 text-sm">
+                  <span className="text-muted-foreground">{stage.count}</span>
+                  {stage.value > 0 && (
+                    <span className={`font-semibold ${isClosed ? 'text-emerald-500' : 'text-primary'}`}>{fmt(stage.value)}</span>
+                  )}
+                </div>
+              </div>
+              <div className="h-1.5 rounded-full bg-muted/50 overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-700 ease-out"
+                  style={{
+                    width: `${Math.max((stage.count / maxCount) * 100, 2)}%`,
+                    backgroundColor: stageColor,
+                    boxShadow: `0 0 8px ${stageColor}40`,
+                  }}
                 />
-                <span className="text-sm font-medium text-foreground">{stage.name}</span>
-              </div>
-              <div className="flex items-center gap-3 text-sm">
-                <span className="text-muted-foreground">{stage.count}</span>
-                {stage.value > 0 && (
-                  <span className="font-semibold text-primary">{fmt(stage.value)}</span>
-                )}
               </div>
             </div>
-            <div className="h-1.5 rounded-full bg-muted/50 overflow-hidden">
-              <div
-                className="h-full rounded-full transition-all duration-700 ease-out"
-                style={{
-                  width: `${Math.max((stage.count / maxCount) * 100, 2)}%`,
-                  backgroundColor: stage.color,
-                  boxShadow: `0 0 8px ${stage.color}40`,
-                }}
-              />
-            </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
 
       <div className="border-t border-border/30 mt-5 pt-4">

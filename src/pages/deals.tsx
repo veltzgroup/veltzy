@@ -119,9 +119,9 @@ const DealsPage = () => {
                 </span>
               </div>
               <div className="flex flex-col items-center gap-0.5">
-                <span className="text-sm font-medium text-primary">{closedLeads.length}</span>
+                <span className="text-sm font-medium text-emerald-500">{closedLeads.length}</span>
                 <span className="text-xs text-muted-foreground">
-                  <span className="inline-block w-1.5 h-1.5 rounded-full mr-1 align-middle bg-primary" />
+                  <span className="inline-block w-1.5 h-1.5 rounded-full mr-1 align-middle bg-emerald-500" />
                   Fechado
                 </span>
               </div>
@@ -160,7 +160,7 @@ const DealsPage = () => {
                 <span className="text-xs text-muted-foreground">Aberto</span>
               </div>
               <div className="flex flex-col items-center gap-0.5">
-                <span className="text-sm font-medium text-primary">{fmt(closedValue)}</span>
+                <span className="text-sm font-medium text-emerald-500">{fmt(closedValue)}</span>
                 <span className="text-xs text-muted-foreground">Fechado</span>
               </div>
               <div className="flex flex-col items-center gap-0.5">
@@ -230,17 +230,24 @@ const DealsPage = () => {
                       </td>
 
                       {/* Valor */}
-                      <td className="py-3 text-left font-semibold text-primary">
+                      <td className={cn('py-3 text-left font-semibold', lead.status === 'deal' ? 'text-emerald-500' : 'text-primary')}>
                         {lead.deal_value ? fmt(lead.deal_value) : '-'}
                       </td>
 
                       {/* Etapa */}
                       <td className="py-3 text-left">
                         {stage && (
-                          <span className="inline-flex items-center gap-1.5 text-xs">
-                            <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: stage.color }} />
-                            {stage.name}
-                          </span>
+                          lead.status === 'deal' ? (
+                            <span className="inline-flex items-center gap-1.5 text-xs rounded-full bg-emerald-500/15 text-emerald-500 px-2 py-0.5 font-medium">
+                              <span className="h-2 w-2 rounded-full shrink-0 bg-emerald-500" />
+                              {stage.name}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 text-xs">
+                              <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: stage.color }} />
+                              {stage.name}
+                            </span>
+                          )
                         )}
                       </td>
 

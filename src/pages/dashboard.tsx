@@ -238,7 +238,7 @@ const DashboardPage = () => {
               </p>
               <Breakdown items={[
                 { value: String(kpis?.openCount ?? 0), color: 'text-yellow-500', dotColor: 'bg-yellow-500', label: 'Aberto' },
-                { value: String(kpis?.closedCount ?? 0), color: 'text-primary', dotColor: 'bg-primary', label: 'Fechado' },
+                { value: String(kpis?.closedCount ?? 0), color: 'text-emerald-500', dotColor: 'bg-emerald-500', label: 'Fechado' },
                 { value: String(kpis?.lostCount ?? 0), color: 'text-red-500', dotColor: 'bg-red-500', label: 'Perdido' },
               ]} />
             </div>
@@ -269,7 +269,7 @@ const DashboardPage = () => {
               </p>
               <Breakdown items={[
                 { value: fmt(kpis?.openValue ?? 0), color: 'text-yellow-500', dotColor: 'bg-yellow-500', label: 'Aberto' },
-                { value: fmt(kpis?.closedValue ?? 0), color: 'text-primary', dotColor: 'bg-primary', label: 'Fechado' },
+                { value: fmt(kpis?.closedValue ?? 0), color: 'text-emerald-500', dotColor: 'bg-emerald-500', label: 'Fechado' },
                 { value: fmt(kpis?.lostValue ?? 0), color: 'text-red-500', dotColor: 'bg-red-500', label: 'Perdido' },
               ]} />
             </div>

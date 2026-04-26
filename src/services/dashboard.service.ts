@@ -109,7 +109,7 @@ export const getLeadsBySource = async (companyId: string): Promise<SourceMetrics
 }
 
 export const getPipelineOverview = async (companyId: string): Promise<StageMetrics[]> => {
-  const { data: stages, error: stagesError } = await veltzy().from('pipeline_stages').select('id, name, color, position').eq('company_id', companyId).order('position')
+  const { data: stages, error: stagesError } = await veltzy().from('pipeline_stages').select('id, name, color, position, is_final').eq('company_id', companyId).order('position')
   if (stagesError) throw stagesError
   const { data: leads, error: leadsError } = await veltzy().from('leads').select('stage_id, deal_value').eq('company_id', companyId)
   if (leadsError) throw leadsError
@@ -124,6 +124,7 @@ export const getPipelineOverview = async (companyId: string): Promise<StageMetri
   return (stages ?? []).map((s) => ({
     stage_id: s.id, name: s.name, color: s.color, position: s.position,
     count: map[s.id]?.count ?? 0, value: map[s.id]?.value ?? 0,
+    is_final: s.is_final,
   }))
 }
 

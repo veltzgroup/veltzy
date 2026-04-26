@@ -319,6 +319,7 @@ export interface StageMetrics {
   position: number
   count: number
   value: number
+  is_final?: boolean
 }
 
 export interface SellerMetrics {
