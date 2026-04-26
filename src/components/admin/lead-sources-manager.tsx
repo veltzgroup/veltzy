@@ -4,11 +4,11 @@ import { toast } from 'sonner'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { ColorPicker } from '@/components/shared/color-picker'
-import { veltzy } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/auth.store'
-import { getAllLeadSources } from '@/services/lead-sources.service'
+import { getAllLeadSources, createLeadSource, toggleLeadSourceActive, deleteLeadSource } from '@/services/lead-sources.service'
 
 const sourceIconMap: Record<string, React.ComponentType<{ className?: string; style?: React.CSSProperties }>> = {
   instagram: Camera,
@@ -39,26 +39,37 @@ const LeadSourcesManager = () => {
   const handleAdd = async () => {
     if (!newName.trim() || !companyId) return
     const slug = newName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
-    const { error } = await veltzy().from('lead_sources').insert({
-      company_id: companyId, name: newName, slug, color: newColor, icon_name: 'Globe',
-    })
-    if (error) { toast.error(error.message); return }
-    invalidate()
-    setNewName('')
-    toast.success('Origem criada!')
+    try {
+      await createLeadSource(companyId, { name: newName, slug, color: newColor, icon_name: 'Globe' })
+      invalidate()
+      setNewName('')
+      toast.success('Origem criada!')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao criar origem')
+    }
   }
 
-  const toggleActive = async (id: string, active: boolean) => {
-    await veltzy().from('lead_sources').update({ is_active: active }).eq('id', id)
-    invalidate()
+  const handleToggleActive = async (id: string, active: boolean) => {
+    if (!companyId) return
+    try {
+      await toggleLeadSourceActive(companyId, id, active)
+      invalidate()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao atualizar origem')
+    }
   }
 
   const handleDelete = async (id: string, isSystem: boolean) => {
-    if (isSystem) { toast.error('Origens do sistema não podem ser removidas'); return }
+    if (isSystem) { toast.error('Origens do sistema nao podem ser removidas'); return }
     if (!confirm('Remover esta origem?')) return
-    await veltzy().from('lead_sources').delete().eq('id', id)
-    invalidate()
-    toast.success('Origem removida!')
+    if (!companyId) return
+    try {
+      await deleteLeadSource(companyId, id)
+      invalidate()
+      toast.success('Origem removida!')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao remover origem')
+    }
   }
 
   return (
@@ -68,7 +79,17 @@ const LeadSourcesManager = () => {
         <CardDescription>Gerencie as origens de captura de leads</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
-        {isLoading && <p className="text-sm text-muted-foreground">Carregando...</p>}
+        {isLoading && (
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center gap-3 rounded-lg border border-border/30 p-3">
+                <Skeleton className="h-4 w-4 rounded-full" />
+                <Skeleton className="h-4 flex-1" />
+                <Skeleton className="h-4 w-7 rounded-full" />
+              </div>
+            ))}
+          </div>
+        )}
 
         {sources?.map((s) => {
           const Icon = getSourceIcon(s.slug)
@@ -78,7 +99,7 @@ const LeadSourcesManager = () => {
               <span className="text-sm font-medium flex-1">{s.name}</span>
               {s.is_system && <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">Sistema</span>}
               <label className="relative inline-flex cursor-pointer items-center">
-                <input type="checkbox" className="peer sr-only" checked={s.is_active} onChange={() => toggleActive(s.id, !s.is_active)} />
+                <input type="checkbox" className="peer sr-only" checked={s.is_active} onChange={() => handleToggleActive(s.id, !s.is_active)} />
                 <div className="peer h-4 w-7 rounded-full bg-muted-foreground/40 after:absolute after:left-[2px] after:top-[2px] after:h-3 after:w-3 after:rounded-full after:bg-background after:transition-all peer-checked:bg-primary peer-checked:after:translate-x-3" />
               </label>
               {!s.is_system && (
