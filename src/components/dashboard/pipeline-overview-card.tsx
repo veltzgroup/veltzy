@@ -4,8 +4,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 const fmt = (value: number) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
 
-const PipelineOverviewCard = () => {
-  const { data: stages, isLoading } = usePipelineOverview()
+const PipelineOverviewCard = ({ days }: { days?: number }) => {
+  const { data: stages, isLoading } = usePipelineOverview(days)
 
   const totalLeads = stages?.reduce((s, st) => s + st.count, 0) ?? 0
   const totalValue = stages?.reduce((s, st) => s + st.value, 0) ?? 0

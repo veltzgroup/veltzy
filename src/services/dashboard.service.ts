@@ -96,8 +96,14 @@ export const getDashboardKpis = async (companyId: string, days?: number): Promis
   }
 }
 
-export const getLeadsBySource = async (companyId: string): Promise<SourceMetrics[]> => {
-  const { data: leads, error: leadsError } = await veltzy().from('leads').select('source_id').eq('company_id', companyId)
+export const getLeadsBySource = async (companyId: string, days?: number): Promise<SourceMetrics[]> => {
+  let query = veltzy().from('leads').select('source_id').eq('company_id', companyId)
+  if (days) {
+    const start = new Date()
+    start.setDate(start.getDate() - days)
+    query = query.gte('created_at', start.toISOString())
+  }
+  const { data: leads, error: leadsError } = await query
   if (leadsError) throw leadsError
   const { data: sources, error: sourcesError } = await veltzy().from('lead_sources').select('id, name, color').eq('company_id', companyId)
   if (sourcesError) throw sourcesError
@@ -108,10 +114,16 @@ export const getLeadsBySource = async (companyId: string): Promise<SourceMetrics
   return (sources ?? []).map((s) => ({ source_id: s.id, name: s.name, color: s.color, count: counts[s.id] ?? 0 })).filter((s) => s.count > 0)
 }
 
-export const getPipelineOverview = async (companyId: string): Promise<StageMetrics[]> => {
+export const getPipelineOverview = async (companyId: string, days?: number): Promise<StageMetrics[]> => {
   const { data: stages, error: stagesError } = await veltzy().from('pipeline_stages').select('id, name, color, position, is_final').eq('company_id', companyId).order('position')
   if (stagesError) throw stagesError
-  const { data: leads, error: leadsError } = await veltzy().from('leads').select('stage_id, deal_value').eq('company_id', companyId)
+  let leadsQuery = veltzy().from('leads').select('stage_id, deal_value').eq('company_id', companyId)
+  if (days) {
+    const start = new Date()
+    start.setDate(start.getDate() - days)
+    leadsQuery = leadsQuery.gte('created_at', start.toISOString())
+  }
+  const { data: leads, error: leadsError } = await leadsQuery
   if (leadsError) throw leadsError
 
   const map: Record<string, { count: number; value: number }> = {}

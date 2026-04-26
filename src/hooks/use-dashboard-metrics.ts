@@ -22,21 +22,21 @@ export const useDashboardKpis = (days?: number) => {
   })
 }
 
-export const useLeadsBySource = () => {
+export const useLeadsBySource = (days?: number) => {
   const companyId = useAuthStore((s) => s.company?.id)
   return useQuery({
-    queryKey: ['leads-by-source', companyId],
-    queryFn: () => dashboardService.getLeadsBySource(companyId!),
+    queryKey: ['leads-by-source', companyId, days],
+    queryFn: () => dashboardService.getLeadsBySource(companyId!, days),
     enabled: !!companyId,
     staleTime: 1000 * 60 * 5,
   })
 }
 
-export const usePipelineOverview = () => {
+export const usePipelineOverview = (days?: number) => {
   const companyId = useAuthStore((s) => s.company?.id)
   return useQuery({
-    queryKey: ['pipeline-overview', companyId],
-    queryFn: () => dashboardService.getPipelineOverview(companyId!),
+    queryKey: ['pipeline-overview', companyId, days],
+    queryFn: () => dashboardService.getPipelineOverview(companyId!, days),
     enabled: !!companyId,
     staleTime: 1000 * 60 * 5,
   })

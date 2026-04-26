@@ -15,8 +15,8 @@ const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Array<
   )
 }
 
-const LeadsBySourceChart = () => {
-  const { data } = useLeadsBySource()
+const LeadsBySourceChart = ({ days }: { days?: number }) => {
+  const { data } = useLeadsBySource(days)
   const total = data?.reduce((sum, s) => sum + s.count, 0) ?? 0
 
   return (

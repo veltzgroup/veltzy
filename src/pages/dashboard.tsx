@@ -1,15 +1,18 @@
 import { useState } from 'react'
 import {
-  Building2, Clock, Calendar, CalendarDays, BarChart3,
+  AlertCircle, Building2, Clock, Calendar, CalendarDays, BarChart3,
   TrendingUp, Target, DollarSign, Users,
 } from 'lucide-react'
 import { ComposedChart, Line, Area, ResponsiveContainer } from 'recharts'
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAuthStore } from '@/stores/auth.store'
 import { useDashboardKpis } from '@/hooks/use-dashboard-metrics'
 import { useDashboardRealtime } from '@/hooks/use-dashboard-realtime'
 import { PipelineOverviewCard } from '@/components/dashboard/pipeline-overview-card'
+import { LeadsBySourceChart } from '@/components/dashboard/leads-by-source-chart'
+import { SellerPerformanceTable } from '@/components/dashboard/seller-performance-table'
 import { FollowUpTips } from '@/components/dashboard/follow-up-tips'
 import { MonthlyComparisonGrid } from '@/components/dashboard/monthly-comparison-grid'
 import { NextActionsCard } from '@/components/dashboard/next-actions-card'
@@ -111,9 +114,12 @@ const KpiCardSkeleton = ({ hasBreakdown = false }: { hasBreakdown?: boolean }) =
 
 const DashboardPage = () => {
   const company = useAuthStore((s) => s.company)
+  const profile = useAuthStore((s) => s.profile)
   const [selectedDays, setSelectedDays] = useState<number | undefined>(30)
-  const { data: kpis, isLoading } = useDashboardKpis(selectedDays)
+  const { data: kpis, isLoading, isError, refetch } = useDashboardKpis(selectedDays)
   useDashboardRealtime()
+
+  const displayName = profile?.name || company?.name || 'usuario'
 
   const cardBase = 'bg-card border border-border/30 rounded-2xl p-5'
 
@@ -129,10 +135,10 @@ const DashboardPage = () => {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-foreground">
-                Olá, {company?.name}!
+                Ola, {displayName}!
               </h1>
               <p className="text-sm text-muted-foreground mt-0.5">
-                Bem-vindo ao seu painel de gestão
+                Painel de gestao {company?.name ? `de ${company.name}` : ''}
               </p>
             </div>
           </div>
@@ -172,6 +178,14 @@ const DashboardPage = () => {
             <KpiCardSkeleton hasBreakdown />
             <KpiCardSkeleton />
             <KpiCardSkeleton hasBreakdown />
+          </div>
+        ) : isError ? (
+          <div className="flex flex-col items-center justify-center gap-3 py-12 bg-card border border-border/30 rounded-2xl">
+            <AlertCircle className="h-8 w-8 text-destructive" />
+            <p className="text-sm text-muted-foreground">Erro ao carregar dados do dashboard</p>
+            <Button variant="outline" size="sm" onClick={() => refetch()}>
+              Tentar novamente
+            </Button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -285,8 +299,14 @@ const DashboardPage = () => {
 
         {/* VISAO DO PIPELINE + DICAS DE FOLLOW-UP */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <PipelineOverviewCard />
+          <PipelineOverviewCard days={selectedDays} />
           <FollowUpTips />
+        </div>
+
+        {/* LEADS POR ORIGEM + PERFORMANCE VENDEDORES */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <LeadsBySourceChart days={selectedDays} />
+          <SellerPerformanceTable days={selectedDays} />
         </div>
 
         {/* COMPARATIVO MENSAL */}
