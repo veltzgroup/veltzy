@@ -348,7 +348,7 @@ const DashboardPage = () => {
         <MonthlyComparisonGrid />
 
         {/* EVOLUCAO DAS METRICAS */}
-        <MetricsLineChart />
+        <MetricsLineChart days={selectedDays} />
 
       </div>
     </div>
