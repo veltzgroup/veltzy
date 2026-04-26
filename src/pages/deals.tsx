@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  Clock, Calendar, CalendarDays, BarChart3,
+  AlertCircle, Clock, Calendar, CalendarDays, BarChart3,
   DollarSign, Users, TrendingUp, Plus, MessageSquare, Download,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -9,10 +9,12 @@ import { useLeads } from '@/hooks/use-leads'
 import { usePipelineStages } from '@/hooks/use-pipeline-stages'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { CreateLeadModal } from '@/components/pipeline/create-lead-modal'
+import { EditLeadModal } from '@/components/pipeline/edit-lead-modal'
 import { exportToCsv, exportToPdf } from '@/lib/export-leads'
 import type { LeadWithDetails, LeadTemperature } from '@/types/database'
 
@@ -44,10 +46,11 @@ const thClass = 'pb-3 text-xs font-medium text-muted-foreground uppercase tracki
 
 const DealsPage = () => {
   const navigate = useNavigate()
-  const { data: allLeads } = useLeads()
+  const { data: allLeads, isLoading, isError, refetch } = useLeads()
   const { data: stages } = usePipelineStages()
   const [selectedDays, setSelectedDays] = useState<number | undefined>(30)
   const [createModalOpen, setCreateModalOpen] = useState(false)
+  const [selectedLead, setSelectedLead] = useState<LeadWithDetails | null>(null)
 
   const leads = filterByPeriod(allLeads ?? [], selectedDays)
 
@@ -124,7 +127,32 @@ const DealsPage = () => {
         </div>
 
         {/* KPI CARDS */}
-        <div className="grid grid-cols-3 gap-6">
+        {isLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-card border border-border/30 rounded-2xl p-5">
+                <div className="flex justify-between">
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-10 w-10 rounded-lg" />
+                </div>
+                <Skeleton className="h-8 w-20 mt-3" />
+                <Skeleton className="h-px w-full my-3" />
+                <div className="grid grid-cols-3 gap-2">
+                  {[1, 2, 3].map((j) => <Skeleton key={j} className="h-8 w-full" />)}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : isError ? (
+          <div className="flex flex-col items-center justify-center gap-3 py-12 bg-card border border-border/30 rounded-2xl">
+            <AlertCircle className="h-8 w-8 text-destructive" />
+            <p className="text-sm text-muted-foreground">Erro ao carregar negocios</p>
+            <Button variant="outline" size="sm" onClick={() => refetch()}>
+              Tentar novamente
+            </Button>
+          </div>
+        ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
           <div className={cardBase}>
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">Total de Negocios</span>
@@ -194,6 +222,7 @@ const DealsPage = () => {
             </div>
           </div>
         </div>
+        )}
 
         {/* TABELA */}
         <div className="glass-card rounded-xl p-5">
@@ -225,7 +254,7 @@ const DealsPage = () => {
                   const source = lead.lead_sources as { name?: string; color?: string } | null
 
                   return (
-                    <tr key={lead.id} className="border-b border-border/10 last:border-0 hover:bg-muted/20 transition-smooth">
+                    <tr key={lead.id} onClick={() => setSelectedLead(lead)} className="border-b border-border/10 last:border-0 hover:bg-muted/20 transition-smooth cursor-pointer">
                       {/* Contato */}
                       <td className="py-3 text-left">
                         <div className="flex items-center gap-2.5">
@@ -246,7 +275,7 @@ const DealsPage = () => {
                       {/* Chat */}
                       <td className="py-3 text-left">
                         <button
-                          onClick={() => navigate(`/inbox?lead=${lead.id}`)}
+                          onClick={(e) => { e.stopPropagation(); navigate(`/inbox?lead=${lead.id}`) }}
                           className="inline-flex items-center text-muted-foreground hover:text-primary transition-smooth cursor-pointer"
                         >
                           <MessageSquare className="h-4 w-4" />
@@ -328,6 +357,12 @@ const DealsPage = () => {
       <CreateLeadModal
         open={createModalOpen}
         onClose={() => setCreateModalOpen(false)}
+      />
+
+      <EditLeadModal
+        lead={selectedLead}
+        open={!!selectedLead}
+        onClose={() => setSelectedLead(null)}
       />
     </div>
   )
