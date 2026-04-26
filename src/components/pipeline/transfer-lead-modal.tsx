@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from '@/components/ui/dialog'
@@ -36,6 +37,7 @@ const TransferLeadModal = ({ leadId, open, onClose }: TransferLeadModalProps) =>
       leadId,
       data: { assigned_to: selectedUserId },
     })
+    toast.success('Lead transferido com sucesso!')
     setSelectedUserId('')
     onClose()
   }

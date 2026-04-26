@@ -1,14 +1,18 @@
-import { Search, Plus, Settings2, Flame } from 'lucide-react'
+import { Search, Plus, Settings2, Flame, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { usePipelineStore } from '@/stores/pipeline.store'
 import { useLeadSources } from '@/hooks/use-lead-sources'
 import { useRoles } from '@/hooks/use-roles'
-import type { LeadTemperature } from '@/types/database'
+import type { LeadTemperature, LeadWithDetails } from '@/types/database'
 import { leadTemperatureConfig } from '@/lib/lead-config'
+import { exportToCsv, exportToPdf } from '@/lib/export-leads'
 import { cn } from '@/lib/utils'
 
 const TemperatureIcon = ({ temperature }: { temperature: LeadTemperature }) => {
@@ -60,9 +64,10 @@ interface PipelineHeaderProps {
   onManageStages: () => void
   fireOnly: boolean
   onToggleFireOnly: () => void
+  leads?: LeadWithDetails[]
 }
 
-const PipelineHeader = ({ onAddLead, onManageStages, fireOnly, onToggleFireOnly }: PipelineHeaderProps) => {
+const PipelineHeader = ({ onAddLead, onManageStages, fireOnly, onToggleFireOnly, leads }: PipelineHeaderProps) => {
   const { filters, setFilters } = usePipelineStore()
   const { data: sources } = useLeadSources()
   const { isAdmin, isManager } = useRoles()
@@ -136,6 +141,24 @@ const PipelineHeader = ({ onAddLead, onManageStages, fireOnly, onToggleFireOnly 
           <Button variant="outline" size="icon" className="h-9 w-9" onClick={onManageStages} title="Gerenciar fases">
             <Settings2 className="h-4 w-4" />
           </Button>
+        )}
+
+        {leads && leads.length > 0 && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon" className="h-9 w-9" title="Exportar leads">
+                <Download className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => exportToCsv(leads)}>
+                Exportar CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => exportToPdf(leads)}>
+                Exportar PDF
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
 
         <Button size="sm" className="h-9" onClick={onAddLead}>

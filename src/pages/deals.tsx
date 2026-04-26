@@ -2,13 +2,18 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Clock, Calendar, CalendarDays, BarChart3,
-  DollarSign, Users, TrendingUp, Plus, MessageSquare,
+  DollarSign, Users, TrendingUp, Plus, MessageSquare, Download,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useLeads } from '@/hooks/use-leads'
 import { usePipelineStages } from '@/hooks/use-pipeline-stages'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { CreateLeadModal } from '@/components/pipeline/create-lead-modal'
+import { exportToCsv, exportToPdf } from '@/lib/export-leads'
 import type { LeadWithDetails, LeadTemperature } from '@/types/database'
 
 const periodOptions = [
@@ -42,6 +47,7 @@ const DealsPage = () => {
   const { data: allLeads } = useLeads()
   const { data: stages } = usePipelineStages()
   const [selectedDays, setSelectedDays] = useState<number | undefined>(30)
+  const [createModalOpen, setCreateModalOpen] = useState(false)
 
   const leads = filterByPeriod(allLeads ?? [], selectedDays)
 
@@ -92,7 +98,25 @@ const DealsPage = () => {
                 )
               })}
             </div>
-            <Button size="sm" className="gap-1.5">
+            {leads.length > 0 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-1.5" title="Exportar leads">
+                    <Download className="h-4 w-4" />
+                    Exportar
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => exportToCsv(leads)}>
+                    Exportar CSV
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => exportToPdf(leads)}>
+                    Exportar PDF
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+            <Button size="sm" className="gap-1.5" onClick={() => setCreateModalOpen(true)}>
               <Plus className="h-4 w-4" />
               Novo Negocio
             </Button>
@@ -300,6 +324,11 @@ const DealsPage = () => {
           </div>
         </div>
       </div>
+
+      <CreateLeadModal
+        open={createModalOpen}
+        onClose={() => setCreateModalOpen(false)}
+      />
     </div>
   )
 }

@@ -55,8 +55,14 @@ const PipelineBoard = () => {
           l.email?.toLowerCase().includes(q)
       )
     }
+    if (filters.temperature) {
+      result = result.filter((l) => l.temperature === filters.temperature)
+    }
+    if (filters.sourceId) {
+      result = result.filter((l) => l.source_id === filters.sourceId)
+    }
     return result
-  }, [leads, filters.search])
+  }, [leads, filters.search, filters.temperature, filters.sourceId])
 
   const leadsByStage = useMemo(() => {
     const map: Record<string, LeadWithDetails[]> = {}
@@ -140,6 +146,7 @@ const PipelineBoard = () => {
           onManageStages={() => setStageManagerOpen(true)}
           fireOnly={fireOnly}
           onToggleFireOnly={() => setFireOnly((v) => !v)}
+          leads={filteredLeads}
         />
       </div>
 
