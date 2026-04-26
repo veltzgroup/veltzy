@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { toast } from 'sonner'
 import { Loader2, RotateCcw } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -31,27 +31,95 @@ const sidebarStyles = [
   { id: 'glass', label: 'Glass' },
 ]
 
+function hexToHsl(hex: string): string {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+  if (!result) return '158 64% 42%'
+  let r = parseInt(result[1], 16) / 255
+  let g = parseInt(result[2], 16) / 255
+  let b = parseInt(result[3], 16) / 255
+  const max = Math.max(r, g, b)
+  const min = Math.min(r, g, b)
+  let h = 0
+  let s = 0
+  const l = (max + min) / 2
+  if (max !== min) {
+    const d = max - min
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
+    switch (max) {
+      case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break
+      case g: h = ((b - r) / d + 2) / 6; break
+      case b: h = ((r - g) / d + 4) / 6; break
+    }
+  }
+  return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`
+}
+
+function hslToHex(hslStr: string): string {
+  const parts = hslStr.match(/(\d+)\s+(\d+)%?\s+(\d+)%?/)
+  if (!parts) return '#22a06b'
+  const h = parseInt(parts[1]) / 360
+  const s = parseInt(parts[2]) / 100
+  const l = parseInt(parts[3]) / 100
+  let r: number, g: number, b: number
+  if (s === 0) {
+    r = g = b = l
+  } else {
+    const hue2rgb = (p: number, q: number, t: number) => {
+      if (t < 0) t += 1
+      if (t > 1) t -= 1
+      if (t < 1 / 6) return p + (q - p) * 6 * t
+      if (t < 1 / 2) return q
+      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6
+      return p
+    }
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s
+    const p = 2 * l - q
+    r = hue2rgb(p, q, h + 1 / 3)
+    g = hue2rgb(p, q, h)
+    b = hue2rgb(p, q, h - 1 / 3)
+  }
+  const toHex = (x: number) => Math.round(x * 255).toString(16).padStart(2, '0')
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`
+}
+
 const ThemeCustomizer = () => {
   const company = useAuthStore((s) => s.company)
   const companyId = company?.id
   const { theme, setTheme } = useThemeConfig()
   const queryClient = useQueryClient()
 
-  const [primaryHsl, setPrimaryHsl] = useState(company?.primary_color ?? '158 64% 42%')
-  const [primaryHex, setPrimaryHex] = useState('#22a06b')
+  const initialHsl = company?.primary_color ?? '158 64% 42%'
+  const [primaryHsl, setPrimaryHsl] = useState(initialHsl)
+  const [primaryHex, setPrimaryHex] = useState(() => hslToHex(initialHsl))
   const [cardStyle, setCardStyle] = useState('glass')
   const [sidebarStyle, setSidebarStyle] = useState('solid')
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => {
-    const match = swatches.find((s) => s.hsl === primaryHsl)
-    if (match) setPrimaryHex(match.hex)
-  }, [primaryHsl])
-
-  const applyPreview = (hsl: string) => {
+  const applyPreview = (hsl: string, hex: string) => {
     setPrimaryHsl(hsl)
+    setPrimaryHex(hex)
     document.documentElement.style.setProperty('--primary', hsl)
     document.documentElement.style.setProperty('--ring', hsl)
+    document.documentElement.style.setProperty('--sidebar-primary', hsl)
+    document.documentElement.style.setProperty('--glow-primary', hsl)
+  }
+
+  const handleColorPicker = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const hex = e.target.value
+    applyPreview(hexToHsl(hex), hex)
+  }
+
+  const handleHexInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const hex = e.target.value
+    setPrimaryHex(hex)
+    if (/^#[0-9a-fA-F]{6}$/.test(hex)) {
+      const hsl = hexToHsl(hex)
+      setPrimaryHsl(hsl)
+      document.documentElement.style.setProperty('--primary', hsl)
+      document.documentElement.style.setProperty('--ring', hsl)
+      document.documentElement.style.setProperty('--sidebar-primary', hsl)
+      document.documentElement.style.setProperty('--glow-primary', hsl)
+    }
   }
 
   const handleSave = async () => {
@@ -73,7 +141,7 @@ const ThemeCustomizer = () => {
   }
 
   const handleReset = () => {
-    applyPreview('158 64% 42%')
+    applyPreview('158 64% 42%', '#22a06b')
     setCardStyle('glass')
     setSidebarStyle('solid')
   }
@@ -109,16 +177,17 @@ const ThemeCustomizer = () => {
             <input
               type="color"
               value={primaryHex}
-              onChange={(e) => {
-                setPrimaryHex(e.target.value)
-                const match = swatches.find((s) => s.hex === e.target.value)
-                if (match) applyPreview(match.hsl)
-              }}
-              className="h-10 w-10 cursor-pointer rounded-lg border-0"
+              onChange={handleColorPicker}
+              className="h-10 w-10 cursor-pointer rounded-lg border-0 bg-transparent"
             />
-            <Input value={primaryHex} onChange={(e) => setPrimaryHex(e.target.value)} className="w-28 text-xs" />
+            <Input
+              value={primaryHex}
+              onChange={handleHexInput}
+              placeholder="#000000"
+              className="w-28 text-xs font-mono"
+            />
             <div
-              className="h-4 w-4 rounded-full"
+              className="h-6 w-6 rounded-full border border-border/50"
               style={{ backgroundColor: `hsl(${primaryHsl})` }}
             />
           </div>
@@ -126,7 +195,7 @@ const ThemeCustomizer = () => {
             {swatches.map((s) => (
               <button
                 key={s.hsl}
-                onClick={() => { applyPreview(s.hsl); setPrimaryHex(s.hex) }}
+                onClick={() => applyPreview(s.hsl, s.hex)}
                 className={cn(
                   'h-10 w-10 rounded-lg ring-2 transition-smooth',
                   primaryHsl === s.hsl ? 'ring-foreground' : 'ring-transparent hover:ring-border'
@@ -136,6 +205,9 @@ const ThemeCustomizer = () => {
               />
             ))}
           </div>
+          <p className="text-[11px] text-muted-foreground">
+            Escolha um preset ou use o seletor de cores para qualquer cor
+          </p>
         </div>
 
         <div className="space-y-3">

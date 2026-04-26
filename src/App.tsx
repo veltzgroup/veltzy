@@ -17,7 +17,6 @@ const UpdatePasswordPage = lazy(() => import('@/pages/update-password'))
 const PipelinePage = lazy(() => import('@/pages/pipeline'))
 const InboxPage = lazy(() => import('@/pages/inbox'))
 const AdminPage = lazy(() => import('@/pages/admin'))
-const CompanyPage = lazy(() => import('@/pages/company'))
 const SuperAdminPage = lazy(() => import('@/pages/super-admin'))
 const GestaoPage = lazy(() => import('@/pages/gestao'))
 const DealsPage = lazy(() => import('@/pages/deals'))
@@ -84,10 +83,10 @@ const App = () => {
                 <Route path="/deals" element={<DealsPage />} />
                 <Route path="/gestao" element={<GestaoPage />} />
                 <Route path="/sellers" element={<Navigate to="/gestao?tab=vendedores" replace />} />
-                <Route path="/settings" element={<Navigate to="/" replace />} />
+                <Route path="/settings" element={<Navigate to="/minha-conta" replace />} />
                 <Route path="/minha-conta" element={<MinhaContaPage />} />
                 <Route path="/admin" element={<AdminPage />} />
-                <Route path="/company" element={<CompanyPage />} />
+                <Route path="/company" element={<Navigate to="/admin?tab=empresa" replace />} />
                 <Route path="/super-admin" element={<SuperAdminPage />} />
               </Route>
 
