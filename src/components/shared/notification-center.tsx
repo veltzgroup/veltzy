@@ -52,12 +52,10 @@ const NotificationItem = ({ notification, onRead }: { notification: Notification
 }
 
 const NotificationCenter = () => {
-  useNotifications()
+  const { data: notifications } = useNotifications()
   const unreadCount = useUnreadCount()
   const markAsRead = useMarkNotificationAsRead()
   const markAllAsRead = useMarkAllNotificationsAsRead()
-
-  const { data: notifications } = useNotifications()
 
   return (
     <DropdownMenu>

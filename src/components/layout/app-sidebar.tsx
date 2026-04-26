@@ -70,7 +70,7 @@ const AppSidebar = () => {
     <aside className="flex h-screen w-64 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
       <div className="flex items-center gap-3 px-4 py-5">
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-sm shrink-0">
-          V
+          {company?.name?.[0]?.toUpperCase() ?? 'V'}
         </div>
         <div className="flex flex-col min-w-0">
           <span className="text-sm font-semibold text-primary">Veltzy</span>
