@@ -8,9 +8,13 @@ import { cn } from '@/lib/utils'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAuthStore } from '@/stores/auth.store'
 import { useDashboardKpis } from '@/hooks/use-dashboard-metrics'
+import { useDashboardRealtime } from '@/hooks/use-dashboard-realtime'
 import { PipelineOverviewCard } from '@/components/dashboard/pipeline-overview-card'
 import { FollowUpTips } from '@/components/dashboard/follow-up-tips'
 import { MonthlyComparisonGrid } from '@/components/dashboard/monthly-comparison-grid'
+import { NextActionsCard } from '@/components/dashboard/next-actions-card'
+import { BottleneckDetector } from '@/components/dashboard/bottleneck-detector'
+import { ForecastCard } from '@/components/dashboard/forecast-card'
 
 const curveData = [5, 8, 15, 35, 60, 75, 60, 35, 15, 8, 5].map((v, i) => ({ x: i, y: v }))
 
@@ -99,6 +103,7 @@ const DashboardPage = () => {
   const company = useAuthStore((s) => s.company)
   const [selectedDays, setSelectedDays] = useState<number | undefined>(30)
   const { data: kpis, isLoading } = useDashboardKpis(selectedDays)
+  useDashboardRealtime()
 
   const cardBase = 'bg-card border border-border/30 rounded-2xl p-5'
 
@@ -114,10 +119,10 @@ const DashboardPage = () => {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-foreground">
-                Ola, {company?.name}!
+                Olá, {company?.name}!
               </h1>
               <p className="text-sm text-muted-foreground mt-0.5">
-                Bem-vindo ao seu painel de gestao
+                Bem-vindo ao seu painel de gestão
               </p>
             </div>
           </div>
@@ -166,7 +171,7 @@ const DashboardPage = () => {
             {/* Taxa de Conversao */}
             <div className={cardBase}>
               <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Taxa de Conversao</span>
+                <span className="text-sm text-muted-foreground">Taxa de Conversão</span>
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15">
                   <TrendingUp className="h-5 w-5 text-primary" />
                 </div>
@@ -181,7 +186,7 @@ const DashboardPage = () => {
             {/* Score Medio IA */}
             <div className={cardBase}>
               <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Score Medio IA</span>
+                <span className="text-sm text-muted-foreground">Score Médio IA</span>
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15">
                   <Target className="h-5 w-5 text-primary" />
                 </div>
@@ -189,7 +194,7 @@ const DashboardPage = () => {
               <p className="text-3xl font-bold text-foreground mt-2">
                 {kpis?.avgAiScore ?? 0}%
               </p>
-              <p className="text-sm text-muted-foreground mt-1">Qualificacao media dos leads</p>
+              <p className="text-sm text-muted-foreground mt-1">Qualificação média dos leads</p>
               <DecorativeLine />
             </div>
 
@@ -204,7 +209,7 @@ const DashboardPage = () => {
               <p className="text-3xl font-bold text-foreground mt-2">
                 {kpis?.dealsClosed ?? 0}
               </p>
-              <p className="text-sm text-muted-foreground mt-1">Negocios concluidos com sucesso</p>
+              <p className="text-sm text-muted-foreground mt-1">Negócios concluídos com sucesso</p>
               <DecorativeLine />
             </div>
 
@@ -213,7 +218,7 @@ const DashboardPage = () => {
             {/* Negocios */}
             <div className={cardBase}>
               <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Negocios</span>
+                <span className="text-sm text-muted-foreground">Negócios</span>
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15">
                   <Users className="h-5 w-5 text-primary" />
                 </div>
@@ -231,7 +236,7 @@ const DashboardPage = () => {
             {/* Ticket Medio */}
             <div className={cardBase}>
               <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Ticket Medio</span>
+                <span className="text-sm text-muted-foreground">Ticket Médio</span>
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15">
                   <TrendingUp className="h-5 w-5 text-primary" />
                 </div>
@@ -260,6 +265,13 @@ const DashboardPage = () => {
             </div>
           </div>
         )}
+
+        {/* INTELIGENCIA: ACOES + GARGALOS + PREVISAO */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <NextActionsCard />
+          <BottleneckDetector />
+          <ForecastCard />
+        </div>
 
         {/* VISAO DO PIPELINE + DICAS DE FOLLOW-UP */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

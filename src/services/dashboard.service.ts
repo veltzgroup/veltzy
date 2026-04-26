@@ -195,6 +195,65 @@ export const getMonthlyComparisonGrid = async (companyId: string, months = 6): P
     })
 }
 
+export interface HistoricalConversionRate {
+  stage_id: string
+  stage_name: string
+  position: number
+  entered: number
+  advanced: number
+  rate: number
+}
+
+export const getHistoricalConversionRates = async (companyId: string, days = 90): Promise<HistoricalConversionRate[]> => {
+  const startDate = new Date()
+  startDate.setDate(startDate.getDate() - days)
+
+  const { data: stages, error: stagesError } = await veltzy()
+    .from('pipeline_stages')
+    .select('id, name, position, is_final')
+    .eq('company_id', companyId)
+    .order('position')
+  if (stagesError) throw stagesError
+
+  const { data: leads, error: leadsError } = await veltzy()
+    .from('leads')
+    .select('stage_id, status, created_at, updated_at')
+    .eq('company_id', companyId)
+    .gte('created_at', startDate.toISOString())
+  if (leadsError) throw leadsError
+
+  const nonFinalStages = (stages ?? []).filter((s) => !s.is_final)
+  const stagePositions = new Map((stages ?? []).map((s) => [s.id, s.position]))
+
+  const entered: Record<string, number> = {}
+  const advanced: Record<string, number> = {}
+
+  ;(leads ?? []).forEach((lead) => {
+    const pos = stagePositions.get(lead.stage_id)
+    nonFinalStages.forEach((stage) => {
+      if (stage.position <= (pos ?? -1)) {
+        entered[stage.id] = (entered[stage.id] ?? 0) + 1
+      }
+      if (stage.position < (pos ?? -1)) {
+        advanced[stage.id] = (advanced[stage.id] ?? 0) + 1
+      }
+    })
+  })
+
+  return nonFinalStages.map((stage) => {
+    const e = entered[stage.id] ?? 0
+    const a = advanced[stage.id] ?? 0
+    return {
+      stage_id: stage.id,
+      stage_name: stage.name,
+      position: stage.position,
+      entered: e,
+      advanced: a,
+      rate: e > 0 ? Math.round((a / e) * 100) : 0,
+    }
+  })
+}
+
 export const getSellerPerformance = async (companyId: string, days?: number): Promise<SellerMetrics[]> => {
   const { data: profiles, error: profilesError } = await supabase.from('profiles').select('id, name, is_available').eq('company_id', companyId)
   if (profilesError) throw profilesError

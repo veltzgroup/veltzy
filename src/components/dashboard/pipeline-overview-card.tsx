@@ -30,9 +30,9 @@ const PipelineOverviewCard = () => {
 
   return (
     <div className="bg-card border border-border/30 rounded-2xl p-5">
-      <h3 className="text-base font-semibold text-foreground">Visao do Pipeline</h3>
+      <h3 className="text-base font-semibold text-foreground">Visão do Pipeline</h3>
       <p className="text-xs text-muted-foreground mt-0.5 mb-5">
-        Distribuicao de leads por etapa
+        Distribuição de leads por etapa
       </p>
 
       <div className="space-y-4">

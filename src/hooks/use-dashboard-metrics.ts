@@ -62,6 +62,16 @@ export const useMonthlyComparisonGrid = (months = 6) => {
   })
 }
 
+export const useHistoricalConversionRates = (days = 90) => {
+  const companyId = useAuthStore((s) => s.company?.id)
+  return useQuery({
+    queryKey: ['historical-conversion-rates', companyId, days],
+    queryFn: () => dashboardService.getHistoricalConversionRates(companyId!, days),
+    enabled: !!companyId,
+    staleTime: 1000 * 60 * 5,
+  })
+}
+
 export const useSellerPerformance = (days?: number) => {
   const companyId = useAuthStore((s) => s.company?.id)
   return useQuery({

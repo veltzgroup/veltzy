@@ -2,7 +2,7 @@ import { useState } from 'react'
 import {
   BarChart3, Users, TrendingUp, CheckCircle, DollarSign,
 } from 'lucide-react'
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell } from 'recharts'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useMonthlyComparisonGrid } from '@/hooks/use-dashboard-metrics'
 import type { MonthlyGridData } from '@/services/dashboard.service'
@@ -13,11 +13,23 @@ const periodOptions = [
   { label: '12 meses', value: 12 },
 ] as const
 
+interface GradientDef {
+  id: string
+  color: string
+}
+
+const gradients: GradientDef[] = [
+  { id: 'greenGrad', color: '#10b981' },
+  { id: 'blueGrad', color: '#3b82f6' },
+  { id: 'greenGrad2', color: '#10b981' },
+  { id: 'orangeGrad', color: '#f97316' },
+]
+
 interface MiniChartProps {
   title: string
   icon: React.ElementType
   dataKey: string
-  color: string
+  gradient: GradientDef
   data: MonthlyGridData[]
   formatter?: (v: number) => string
 }
@@ -40,26 +52,32 @@ const CustomTooltip = ({
   )
 }
 
-const MiniChart = ({ title, icon: Icon, dataKey, color, data, formatter }: MiniChartProps) => (
-  <div className="bg-card border border-border/30 rounded-xl p-4">
-    <div className="flex items-center gap-2 mb-3">
-      <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-      <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{title}</span>
+const MiniChart = ({ title, icon: Icon, dataKey, gradient, data, formatter }: MiniChartProps) => (
+  <div className="bg-card border border-border/30 rounded-xl p-3">
+    <div className="flex items-center gap-1.5 mb-2">
+      <Icon className="h-3 w-3 text-muted-foreground" />
+      <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{title}</span>
     </div>
-    <div className="h-[180px]">
+    <div className="h-[120px]">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
+        <BarChart data={data} margin={{ top: 4, right: 2, bottom: 0, left: -24 }}>
+          <defs>
+            <linearGradient id={gradient.id} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={gradient.color} stopOpacity={0.8} />
+              <stop offset="100%" stopColor={gradient.color} stopOpacity={0.1} />
+            </linearGradient>
+          </defs>
           <XAxis
             dataKey="month"
-            tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
+            tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 9 }}
             axisLine={false}
             tickLine={false}
           />
           <YAxis
-            tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
+            tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 9 }}
             axisLine={false}
             tickLine={false}
-            width={40}
+            width={32}
           />
           <Tooltip
             content={<CustomTooltip formatter={formatter} />}
@@ -67,10 +85,17 @@ const MiniChart = ({ title, icon: Icon, dataKey, color, data, formatter }: MiniC
           />
           <Bar
             dataKey={dataKey}
-            fill={color}
-            radius={[4, 4, 0, 0]}
+            fill={`url(#${gradient.id})`}
+            radius={[3, 3, 0, 0]}
             animationDuration={600}
-          />
+            stroke={gradient.color}
+            strokeWidth={1.5}
+            strokeOpacity={0.9}
+          >
+            {data.map((_, idx) => (
+              <Cell key={idx} strokeDasharray="" />
+            ))}
+          </Bar>
         </BarChart>
       </ResponsiveContainer>
     </div>
@@ -103,28 +128,28 @@ const MonthlyComparisonGrid = () => {
       </div>
 
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="bg-card border border-border/30 rounded-xl p-4">
-              <Skeleton className="h-4 w-24 mb-3" />
-              <Skeleton className="h-[180px] w-full" />
+            <div key={i} className="bg-card border border-border/30 rounded-xl p-3">
+              <Skeleton className="h-3 w-20 mb-2" />
+              <Skeleton className="h-[120px] w-full" />
             </div>
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <MiniChart
-            title="Negocios"
+            title="Negócios"
             icon={Users}
             dataKey="leads"
-            color="hsl(var(--primary))"
+            gradient={gradients[0]}
             data={data ?? []}
           />
           <MiniChart
-            title="Conversao %"
+            title="Conversão %"
             icon={TrendingUp}
             dataKey="conversion"
-            color="hsl(210 80% 55%)"
+            gradient={gradients[1]}
             data={data ?? []}
             formatter={(v) => `${v}%`}
           />
@@ -132,14 +157,14 @@ const MonthlyComparisonGrid = () => {
             title="Deals Fechados"
             icon={CheckCircle}
             dataKey="deals"
-            color="hsl(var(--primary))"
+            gradient={gradients[2]}
             data={data ?? []}
           />
           <MiniChart
             title="Valor Fechados"
             icon={DollarSign}
             dataKey="value"
-            color="hsl(25 95% 53%)"
+            gradient={gradients[3]}
             data={data ?? []}
             formatter={fmtCurrency}
           />

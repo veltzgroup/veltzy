@@ -56,10 +56,10 @@ const FollowUpTips = () => {
       icon: AlertCircle,
       iconColor: 'text-red-500',
       borderColor: 'border-red-500',
-      title: `${staleCount} lead${staleCount !== 1 ? 's' : ''} sem interacao`,
+      title: `${staleCount} lead${staleCount !== 1 ? 's' : ''} sem interação`,
       badge: 'Urgente',
       badgeClass: 'bg-red-500/15 text-red-500',
-      description: 'Leads sem atualizacao ha mais de 3 dias precisam de follow-up para nao esfriar.',
+      description: 'Leads sem atualização há mais de 3 dias precisam de follow-up para não esfriar.',
       count: staleCount,
     },
     {
@@ -82,7 +82,7 @@ const FollowUpTips = () => {
       title: `${qualifiedCount} lead${qualifiedCount !== 1 ? 's' : ''} qualificado${qualifiedCount !== 1 ? 's' : ''}`,
       badge: 'Dica',
       badgeClass: 'bg-green-500/15 text-green-500',
-      description: 'A IA identificou leads com alta probabilidade de conversao. Foque nesses contatos.',
+      description: 'A IA identificou leads com alta probabilidade de conversão. Foque nesses contatos.',
       count: qualifiedCount,
     },
   ]
@@ -94,7 +94,7 @@ const FollowUpTips = () => {
         <h3 className="text-base font-semibold text-foreground">Dicas de Follow-up</h3>
       </div>
       <p className="text-xs text-muted-foreground mb-5">
-        Sugestoes inteligentes baseadas nos seus leads
+        Sugestões inteligentes baseadas nos seus leads
       </p>
 
       <div className="space-y-3">
