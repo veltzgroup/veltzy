@@ -15,23 +15,33 @@ import { getAvatarUrl } from '@/lib/avatar'
 import { timeAgo } from '@/lib/time'
 import type { LeadWithDetails } from '@/types/database'
 import { useNavigate } from 'react-router-dom'
-import { Phone, Mail, MoreVertical, Pencil, ArrowRightLeft, UserRoundPen, Clock, MessageSquare } from 'lucide-react'
+import { Phone, Mail, MoreVertical, Pencil, ArrowRightLeft, UserRoundPen, Clock, MessageSquare, Bot } from 'lucide-react'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
+import type { LeadTemperature } from '@/types/database'
 
 interface LeadCardProps {
   lead: LeadWithDetails
   onTransfer?: (leadId: string) => void
 }
 
-const ScoreBar = ({ score }: { score: number }) => {
-  const color =
-    score >= 67 ? 'bg-green-500' : score >= 34 ? 'bg-yellow-500' : 'bg-red-500'
-
-  return (
-    <div className="h-1 w-full rounded-full bg-muted overflow-hidden">
-      <div className={cn('h-full rounded-full transition-all duration-500 ease-out', color)} style={{ width: `${score}%` }} />
-    </div>
-  )
+const TEMP_WIDTH: Record<LeadTemperature, string> = {
+  cold: '25%',
+  warm: '50%',
+  hot: '75%',
+  fire: '100%',
 }
+
+const TemperatureBar = ({ temperature }: { temperature: LeadTemperature }) => (
+  <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+    <div
+      className="h-full rounded-full transition-all duration-500 ease-out"
+      style={{
+        width: TEMP_WIDTH[temperature],
+        background: 'linear-gradient(to right, #3b82f6, #06b6d4, #f59e0b, #f97316, #ef4444)',
+      }}
+    />
+  </div>
+)
 
 const LeadCard = ({ lead, onTransfer }: LeadCardProps) => {
   const navigate = useNavigate()
@@ -72,7 +82,8 @@ const LeadCard = ({ lead, onTransfer }: LeadCardProps) => {
       {...listeners}
       className={cn(
         'kanban-card glass-card rounded-lg p-3 cursor-grab active:cursor-grabbing animate-fade-in',
-        isDragging && 'opacity-50 scale-105 shadow-xl z-50'
+        isDragging && 'opacity-50 scale-105 shadow-xl z-50',
+        lead.temperature === 'fire' && 'fire-card'
       )}
       onClick={() => setSelectedLeadId(lead.id)}
     >
@@ -147,20 +158,31 @@ const LeadCard = ({ lead, onTransfer }: LeadCardProps) => {
               )}
             </DropdownMenuContent>
           </DropdownMenu>
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              navigate(`/inbox?lead=${lead.id}`)
-            }}
-            className="rounded p-0.5 text-white/70 hover:text-primary transition-smooth"
-            title="Abrir conversa"
-          >
-            <MessageSquare className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-0.5">
+            {lead.is_ai_active && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="p-0.5">
+                    <Bot className="h-3.5 w-3.5 text-primary opacity-70" />
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="left">Atendido pela IA SDR</TooltipContent>
+              </Tooltip>
+            )}
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                navigate(`/inbox?lead=${lead.id}`)
+              }}
+              className="rounded p-0.5 text-muted-foreground hover:text-primary transition-smooth cursor-pointer"
+            >
+              <MessageSquare className="h-4 w-4" />
+            </button>
+          </div>
           </div>
         </div>
 
-        {lead.ai_score > 0 && <ScoreBar score={lead.ai_score} />}
+        <TemperatureBar temperature={lead.temperature} />
 
         <div className="flex items-center justify-between gap-2">
           <LeadSourceBadge source={lead.lead_sources} />

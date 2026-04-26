@@ -324,3 +324,17 @@
 .scrollbar-minimal:hover::-webkit-scrollbar-thumb {
   background: hsl(var(--muted-foreground) / 0.2);
 }
+
+/* Fire card glow */
+@keyframes fire-border {
+  0%, 100% { box-shadow: 0 0 8px 2px rgba(249,115,22,0.4), 0 0 16px 4px rgba(239,68,68,0.2); }
+  50% { box-shadow: 0 0 12px 4px rgba(239,68,68,0.6), 0 0 24px 8px rgba(249,115,22,0.3); }
+}
+
+.fire-card {
+  animation: fire-border 5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fire-card { animation: none; }
+}
