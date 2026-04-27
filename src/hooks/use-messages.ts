@@ -61,6 +61,16 @@ export const useSendMessage = () => {
   })
 }
 
+export const useWhatsAppConnected = () => {
+  const companyId = useAuthStore((s) => s.company?.id)
+  return useQuery({
+    queryKey: ['whatsapp-connected', companyId],
+    queryFn: () => messagesService.isWhatsAppConnected(companyId!),
+    enabled: !!companyId,
+    staleTime: 1000 * 60 * 5,
+  })
+}
+
 export const useMarkAsRead = () => {
   const queryClient = useQueryClient()
   const companyId = useAuthStore((s) => s.company?.id)

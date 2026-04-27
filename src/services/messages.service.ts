@@ -110,6 +110,26 @@ export const getLeadSourceSlug = async (companyId: string, leadId: string): Prom
   return sources?.slug ?? null
 }
 
+export const isWhatsAppConnected = async (companyId: string): Promise<boolean> => {
+  const { data } = await db()
+    .from('whatsapp_configs')
+    .select('id')
+    .eq('company_id', companyId)
+    .eq('status', 'connected')
+    .maybeSingle()
+  return !!data
+}
+
+export const isInstagramConnected = async (companyId: string): Promise<boolean> => {
+  const { data } = await db()
+    .from('instagram_connections')
+    .select('id')
+    .eq('company_id', companyId)
+    .eq('is_active', true)
+    .maybeSingle()
+  return !!data
+}
+
 export const routeMessage = async (
   companyId: string,
   payload: SendMessagePayload,
@@ -117,19 +137,29 @@ export const routeMessage = async (
   const slug = await getLeadSourceSlug(companyId, payload.leadId)
 
   if (slug === 'whatsapp') {
-    const { data, error } = await supabase.functions.invoke('zapi-send', {
-      body: payload,
-    })
-    if (error) throw error
-    return data as Message
+    const connected = await isWhatsAppConnected(companyId)
+    if (connected) {
+      const { data, error } = await supabase.functions.invoke('zapi-send', {
+        body: payload,
+      })
+      if (error) throw error
+      return data as Message
+    }
+    // WhatsApp nao conectado: salva como manual
+    return sendMessage(companyId, payload)
   }
 
   if (slug === 'instagram') {
-    const { data, error } = await supabase.functions.invoke('instagram-send', {
-      body: { leadId: payload.leadId, content: payload.content, companyId },
-    })
-    if (error) throw error
-    return data as Message
+    const connected = await isInstagramConnected(companyId)
+    if (connected) {
+      const { data, error } = await supabase.functions.invoke('instagram-send', {
+        body: { leadId: payload.leadId, content: payload.content, companyId },
+      })
+      if (error) throw error
+      return data as Message
+    }
+    // Instagram nao conectado: salva como manual
+    return sendMessage(companyId, payload)
   }
 
   // Manual ou outra source: insere direto

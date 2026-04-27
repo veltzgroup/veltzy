@@ -3,7 +3,7 @@ import { Send, Paperclip, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { ReplyTemplatesPopover } from '@/components/inbox/reply-templates-popover'
-import { useSendMessage } from '@/hooks/use-messages'
+import { useSendMessage, useWhatsAppConnected } from '@/hooks/use-messages'
 import { useAuthStore } from '@/stores/auth.store'
 import { supabase } from '@/lib/supabase'
 
@@ -18,6 +18,7 @@ const ChatInput = ({ leadId, onTyping }: ChatInputProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const sendMessage = useSendMessage()
+  const { data: whatsAppConnected } = useWhatsAppConnected()
   const companyId = useAuthStore((s) => s.company?.id)
 
   const adjustHeight = useCallback(() => {
@@ -131,6 +132,7 @@ const ChatInput = ({ leadId, onTyping }: ChatInputProps) => {
           className="h-8 w-8 shrink-0"
           onClick={handleSend}
           disabled={!content.trim() || sendMessage.isPending}
+          title={whatsAppConnected === false ? 'WhatsApp nao conectado - mensagem sera salva como manual' : undefined}
         >
           {sendMessage.isPending ? (
             <Loader2 className="h-4 w-4 animate-spin" />
