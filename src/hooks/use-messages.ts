@@ -50,7 +50,7 @@ export const useSendMessage = () => {
 
   return useMutation({
     mutationFn: (payload: SendMessagePayload) =>
-      messagesService.sendMessage(companyId!, payload),
+      messagesService.routeMessage(companyId!, payload),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['messages', variables.leadId] })
       queryClient.invalidateQueries({ queryKey: ['conversations'] })

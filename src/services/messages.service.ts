@@ -1,4 +1,4 @@
-import { veltzy as db } from '@/lib/supabase'
+import { veltzy as db, supabase } from '@/lib/supabase'
 import type { Message, SendMessagePayload, LeadWithLastMessage } from '@/types/database'
 
 export const getMessages = async (companyId: string, leadId: string): Promise<Message[]> => {
@@ -49,45 +49,89 @@ export const markAsRead = async (companyId: string, leadId: string): Promise<voi
 }
 
 export const getConversationList = async (companyId: string): Promise<LeadWithLastMessage[]> => {
-  const { data: leads, error } = await db()
-    .from('leads')
-    .select(`
-      *,
-      profiles:assigned_to(id, name, email),
-      lead_sources:source_id(*)
-    `)
-    .eq('company_id', companyId)
-    .order('updated_at', { ascending: false })
+  const { data, error } = await db().rpc('get_conversation_list', { p_company_id: companyId })
   if (error) throw error
 
-  const leadsWithMessages = await Promise.all(
-    (leads ?? []).map(async (lead) => {
-      const { data: lastMsg } = await db()
-        .from('messages')
-        .select('content, sender_type, created_at, message_type')
-        .eq('lead_id', lead.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle()
+  return (data ?? []).map((row: Record<string, unknown>) => ({
+    id: row.id as string,
+    company_id: row.company_id as string,
+    name: row.name as string | null,
+    phone: row.phone as string,
+    email: row.email as string | null,
+    instagram_id: row.instagram_id as string | null,
+    linkedin_id: row.linkedin_id as string | null,
+    source_id: row.source_id as string | null,
+    stage_id: row.stage_id as string,
+    status: row.status,
+    temperature: row.temperature,
+    ai_score: row.ai_score as number,
+    assigned_to: row.assigned_to as string | null,
+    is_ai_active: row.is_ai_active as boolean,
+    is_queued: row.is_queued as boolean,
+    conversation_status: row.conversation_status,
+    tags: row.tags as string[],
+    deal_value: row.deal_value as number | null,
+    observations: row.observations as string | null,
+    avatar_url: row.avatar_url as string | null,
+    ad_context: row.ad_context ?? null,
+    created_at: row.created_at as string,
+    updated_at: row.updated_at as string,
+    profiles: row.assigned_to ? {
+      id: row.assigned_to as string,
+      name: row.assigned_name as string,
+      email: row.assigned_email as string,
+      is_available: row.assigned_available as boolean,
+    } : null,
+    lead_sources: row.source_id ? {
+      id: row.source_id as string,
+      name: row.source_name as string,
+      slug: row.source_slug as string,
+      color: row.source_color as string,
+      icon_name: row.source_icon as string,
+    } : null,
+    last_message: row.last_message_content ? {
+      content: row.last_message_content as string,
+      sender_type: row.last_message_sender as string,
+      created_at: row.last_message_at as string,
+      message_type: row.last_message_type as string,
+    } : null,
+    unread_count: Number(row.unread_count) || 0,
+  })) as LeadWithLastMessage[]
+}
 
-      const { count } = await db()
-        .from('messages')
-        .select('*', { count: 'exact', head: true })
-        .eq('lead_id', lead.id)
-        .eq('sender_type', 'lead')
-        .eq('is_read', false)
+export const getLeadSourceSlug = async (companyId: string, leadId: string): Promise<string | null> => {
+  const { data } = await db()
+    .from('leads')
+    .select('lead_sources:source_id(slug)')
+    .eq('id', leadId)
+    .eq('company_id', companyId)
+    .single()
+  const sources = (data as Record<string, unknown>)?.lead_sources as { slug: string } | null
+  return sources?.slug ?? null
+}
 
-      return {
-        ...lead,
-        last_message: lastMsg ?? null,
-        unread_count: count ?? 0,
-      } as LeadWithLastMessage
+export const routeMessage = async (
+  companyId: string,
+  payload: SendMessagePayload,
+): Promise<Message> => {
+  const slug = await getLeadSourceSlug(companyId, payload.leadId)
+
+  if (slug === 'whatsapp') {
+    const { data, error } = await supabase.functions.invoke('zapi-send', {
+      body: payload,
     })
-  )
+    if (error) throw error
+    return data as Message
+  }
 
-  return leadsWithMessages.sort((a, b) => {
-    const aTime = a.last_message?.created_at ?? a.updated_at
-    const bTime = b.last_message?.created_at ?? b.updated_at
-    return new Date(bTime).getTime() - new Date(aTime).getTime()
-  })
+  if (slug === 'instagram') {
+    const { data, error } = await supabase.functions.invoke('instagram-send', {
+      body: { leadId: payload.leadId, content: payload.content, companyId },
+    })
+    if (error) throw error
+    return data as Message
+  }
+
+  // Manual ou outra source: insere direto
+  return sendMessage(companyId, payload)
 }

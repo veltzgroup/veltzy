@@ -19,7 +19,7 @@ export const useTypingIndicator = (leadId: string | null) => {
         if (payload.payload?.userId !== profile?.user_id) {
           setIsTyping(true)
           clearTimeout(timeoutRef.current)
-          timeoutRef.current = setTimeout(() => setIsTyping(false), 2000)
+          timeoutRef.current = setTimeout(() => setIsTyping(false), 3000)
         }
       })
       .subscribe()
