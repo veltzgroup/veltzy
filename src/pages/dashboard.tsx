@@ -27,7 +27,7 @@ const curveData = [5, 8, 15, 35, 60, 75, 60, 35, 15, 8, 5].map((v, i) => ({ x: i
 const periodOptions = [
   { label: 'Hoje', icon: Clock, days: 1 },
   { label: 'Semana', icon: Calendar, days: 7 },
-  { label: 'Mes', icon: CalendarDays, days: 30 },
+  { label: 'Mês', icon: CalendarDays, days: 30 },
   { label: 'Total', icon: BarChart3, days: undefined },
 ] as const
 
@@ -159,10 +159,10 @@ const DashboardPage = () => {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-foreground">
-                Ola, {displayName}!
+                Olá, {displayName}!
               </h1>
               <p className="text-sm text-muted-foreground mt-0.5">
-                Painel de gestao {company?.name ? `de ${company.name}` : ''}
+                Painel de gestão {company?.name ? `de ${company.name}` : ''}
               </p>
             </div>
           </div>
