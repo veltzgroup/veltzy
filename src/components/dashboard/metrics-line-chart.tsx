@@ -30,15 +30,8 @@ const CustomTooltip = ({ active, payload, label }: {
   )
 }
 
-const daysToMonths = (days?: number) => {
-  if (!days) return 12
-  if (days <= 7) return 3
-  if (days <= 30) return 6
-  return 12
-}
-
-const MetricsLineChart = ({ days }: { days?: number }) => {
-  const { data, isLoading } = useMonthlyComparisonGrid(daysToMonths(days))
+const MetricsLineChart = ({ months }: { months: number }) => {
+  const { data, isLoading } = useMonthlyComparisonGrid(months)
 
   if (isLoading) {
     return (
@@ -55,7 +48,7 @@ const MetricsLineChart = ({ days }: { days?: number }) => {
     <div className="bg-card border border-border/30 rounded-xl p-4">
       <div className="flex items-center gap-2 mb-4">
         <TrendingUp className="h-4 w-4 text-primary" />
-        <h3 className="text-base font-semibold text-foreground">Evolucao das Metricas</h3>
+        <h3 className="text-base font-semibold text-foreground">Evolução das Métricas</h3>
       </div>
       <div className="h-[200px]">
         <ResponsiveContainer width="100%" height="100%">
@@ -88,7 +81,7 @@ const MetricsLineChart = ({ days }: { days?: number }) => {
               yAxisId="right"
               type="monotone"
               dataKey="conversion"
-              name="Conversao %"
+              name="Conversão %"
               stroke="#3b82f6"
               strokeWidth={2}
               dot={false}

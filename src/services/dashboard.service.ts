@@ -209,7 +209,20 @@ export const getMonthlyComparisonGrid = async (companyId: string, months = 6): P
     .gte('created_at', startDate.toISOString())
   if (error) throw error
 
+  // Gerar todos os meses do periodo, mesmo sem dados
+  const allMonths: string[] = []
+  const cursor = new Date(startDate.getFullYear(), startDate.getMonth(), 1)
+  const now = new Date()
+  while (cursor <= now) {
+    allMonths.push(`${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}`)
+    cursor.setMonth(cursor.getMonth() + 1)
+  }
+
   const buckets: Record<string, { leads: number; deals: number; value: number }> = {}
+  allMonths.forEach((key) => {
+    buckets[key] = { leads: 0, deals: 0, value: 0 }
+  })
+
   leads?.forEach((l) => {
     const d = new Date(l.created_at)
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
@@ -221,18 +234,17 @@ export const getMonthlyComparisonGrid = async (companyId: string, months = 6): P
     }
   })
 
-  return Object.entries(buckets)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([month, data]) => {
-      const label = new Date(month + '-15').toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })
-      return {
-        month: label,
-        leads: data.leads,
-        conversion: data.leads > 0 ? Math.round((data.deals / data.leads) * 100) : 0,
-        deals: data.deals,
-        value: data.value,
-      }
-    })
+  return allMonths.map((month) => {
+    const data = buckets[month]
+    const label = new Date(month + '-15').toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })
+    return {
+      month: label,
+      leads: data.leads,
+      conversion: data.leads > 0 ? Math.round((data.deals / data.leads) * 100) : 0,
+      deals: data.deals,
+      value: data.value,
+    }
+  })
 }
 
 export interface HistoricalConversionRate {

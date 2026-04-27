@@ -139,6 +139,7 @@ const DashboardPage = () => {
   const company = useAuthStore((s) => s.company)
   const profile = useAuthStore((s) => s.profile)
   const [selectedDays, setSelectedDays] = useState<number | undefined>(30)
+  const [monthlyRange, setMonthlyRange] = useState(6)
   const { data: kpis, isLoading, isError, refetch } = useDashboardKpis(selectedDays)
   useDashboardRealtime()
 
@@ -345,10 +346,10 @@ const DashboardPage = () => {
         <SellerPerformanceTable days={selectedDays} />
 
         {/* COMPARATIVO MENSAL */}
-        <MonthlyComparisonGrid />
+        <MonthlyComparisonGrid months={monthlyRange} onMonthsChange={setMonthlyRange} />
 
         {/* EVOLUCAO DAS METRICAS */}
-        <MetricsLineChart days={selectedDays} />
+        <MetricsLineChart months={monthlyRange} />
 
       </div>
     </div>

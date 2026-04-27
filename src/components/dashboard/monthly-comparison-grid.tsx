@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import {
   BarChart3, Users, TrendingUp, CheckCircle, DollarSign,
 } from 'lucide-react'
@@ -121,8 +120,12 @@ const MiniChart = ({ title, icon: Icon, dataKey, data, formatter }: MiniChartPro
 const fmtCurrency = (v: number) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(v)
 
-const MonthlyComparisonGrid = () => {
-  const [months, setMonths] = useState(6)
+interface MonthlyComparisonGridProps {
+  months: number
+  onMonthsChange: (months: number) => void
+}
+
+const MonthlyComparisonGrid = ({ months, onMonthsChange }: MonthlyComparisonGridProps) => {
   const { data, isLoading } = useMonthlyComparisonGrid(months)
 
   return (
@@ -134,7 +137,7 @@ const MonthlyComparisonGrid = () => {
         </div>
         <select
           value={months}
-          onChange={(e) => setMonths(Number(e.target.value))}
+          onChange={(e) => onMonthsChange(Number(e.target.value))}
           className="text-xs bg-card border border-border/40 rounded-lg px-3 py-1.5 text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
         >
           {periodOptions.map((o) => (
