@@ -236,7 +236,9 @@ export const getMonthlyComparisonGrid = async (companyId: string, months = 6): P
 
   return allMonths.map((month) => {
     const data = buckets[month]
-    const label = new Date(month + '-15').toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })
+    const [y, m] = month.split('-')
+    const monthNames = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
+    const label = `${monthNames[Number(m) - 1]}/${y.slice(2)}`
     return {
       month: label,
       leads: data.leads,

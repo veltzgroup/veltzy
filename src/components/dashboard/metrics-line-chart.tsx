@@ -55,6 +55,7 @@ const MetricsLineChart = ({ months }: { months: number }) => {
           <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
             <XAxis
               dataKey="month"
+              interval={0}
               tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
               axisLine={false}
               tickLine={false}
