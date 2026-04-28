@@ -1,15 +1,25 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth.store'
+import { useRoles } from '@/hooks/use-roles'
 import * as tasksService from '@/services/tasks.service'
 import type { TaskFilters, CreateTaskPayload, UpdateTaskPayload } from '@/services/tasks.service'
 import type { TaskStatus } from '@/types/database'
 
-export const useTasks = (filters?: TaskFilters) => {
+export const useTasks = (filters?: Omit<TaskFilters, 'currentProfileId' | 'isAdminOrManager'>) => {
   const companyId = useAuthStore((s) => s.company?.id)
+  const profileId = useAuthStore((s) => s.profile?.id)
+  const { isManager } = useRoles()
+
+  const fullFilters: TaskFilters = {
+    ...filters,
+    currentProfileId: profileId ?? undefined,
+    isAdminOrManager: isManager,
+  }
+
   return useQuery({
-    queryKey: ['tasks', companyId, filters],
-    queryFn: () => tasksService.getTasks(companyId!, filters),
+    queryKey: ['tasks', companyId, fullFilters],
+    queryFn: () => tasksService.getTasks(companyId!, fullFilters),
     enabled: !!companyId,
     staleTime: 1000 * 30,
   })

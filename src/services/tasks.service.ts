@@ -7,6 +7,10 @@ export interface TaskFilters {
   leadId?: string
   type?: TaskType
   search?: string
+  /** Profile ID do usuario logado — usado para filtrar por role */
+  currentProfileId?: string
+  /** Se false, filtra apenas tarefas do usuario (seller/rep) */
+  isAdminOrManager?: boolean
 }
 
 export interface CreateTaskPayload {
@@ -45,6 +49,11 @@ export const getTasks = async (
     .eq('company_id', companyId)
     .neq('status', 'cancelled')
     .order('due_date', { ascending: true, nullsFirst: false })
+
+  // Seller/rep: filtra apenas tarefas proprias (assigned_to ou created_by)
+  if (filters?.currentProfileId && filters?.isAdminOrManager === false) {
+    query = query.or(`assigned_to.eq.${filters.currentProfileId},created_by.eq.${filters.currentProfileId}`)
+  }
 
   if (filters?.assignedTo) query = query.eq('assigned_to', filters.assignedTo)
   if (filters?.status) query = query.eq('status', filters.status)

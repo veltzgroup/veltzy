@@ -76,7 +76,8 @@ const DroppableColumn = ({ status, label, color, tasks, onEdit }: DroppableColum
 const TarefasPage = () => {
   const profile = useAuthStore((s) => s.profile)
   const { isAdmin, isManager } = useRoles()
-  const [tab, setTab] = useState<Tab>('all')
+  const isSeller = !isManager && !isAdmin
+  const [tab, setTab] = useState<Tab>(isSeller ? 'mine' : 'all')
   const [typeFilter, setTypeFilter] = useState<TaskType | 'all'>('all')
   const [assignedFilter, setAssignedFilter] = useState<string>('all')
   const [search, setSearch] = useState('')
@@ -123,9 +124,9 @@ const TarefasPage = () => {
   }
 
   const tabs: Array<{ key: Tab; label: string; visible: boolean }> = [
-    { key: 'all', label: 'Todas', visible: true },
+    { key: 'all', label: 'Todas', visible: !isSeller },
     { key: 'mine', label: 'Minhas tarefas', visible: true },
-    { key: 'team', label: 'Equipe', visible: isAdmin || isManager },
+    { key: 'team', label: 'Equipe', visible: !isSeller },
   ]
 
   return (
@@ -189,17 +190,19 @@ const TarefasPage = () => {
               <SelectItem value="meeting">Reuniao</SelectItem>
             </SelectContent>
           </Select>
-          <Select value={assignedFilter} onValueChange={setAssignedFilter}>
-            <SelectTrigger className="h-9 w-40">
-              <SelectValue placeholder="Responsavel" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              {members?.map((m) => (
-                <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {!isSeller && (
+            <Select value={assignedFilter} onValueChange={setAssignedFilter}>
+              <SelectTrigger className="h-9 w-40">
+                <SelectValue placeholder="Responsavel" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                {members?.map((m) => (
+                  <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
 
         {/* Kanban */}
