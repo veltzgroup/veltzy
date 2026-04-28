@@ -9,13 +9,14 @@ import {
   DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu'
 import { useRoles } from '@/hooks/use-roles'
+import { useLeadTaskCount } from '@/hooks/use-tasks'
 import { usePipelineStages } from '@/hooks/use-pipeline-stages'
 import { useMoveLeadToStage } from '@/hooks/use-leads'
 import { getAvatarUrl } from '@/lib/avatar'
 import { timeAgo } from '@/lib/time'
 import type { LeadWithDetails } from '@/types/database'
 import { useNavigate } from 'react-router-dom'
-import { Phone, Mail, MoreVertical, Pencil, ArrowRightLeft, UserRoundPen, Clock, MessageSquare, Bot } from 'lucide-react'
+import { Phone, Mail, MoreVertical, Pencil, ArrowRightLeft, UserRoundPen, Clock, MessageSquare, Bot, CheckSquare } from 'lucide-react'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import type { LeadTemperature } from '@/types/database'
 
@@ -48,6 +49,7 @@ const LeadCard = ({ lead, onTransfer, fireOnly }: LeadCardProps) => {
   const navigate = useNavigate()
   const setSelectedLeadId = usePipelineStore((s) => s.setSelectedLeadId)
   const { isAdmin, isManager } = useRoles()
+  const { data: taskCount } = useLeadTaskCount(lead.id)
   const { data: stages } = usePipelineStages()
   const moveToStage = useMoveLeadToStage()
 
@@ -214,10 +216,18 @@ const LeadCard = ({ lead, onTransfer, fireOnly }: LeadCardProps) => {
               <span className="text-[10px] text-muted-foreground">+{lead.tags.length - 3}</span>
             )}
           </div>
-          <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground/60 shrink-0">
-            <Clock className="h-2.5 w-2.5" />
-            {timeAgo(lead.created_at)}
-          </span>
+          <div className="flex items-center gap-1.5 shrink-0">
+            {(taskCount ?? 0) > 0 && (
+              <span className="flex items-center gap-0.5 text-[10px] text-primary/70">
+                <CheckSquare className="h-2.5 w-2.5" />
+                {taskCount}
+              </span>
+            )}
+            <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground/60">
+              <Clock className="h-2.5 w-2.5" />
+              {timeAgo(lead.created_at)}
+            </span>
+          </div>
         </div>
       </div>
     </div>

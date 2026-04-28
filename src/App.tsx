@@ -19,6 +19,7 @@ const InboxPage = lazy(() => import('@/pages/inbox'))
 const AdminPage = lazy(() => import('@/pages/admin'))
 const SuperAdminPage = lazy(() => import('@/pages/super-admin'))
 const GestaoPage = lazy(() => import('@/pages/gestao'))
+const TarefasPage = lazy(() => import('@/pages/tarefas'))
 const DealsPage = lazy(() => import('@/pages/deals'))
 const MinhaContaPage = lazy(() => import('@/pages/minha-conta'))
 const NotFoundPage = lazy(() => import('@/pages/not-found'))
@@ -80,6 +81,7 @@ const App = () => {
                 <Route path="/" element={<DashboardPage />} />
                 <Route path="/pipeline" element={<PipelinePage />} />
                 <Route path="/inbox" element={<InboxPage />} />
+                <Route path="/tarefas" element={<TarefasPage />} />
                 <Route path="/deals" element={<DealsPage />} />
                 <Route path="/gestao" element={<ProtectedRoute requireRole={['manager', 'admin', 'super_admin']}><GestaoPage /></ProtectedRoute>} />
                 <Route path="/sellers" element={<Navigate to="/gestao?tab=vendedores" replace />} />

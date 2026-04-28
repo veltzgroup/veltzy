@@ -1,8 +1,9 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import { cn } from '@/lib/utils'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Loader2, Trash2, UserPlus, ArrowRight, User, MessageSquare } from 'lucide-react'
+import { Loader2, Trash2, UserPlus, ArrowRight, User, MessageSquare, Plus, CheckSquare, Phone, Video, MessageCircle as FollowUpIcon, Check } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
@@ -20,7 +21,9 @@ import { usePipelineStages } from '@/hooks/use-pipeline-stages'
 import { useLeadSources } from '@/hooks/use-lead-sources'
 import { useLeadActivityLogs } from '@/hooks/use-activity-logs'
 import { triggerCelebration } from '@/lib/celebration'
-import type { LeadWithDetails, LeadTemperature, ActivityLog } from '@/types/database'
+import { useLeadTasks, useCompleteTask } from '@/hooks/use-tasks'
+import { CreateTaskModal } from '@/components/tarefas/create-task-modal'
+import type { LeadWithDetails, LeadTemperature, ActivityLog, TaskType } from '@/types/database'
 import { leadTemperatureConfig } from '@/lib/lead-config'
 
 const schema = z.object({
@@ -116,8 +119,9 @@ const EditLeadModal = ({ lead, open, onClose }: EditLeadModalProps) => {
         </DialogHeader>
 
         <Tabs defaultValue="info" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="info">Informacoes</TabsTrigger>
+            <TabsTrigger value="tasks">Tarefas</TabsTrigger>
             <TabsTrigger value="history">Historico</TabsTrigger>
           </TabsList>
 
@@ -258,6 +262,10 @@ const EditLeadModal = ({ lead, open, onClose }: EditLeadModalProps) => {
             </form>
           </TabsContent>
 
+          <TabsContent value="tasks" className="mt-4">
+            <LeadTasksTab leadId={lead.id} />
+          </TabsContent>
+
           <TabsContent value="history" className="mt-4">
             <LeadTimeline leadId={lead.id} stages={stages} />
           </TabsContent>
@@ -345,6 +353,97 @@ const LeadTimeline = ({
         )
       })}
     </div>
+  )
+}
+
+const taskTypeIcons: Record<TaskType, typeof CheckSquare> = {
+  todo: CheckSquare,
+  followup: FollowUpIcon,
+  call: Phone,
+  meeting: Video,
+}
+
+const taskStatusLabels: Record<string, string> = {
+  pending: 'A fazer',
+  in_progress: 'Em andamento',
+  done: 'Feito',
+}
+
+const LeadTasksTab = ({ leadId }: { leadId: string }) => {
+  const { data: tasks, isLoading } = useLeadTasks(leadId)
+  const completeTask = useCompleteTask()
+  const [createOpen, setCreateOpen] = useState(false)
+
+  if (isLoading) {
+    return (
+      <div className="flex h-32 items-center justify-center">
+        <Loader2 className="h-5 w-5 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  return (
+    <>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-medium">Tarefas do lead</p>
+          <Button variant="outline" size="sm" onClick={() => setCreateOpen(true)}>
+            <Plus className="mr-1 h-3.5 w-3.5" />
+            Nova tarefa
+          </Button>
+        </div>
+
+        {!tasks || tasks.length === 0 ? (
+          <div className="flex h-24 items-center justify-center rounded-lg border border-dashed">
+            <p className="text-sm text-muted-foreground">Nenhuma tarefa vinculada</p>
+          </div>
+        ) : (
+          <div className="max-h-[40vh] overflow-y-auto space-y-2">
+            {tasks.map((task) => {
+              const Icon = taskTypeIcons[task.type]
+              return (
+                <div
+                  key={task.id}
+                  className="flex items-center gap-3 rounded-lg border border-border/30 p-2.5"
+                >
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-primary/10">
+                    <Icon className="h-3.5 w-3.5 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={cn('text-sm truncate', task.status === 'done' && 'line-through text-muted-foreground')}>
+                      {task.title}
+                    </p>
+                    <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                      <span>{taskStatusLabels[task.status] ?? task.status}</span>
+                      {task.due_date && (
+                        <span>
+                          {new Date(task.due_date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  {task.status !== 'done' && (
+                    <button
+                      onClick={() => completeTask.mutate(task.id)}
+                      className="rounded p-1 text-muted-foreground hover:text-emerald-500 transition-smooth shrink-0"
+                      title="Marcar como feita"
+                    >
+                      <Check className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      <CreateTaskModal
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        defaultLeadId={leadId}
+      />
+    </>
   )
 }
 

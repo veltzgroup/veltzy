@@ -440,3 +440,32 @@ export interface LeadSourceRecord {
   created_at: string
   updated_at: string
 }
+
+export type TaskType = 'todo' | 'followup' | 'call' | 'meeting'
+export type TaskStatus = 'pending' | 'in_progress' | 'done' | 'cancelled'
+
+export interface Task {
+  id: string
+  company_id: string
+  lead_id: string | null
+  assigned_to: string | null
+  created_by: string | null
+  type: TaskType
+  title: string
+  description: string | null
+  status: TaskStatus
+  due_date: string | null
+  completed_at: string | null
+  meeting_date: string | null
+  meeting_duration: number | null
+  meeting_link: string | null
+  meeting_lead_email: string | null
+  google_event_id: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface TaskWithRelations extends Task {
+  leads?: Pick<Lead, 'id' | 'name' | 'phone'> | null
+  profiles?: Pick<Profile, 'id' | 'name' | 'email'> | null
+}
