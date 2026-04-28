@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { Bug, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,13 +15,14 @@ import { useRoles } from '@/hooks/use-roles'
 
 const ErrorReportButton = () => {
   const { isAdmin } = useRoles()
+  const { pathname } = useLocation()
   const [open, setOpen] = useState(false)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [priority, setPriority] = useState('medium')
   const createTicket = useCreateTicket()
 
-  if (!isAdmin) return null
+  if (!isAdmin || pathname === '/inbox') return null
 
   const handleSubmit = async () => {
     if (!title.trim() || !description.trim()) return
