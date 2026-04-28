@@ -44,6 +44,11 @@ export const useTask = (taskId: string | null) => {
   })
 }
 
+const invalidateAllTasks = (queryClient: ReturnType<typeof useQueryClient>) => {
+  queryClient.refetchQueries({ queryKey: ['tasks'] })
+  queryClient.invalidateQueries({ queryKey: ['task-count'] })
+}
+
 export const useCreateTask = () => {
   const queryClient = useQueryClient()
   const companyId = useAuthStore((s) => s.company?.id)
@@ -51,7 +56,7 @@ export const useCreateTask = () => {
   return useMutation({
     mutationFn: (payload: CreateTaskPayload) => tasksService.createTask(companyId!, payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      invalidateAllTasks(queryClient)
       toast.success('Tarefa criada')
     },
     onError: (err: Error) => {
@@ -68,7 +73,7 @@ export const useUpdateTask = () => {
     mutationFn: ({ taskId, data }: { taskId: string; data: UpdateTaskPayload }) =>
       tasksService.updateTask(companyId!, taskId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      invalidateAllTasks(queryClient)
       toast.success('Tarefa atualizada')
     },
     onError: (err: Error) => {
@@ -84,7 +89,7 @@ export const useDeleteTask = () => {
   return useMutation({
     mutationFn: (taskId: string) => tasksService.deleteTask(companyId!, taskId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      invalidateAllTasks(queryClient)
       toast.success('Tarefa removida')
     },
     onError: (err: Error) => {
@@ -100,7 +105,7 @@ export const useCompleteTask = () => {
   return useMutation({
     mutationFn: (taskId: string) => tasksService.completeTask(companyId!, taskId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      invalidateAllTasks(queryClient)
       toast.success('Tarefa concluida')
     },
     onError: (err: Error) => {
@@ -117,7 +122,7 @@ export const useUpdateTaskStatus = () => {
     mutationFn: ({ taskId, status }: { taskId: string; status: TaskStatus }) =>
       tasksService.updateTaskStatus(companyId!, taskId, status),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      invalidateAllTasks(queryClient)
     },
     onError: (err: Error) => {
       toast.error(err.message || 'Erro ao atualizar status')

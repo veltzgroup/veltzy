@@ -1,7 +1,8 @@
+import { useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Loader2, CheckSquare, MessageCircle, Phone, Video } from 'lucide-react'
+import { Loader2, CheckSquare, MessageCircle, Phone, Video, Search } from 'lucide-react'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from '@/components/ui/dialog'
@@ -14,6 +15,7 @@ import {
 import { cn } from '@/lib/utils'
 import { useCreateTask } from '@/hooks/use-tasks'
 import { useTeamMembers } from '@/hooks/use-team'
+import { useLeads } from '@/hooks/use-leads'
 import { useAuthStore } from '@/stores/auth.store'
 import type { TaskType } from '@/types/database'
 
@@ -32,7 +34,6 @@ interface CreateTaskModalProps {
   open: boolean
   onClose: () => void
   defaultLeadId?: string | null
-  leads?: Array<{ id: string; name: string | null; phone: string }>
 }
 
 const typeOptions: Array<{ value: TaskType; label: string; icon: typeof CheckSquare }> = [
@@ -42,10 +43,12 @@ const typeOptions: Array<{ value: TaskType; label: string; icon: typeof CheckSqu
   { value: 'meeting', label: 'Reuniao', icon: Video },
 ]
 
-const CreateTaskModal = ({ open, onClose, defaultLeadId, leads }: CreateTaskModalProps) => {
+const CreateTaskModal = ({ open, onClose, defaultLeadId }: CreateTaskModalProps) => {
   const profile = useAuthStore((s) => s.profile)
   const createTask = useCreateTask()
   const { data: members } = useTeamMembers()
+  const { data: allLeads } = useLeads()
+  const [leadSearch, setLeadSearch] = useState('')
 
   const { register, handleSubmit, control, reset, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -113,26 +116,44 @@ const CreateTaskModal = ({ open, onClose, defaultLeadId, leads }: CreateTaskModa
             />
           </div>
 
-          {leads && leads.length > 0 && (
-            <div className="space-y-2">
-              <Label>Lead vinculado</Label>
-              <Controller
-                control={control}
-                name="lead_id"
-                render={({ field }) => (
-                  <Select value={field.value ?? ''} onValueChange={field.onChange}>
+          <div className="space-y-2">
+            <Label>Lead vinculado</Label>
+            <Controller
+              control={control}
+              name="lead_id"
+              render={({ field }) => {
+                const filteredLeads = (allLeads ?? []).filter((l) => {
+                  if (!leadSearch) return true
+                  const q = leadSearch.toLowerCase()
+                  return (l.name?.toLowerCase().includes(q) || l.phone.includes(q))
+                }).slice(0, 50)
+
+                return (
+                  <Select value={field.value ?? ''} onValueChange={(v) => { field.onChange(v); setLeadSearch('') }}>
                     <SelectTrigger><SelectValue placeholder="Nenhum" /></SelectTrigger>
                     <SelectContent>
+                      <div className="px-2 pb-2">
+                        <div className="relative">
+                          <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                          <input
+                            value={leadSearch}
+                            onChange={(e) => setLeadSearch(e.target.value)}
+                            placeholder="Buscar lead..."
+                            className="w-full rounded-md border border-input bg-background py-1.5 pl-7 pr-2 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+                            onKeyDown={(e) => e.stopPropagation()}
+                          />
+                        </div>
+                      </div>
                       <SelectItem value="">Nenhum</SelectItem>
-                      {leads.map((l) => (
+                      {filteredLeads.map((l) => (
                         <SelectItem key={l.id} value={l.id}>{l.name || l.phone}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                )}
-              />
-            </div>
-          )}
+                )
+              }}
+            />
+          </div>
 
           <div className="space-y-2">
             <Label>Responsavel</Label>
