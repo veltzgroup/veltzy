@@ -131,23 +131,34 @@ export const createTask = async (
     .single()
   if (error) throw error
 
-  // Google Calendar: tentar criar evento se meeting e integracao existir
+  // Google Calendar: criar evento se integracao existir no Hub (oauth_integrations)
   if (payload.type === 'meeting' && payload.meeting_date) {
     try {
-      await supabase.functions.invoke('create-calendar-event', {
-        body: {
-          taskId: data.id,
-          companyId,
-          title: payload.title,
-          meetingDate: payload.meeting_date,
-          meetingDuration: payload.meeting_duration ?? 60,
-          meetingLink: payload.meeting_link,
-          meetingLeadEmail: payload.meeting_lead_email,
-          description: payload.description,
-        },
-      })
+      const { data: integration } = await supabase
+        .from('oauth_integrations')
+        .select('access_token, refresh_token, expires_at, metadata')
+        .eq('company_id', companyId)
+        .eq('provider', 'google_calendar')
+        .maybeSingle()
+
+      if (integration) {
+        await supabase.functions.invoke('create-calendar-event', {
+          body: {
+            taskId: data.id,
+            companyId,
+            title: payload.title,
+            meetingDate: payload.meeting_date,
+            meetingDuration: payload.meeting_duration ?? 60,
+            meetingLink: payload.meeting_link,
+            meetingLeadEmail: payload.meeting_lead_email,
+            description: payload.description,
+            accessToken: integration.access_token,
+            refreshToken: integration.refresh_token,
+          },
+        })
+      }
     } catch {
-      // Nao bloqueia criacao se Calendar nao estiver configurado
+      // Nao bloqueia criacao se Calendar falhar
     }
   }
 
