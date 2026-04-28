@@ -425,7 +425,7 @@ const LeadTasksTab = ({ leadId }: { leadId: string }) => {
                   {task.status !== 'done' && (
                     <button
                       onClick={() => completeTask.mutate(task.id)}
-                      className="rounded p-1 text-muted-foreground hover:text-emerald-500 transition-smooth shrink-0"
+                      className="rounded p-1 text-muted-foreground hover:text-primary transition-smooth shrink-0"
                       title="Marcar como feita"
                     >
                       <Check className="h-4 w-4" />
