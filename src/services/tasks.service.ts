@@ -37,26 +37,48 @@ export interface UpdateTaskPayload {
   due_date?: string | null
 }
 
-const SELECT_WITH_RELATIONS = `
+const SELECT_TASKS = `
   *,
-  leads:lead_id(id, name, phone),
-  profiles:assigned_to(id, name, email)
+  leads:lead_id(id, name, phone)
 `
+
+const enrichWithProfiles = async (tasks: Record<string, unknown>[]): Promise<TaskWithRelations[]> => {
+  if (!tasks.length) return []
+
+  const profileIds = [...new Set(
+    tasks.map((t) => t.assigned_to as string).filter(Boolean),
+  )]
+
+  let profileMap: Record<string, { id: string; name: string; email: string }> = {}
+
+  if (profileIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, name, email')
+      .in('id', profileIds)
+    if (profiles) {
+      profileMap = Object.fromEntries(profiles.map((p) => [p.id, p]))
+    }
+  }
+
+  return tasks.map((t) => ({
+    ...t,
+    profiles: t.assigned_to ? (profileMap[t.assigned_to as string] ?? null) : null,
+  })) as TaskWithRelations[]
+}
 
 export const getTasks = async (
   companyId: string,
   filters?: TaskFilters,
 ): Promise<TaskWithRelations[]> => {
-  // Limitar tarefas 'done' aos ultimos 30 dias para evitar acumulo infinito
   const doneThreshold = new Date()
   doneThreshold.setDate(doneThreshold.getDate() - 30)
 
   let query = db()
     .from('tasks')
-    .select(SELECT_WITH_RELATIONS)
+    .select(SELECT_TASKS)
     .eq('company_id', companyId)
     .neq('status', 'cancelled')
-    .or(`status.neq.done,completed_at.gt.${doneThreshold.toISOString()}`)
     .order('due_date', { ascending: true, nullsFirst: false })
 
   // Seller/rep: filtra apenas tarefas proprias (assigned_to ou created_by)
@@ -72,7 +94,14 @@ export const getTasks = async (
 
   const { data, error } = await query
   if (error) throw error
-  return data as TaskWithRelations[]
+
+  // Filtrar done antigos client-side (evita .or() complexo no PostgREST)
+  const filtered = (data ?? []).filter((t) => {
+    if (t.status !== 'done') return true
+    return t.completed_at && new Date(t.completed_at) > doneThreshold
+  })
+
+  return enrichWithProfiles(filtered as Record<string, unknown>[])
 }
 
 export const getTaskById = async (
@@ -81,12 +110,14 @@ export const getTaskById = async (
 ): Promise<TaskWithRelations> => {
   const { data, error } = await db()
     .from('tasks')
-    .select(SELECT_WITH_RELATIONS)
+    .select(SELECT_TASKS)
     .eq('id', taskId)
     .eq('company_id', companyId)
     .single()
   if (error) throw error
-  return data as TaskWithRelations
+
+  const [enriched] = await enrichWithProfiles([data as Record<string, unknown>])
+  return enriched
 }
 
 export const createTask = async (
