@@ -80,12 +80,13 @@ const TaskCard = ({ task, onEdit, onLeadClick }: TaskCardProps) => {
       className={cn(
         'glass-card rounded-lg p-3 cursor-grab active:cursor-grabbing animate-fade-in border-l-2',
         isDragging && 'opacity-50 scale-105 shadow-xl z-50',
+        task.status === 'done' && 'opacity-60',
         dueStatus === 'overdue' && 'border-l-red-500',
         dueStatus === 'today' && 'border-l-yellow-500',
         dueStatus === 'normal' && 'border-l-transparent',
         !task.due_date && 'border-l-transparent',
       )}
-      onClick={() => onEdit(task)}
+      onClick={() => { if (!isDragging) onEdit(task) }}
     >
       <div className="space-y-2">
         <div className="flex items-start gap-2">
@@ -94,7 +95,9 @@ const TaskCard = ({ task, onEdit, onLeadClick }: TaskCardProps) => {
           </div>
 
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">{task.title}</p>
+            <p className={cn('text-sm font-medium truncate', task.status === 'done' && 'line-through text-muted-foreground')}>
+              {task.title}
+            </p>
           </div>
 
           <DropdownMenu>

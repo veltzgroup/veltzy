@@ -43,11 +43,16 @@ export const getTasks = async (
   companyId: string,
   filters?: TaskFilters,
 ): Promise<TaskWithRelations[]> => {
+  // Limitar tarefas 'done' aos ultimos 30 dias para evitar acumulo infinito
+  const doneThreshold = new Date()
+  doneThreshold.setDate(doneThreshold.getDate() - 30)
+
   let query = db()
     .from('tasks')
     .select(SELECT_WITH_RELATIONS)
     .eq('company_id', companyId)
     .neq('status', 'cancelled')
+    .or(`status.neq.done,completed_at.gt.${doneThreshold.toISOString()}`)
     .order('due_date', { ascending: true, nullsFirst: false })
 
   // Seller/rep: filtra apenas tarefas proprias (assigned_to ou created_by)

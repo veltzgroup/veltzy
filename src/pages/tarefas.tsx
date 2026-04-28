@@ -1,12 +1,12 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import {
-  DndContext, closestCorners, PointerSensor, useSensor, useSensors,
-  type DragEndEvent,
+  DndContext, DragOverlay, closestCorners, PointerSensor, useSensor, useSensors,
+  type DragStartEvent, type DragEndEvent,
 } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { useDroppable } from '@dnd-kit/core'
 import {
-  ListTodo, Plus, Search, Loader2, ClipboardList,
+  ListTodo, Plus, Search, Loader2, ClipboardList, AlertCircle,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -84,8 +84,10 @@ const TarefasPage = () => {
   const [createOpen, setCreateOpen] = useState(false)
   const [editTask, setEditTask] = useState<TaskWithRelations | null>(null)
 
+  const [activeTaskId, setActiveTaskId] = useState<string | null>(null)
+
   const { data: members } = useTeamMembers()
-  const { data: allTasks, isLoading } = useTasks()
+  const { data: allTasks, isLoading, isError, refetch } = useTasks()
   const updateStatus = useUpdateTaskStatus()
 
   const sensors = useSensors(
@@ -111,17 +113,41 @@ const TarefasPage = () => {
 
   const columnTasks = (status: TaskStatus) => filtered.filter((t) => t.status === status)
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const validStatuses = new Set<string>(['pending', 'in_progress', 'done'])
+
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    setActiveTaskId(event.active.id as string)
+  }, [])
+
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    setActiveTaskId(null)
     const { active, over } = event
     if (!over) return
 
     const taskId = active.id as string
-    const newStatus = over.id as TaskStatus
+    const overId = over.id as string
+
+    // Se soltou sobre uma coluna, overId e o status diretamente
+    // Se soltou sobre outro card, resolve o status via dados do task
+    let newStatus: TaskStatus
+    if (validStatuses.has(overId)) {
+      newStatus = overId as TaskStatus
+    } else {
+      const overTask = allTasks?.find((t) => t.id === overId)
+      if (!overTask) return
+      newStatus = overTask.status
+    }
+
     const task = allTasks?.find((t) => t.id === taskId)
     if (!task || task.status === newStatus) return
 
     updateStatus.mutate({ taskId, status: newStatus })
-  }
+  }, [allTasks, updateStatus])
+
+  const activeTask = useMemo(
+    () => allTasks?.find((t) => t.id === activeTaskId) ?? null,
+    [allTasks, activeTaskId],
+  )
 
   const tabs: Array<{ key: Tab; label: string; visible: boolean }> = [
     { key: 'all', label: 'Todas', visible: !isSeller },
@@ -210,6 +236,14 @@ const TarefasPage = () => {
           <div className="flex items-center justify-center py-20">
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
           </div>
+        ) : isError ? (
+          <div className="flex flex-col items-center justify-center gap-3 py-20 bg-card border border-border/30 rounded-2xl">
+            <AlertCircle className="h-8 w-8 text-destructive" />
+            <p className="text-sm text-muted-foreground">Erro ao carregar tarefas</p>
+            <Button variant="outline" size="sm" onClick={() => refetch()}>
+              Tentar novamente
+            </Button>
+          </div>
         ) : allTasks?.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted">
@@ -225,6 +259,7 @@ const TarefasPage = () => {
           <DndContext
             sensors={sensors}
             collisionDetection={closestCorners}
+            onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
           >
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -239,6 +274,13 @@ const TarefasPage = () => {
                 />
               ))}
             </div>
+            <DragOverlay>
+              {activeTask ? (
+                <div className="glass-card rounded-lg p-3 shadow-xl border-l-2 border-l-primary opacity-90 w-[280px]">
+                  <p className="text-sm font-medium truncate">{activeTask.title}</p>
+                </div>
+              ) : null}
+            </DragOverlay>
           </DndContext>
         )}
       </div>

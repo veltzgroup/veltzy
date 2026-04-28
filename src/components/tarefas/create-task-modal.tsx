@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -13,11 +13,31 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
+import { useQuery } from '@tanstack/react-query'
 import { useCreateTask } from '@/hooks/use-tasks'
 import { useTeamMembers } from '@/hooks/use-team'
-import { useLeads } from '@/hooks/use-leads'
 import { useAuthStore } from '@/stores/auth.store'
+import { veltzy } from '@/lib/supabase'
 import type { TaskType } from '@/types/database'
+
+const useLeadsSimple = () => {
+  const companyId = useAuthStore((s) => s.company?.id)
+  return useQuery({
+    queryKey: ['leads-simple', companyId],
+    queryFn: async () => {
+      const { data, error } = await veltzy()
+        .from('leads')
+        .select('id, name, phone')
+        .eq('company_id', companyId!)
+        .order('updated_at', { ascending: false })
+        .limit(200)
+      if (error) throw error
+      return data as Array<{ id: string; name: string | null; phone: string }>
+    },
+    enabled: !!companyId,
+    staleTime: 1000 * 60 * 5,
+  })
+}
 
 const schema = z.object({
   title: z.string().min(1, 'Titulo obrigatorio'),
@@ -47,7 +67,7 @@ const CreateTaskModal = ({ open, onClose, defaultLeadId }: CreateTaskModalProps)
   const profile = useAuthStore((s) => s.profile)
   const createTask = useCreateTask()
   const { data: members } = useTeamMembers()
-  const { data: allLeads } = useLeads()
+  const { data: allLeads } = useLeadsSimple()
   const [leadSearch, setLeadSearch] = useState('')
 
   const { register, handleSubmit, control, reset, formState: { errors } } = useForm<FormValues>({
@@ -58,6 +78,20 @@ const CreateTaskModal = ({ open, onClose, defaultLeadId }: CreateTaskModalProps)
       assigned_to: profile?.id ?? '',
     },
   })
+
+  useEffect(() => {
+    if (open) {
+      reset({
+        title: '',
+        type: 'todo',
+        lead_id: defaultLeadId ?? '',
+        assigned_to: profile?.id ?? '',
+        due_date: '',
+        description: '',
+      })
+      setLeadSearch('')
+    }
+  }, [open, defaultLeadId, profile?.id, reset])
 
   const onSubmit = async (values: FormValues) => {
     await createTask.mutateAsync({
