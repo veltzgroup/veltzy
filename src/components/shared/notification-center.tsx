@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { Bell, CheckCheck, UserPlus, MessageSquare, ArrowRightLeft, Info } from 'lucide-react'
+import { Bell, CheckCheck, UserPlus, MessageSquare, ArrowRightLeft, Info, Bot } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuSeparator,
@@ -17,6 +17,7 @@ const typeIcons: Record<NotificationType, React.ComponentType<{ className?: stri
   new_message: MessageSquare,
   lead_transferred: ArrowRightLeft,
   system: Info,
+  copilot: Bot,
 }
 
 const NotificationItem = ({ notification, onRead }: { notification: Notification; onRead: () => void }) => {
@@ -30,15 +31,23 @@ const NotificationItem = ({ notification, onRead }: { notification: Notification
     }
   }
 
+  const isCopilot = notification.type === 'copilot'
+
   return (
     <button
       onClick={handleClick}
       className={cn(
         'flex w-full items-start gap-2.5 px-3 py-2 text-left transition-smooth hover:bg-accent rounded-md',
-        !notification.is_read && 'bg-primary/5'
+        !notification.is_read && !isCopilot && 'bg-primary/5',
+        !notification.is_read && isCopilot && 'bg-purple-500/10 border border-purple-500/20 rounded-lg',
       )}
     >
-      <div className={cn('mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full', !notification.is_read ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground')}>
+      <div className={cn(
+        'mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full',
+        isCopilot
+          ? 'bg-purple-500/15 text-purple-600'
+          : !notification.is_read ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground',
+      )}>
         <Icon className="h-3.5 w-3.5" />
       </div>
       <div className="flex-1 min-w-0">

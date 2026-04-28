@@ -212,7 +212,7 @@ export interface LeadWithLastMessage extends Lead {
 
 export type AutomationTrigger = 'lead_created' | 'lead_stage_changed' | 'lead_temperature_changed' | 'message_received' | 'no_response' | 'deal_closed' | 'lead_lost'
 export type AutomationAction = 'send_message' | 'change_stage' | 'assign_lead' | 'add_tag' | 'remove_tag' | 'update_temperature' | 'send_webhook' | 'notify_team'
-export type NotificationType = 'new_lead' | 'lead_assigned' | 'new_message' | 'lead_transferred' | 'system'
+export type NotificationType = 'new_lead' | 'lead_assigned' | 'new_message' | 'lead_transferred' | 'system' | 'copilot'
 
 export interface AutomationCondition {
   field: string
