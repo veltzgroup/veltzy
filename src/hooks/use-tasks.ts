@@ -130,6 +130,34 @@ export const useUpdateTaskStatus = () => {
   })
 }
 
+export const useMyTaskCounts = () => {
+  const companyId = useAuthStore((s) => s.company?.id)
+  const profileId = useAuthStore((s) => s.profile?.id)
+
+  return useQuery({
+    queryKey: ['my-task-counts', companyId, profileId],
+    queryFn: async () => {
+      const { data, error } = await import('@/lib/supabase').then((m) =>
+        m.veltzy()
+          .from('tasks')
+          .select('id, status, due_date')
+          .eq('company_id', companyId!)
+          .eq('assigned_to', profileId!)
+          .in('status', ['pending', 'in_progress']),
+      )
+      if (error) throw error
+      const now = new Date()
+      const pending = (data ?? []).length
+      const overdue = (data ?? []).filter(
+        (t) => t.due_date && new Date(t.due_date) < now,
+      ).length
+      return { pending, overdue }
+    },
+    enabled: !!companyId && !!profileId,
+    staleTime: 1000 * 60,
+  })
+}
+
 export const useLeadTaskCount = (leadId: string) => {
   const companyId = useAuthStore((s) => s.company?.id)
   return useQuery({

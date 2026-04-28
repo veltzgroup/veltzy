@@ -17,6 +17,7 @@ import { useAuth } from '@/hooks/use-auth'
 import { useRoles } from '@/hooks/use-roles'
 import { useToggleAvailability } from '@/hooks/use-sellers'
 import { useTeamMembers } from '@/hooks/use-team'
+import { useMyTaskCounts } from '@/hooks/use-tasks'
 import { ThemeToggle } from '@/components/layout/theme-toggle'
 import { NotificationCenter } from '@/components/shared/notification-center'
 import { Separator } from '@/components/ui/separator'
@@ -51,6 +52,7 @@ const AppSidebar = () => {
   const { canAccessGestao, canAccessAdmin, isSuperAdmin, isAdmin, isManager } = useRoles()
   const toggle = useToggleAvailability()
   const { data: members } = useTeamMembers()
+  const { data: taskCounts } = useMyTaskCounts()
 
   const available = profile?.is_available ?? false
   const onlineMembers = members?.filter((m) => m.is_available && m.id !== profile?.id) ?? []
@@ -87,6 +89,7 @@ const AppSidebar = () => {
       <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto scrollbar-minimal">
         {navItems.map((item) => {
           if (item.visible === false) return null
+          const overdueCount = item.href === '/tarefas' ? (taskCounts?.overdue ?? 0) : 0
 
           return (
             <NavLink
@@ -103,6 +106,11 @@ const AppSidebar = () => {
             >
               <item.icon className="h-4 w-4" />
               {item.label}
+              {overdueCount > 0 && (
+                <span className="ml-auto flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-bold text-white">
+                  {overdueCount}
+                </span>
+              )}
             </NavLink>
           )
         })}
@@ -157,6 +165,14 @@ const AppSidebar = () => {
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{profile?.name}</p>
                 <p className="text-xs text-muted-foreground truncate">{profile?.email}</p>
+                {(taskCounts?.pending ?? 0) > 0 && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); navigate('/tarefas') }}
+                    className="text-[10px] text-muted-foreground hover:text-primary transition-smooth"
+                  >
+                    {taskCounts!.pending} tarefa{taskCounts!.pending > 1 ? 's' : ''} pendente{taskCounts!.pending > 1 ? 's' : ''}
+                  </button>
+                )}
               </div>
             </button>
           </DropdownMenuTrigger>

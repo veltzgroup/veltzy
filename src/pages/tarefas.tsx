@@ -6,7 +6,7 @@ import {
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { useDroppable } from '@dnd-kit/core'
 import {
-  ListTodo, Plus, Search, Loader2, ClipboardList, AlertCircle,
+  ListTodo, Plus, Search, Loader2, ClipboardList, AlertCircle, Video, X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -37,10 +37,12 @@ interface DroppableColumnProps {
   color: string
   tasks: TaskWithRelations[]
   onEdit: (task: TaskWithRelations) => void
+  onCreateClick?: () => void
 }
 
-const DroppableColumn = ({ status, label, color, tasks, onEdit }: DroppableColumnProps) => {
+const DroppableColumn = ({ status, label, color, tasks, onEdit, onCreateClick }: DroppableColumnProps) => {
   const { setNodeRef, isOver } = useDroppable({ id: status })
+  const isDone = status === 'done'
 
   return (
     <div
@@ -48,12 +50,12 @@ const DroppableColumn = ({ status, label, color, tasks, onEdit }: DroppableColum
       className={cn(
         'flex flex-col rounded-xl bg-muted/30 border border-border/30 min-h-[300px]',
         isOver && 'ring-2 ring-primary/30',
+        isDone && 'opacity-75',
       )}
     >
       <div className="flex items-center gap-2 px-3 py-2.5 border-b border-border/20">
         <span className={cn('h-2 w-2 rounded-full', color)} />
-        <span className="text-sm font-medium">{label}</span>
-        <span className="ml-auto text-xs text-muted-foreground">{tasks.length}</span>
+        <span className="text-sm font-medium">{label} ({tasks.length})</span>
       </div>
 
       <div className="flex-1 p-2 space-y-2 overflow-y-auto scrollbar-minimal max-h-[calc(100vh-280px)]">
@@ -64,11 +66,67 @@ const DroppableColumn = ({ status, label, color, tasks, onEdit }: DroppableColum
         </SortableContext>
 
         {tasks.length === 0 && (
-          <div className="flex items-center justify-center py-8 text-muted-foreground/50">
+          <div className="flex flex-col items-center justify-center py-8 gap-2 text-muted-foreground/50">
             <p className="text-xs">Nenhuma tarefa</p>
+            {onCreateClick && !isDone && (
+              <button
+                onClick={onCreateClick}
+                className="flex items-center gap-1 text-[10px] text-primary hover:underline"
+              >
+                <Plus className="h-3 w-3" />
+                Nova tarefa
+              </button>
+            )}
           </div>
         )}
       </div>
+    </div>
+  )
+}
+
+const UpcomingMeetingBanner = ({
+  tasks,
+  onViewTask,
+}: {
+  tasks?: TaskWithRelations[]
+  onViewTask: (task: TaskWithRelations) => void
+}) => {
+  const [dismissed, setDismissed] = useState(false)
+
+  if (dismissed || !tasks) return null
+
+  const now = new Date()
+  const twoHoursFromNow = new Date(now.getTime() + 2 * 60 * 60 * 1000)
+
+  const upcoming = tasks.find(
+    (t) =>
+      t.type === 'meeting' &&
+      t.meeting_date &&
+      t.status !== 'done' &&
+      t.status !== 'cancelled' &&
+      new Date(t.meeting_date) > now &&
+      new Date(t.meeting_date) <= twoHoursFromNow,
+  )
+
+  if (!upcoming) return null
+
+  const meetingDate = new Date(upcoming.meeting_date!)
+  const minutesUntil = Math.round((meetingDate.getTime() - now.getTime()) / 60000)
+  const leadName = upcoming.leads?.name || upcoming.leads?.phone || ''
+
+  return (
+    <div className="flex items-center gap-3 rounded-xl bg-amber-500/10 border border-amber-500/20 px-4 py-3">
+      <Video className="h-4 w-4 text-amber-600 shrink-0" />
+      <p className="text-sm flex-1">
+        Reuniao com <span className="font-medium">{leadName || 'lead'}</span> em{' '}
+        <span className="font-medium">{minutesUntil}min</span>
+      </p>
+      <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => onViewTask(upcoming)}>
+        Ver detalhes
+      </Button>
+      <button onClick={() => setDismissed(true)} className="text-muted-foreground hover:text-foreground transition-smooth">
+        <X className="h-3.5 w-3.5" />
+      </button>
     </div>
   )
 }
@@ -175,6 +233,9 @@ const TarefasPage = () => {
           </Button>
         </div>
 
+        {/* Banner reuniao iminente */}
+        <UpcomingMeetingBanner tasks={allTasks} onViewTask={setEditTask} />
+
         {/* Tabs */}
         <div className="flex items-center gap-4 border-b">
           {tabs.map((t) => t.visible && (
@@ -271,6 +332,7 @@ const TarefasPage = () => {
                   color={col.color}
                   tasks={columnTasks(col.status)}
                   onEdit={setEditTask}
+                  onCreateClick={() => setCreateOpen(true)}
                 />
               ))}
             </div>

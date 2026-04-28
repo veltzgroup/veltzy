@@ -21,6 +21,7 @@ import { MetricsLineChart } from '@/components/dashboard/metrics-line-chart'
 import { NextActionsCard } from '@/components/dashboard/next-actions-card'
 import { BottleneckDetector } from '@/components/dashboard/bottleneck-detector'
 import { ForecastCard } from '@/components/dashboard/forecast-card'
+import { CopilotCard } from '@/components/dashboard/copilot-card'
 
 const curveData = [5, 8, 15, 35, 60, 75, 60, 35, 15, 8, 5].map((v, i) => ({ x: i, y: v }))
 
@@ -329,6 +330,9 @@ const DashboardPage = () => {
           <BottleneckDetector />
           <ForecastCard />
         </div>
+
+        {/* COPILOTO DE VENDAS */}
+        <CopilotCard />
 
         {/* VISAO DO PIPELINE + DICAS DE FOLLOW-UP */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
