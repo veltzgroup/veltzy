@@ -1,6 +1,7 @@
 import { cn } from '@/lib/utils'
 import { timeAgo } from '@/lib/time'
 import { Download, FileText } from 'lucide-react'
+import { AudioBubble } from '@/components/inbox/audio-bubble'
 import type { Message } from '@/types/database'
 
 interface MessageBubbleProps {
@@ -22,7 +23,12 @@ const MediaContent = ({ message }: { message: Message }) => {
         </a>
       )
     case 'audio':
-      return <audio controls src={message.file_url ?? ''} className="max-w-[240px]" />
+      return (
+        <AudioBubble
+          fileUrl={message.file_url ?? ''}
+          transcription={message.content || null}
+        />
+      )
     case 'video':
       return <video controls src={message.file_url ?? ''} className="max-w-[280px] rounded-lg" />
     case 'document':
@@ -67,7 +73,7 @@ const MessageBubble = ({ message, senderName }: MessageBubbleProps) => {
 
         {message.message_type !== 'text' && <MediaContent message={message} />}
 
-        {message.content && (
+        {message.content && message.message_type !== 'audio' && (
           <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
         )}
 

@@ -3,6 +3,7 @@ import { Send, Paperclip, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { ReplyTemplatesPopover } from '@/components/inbox/reply-templates-popover'
+import { AudioRecorder } from '@/components/inbox/audio-recorder'
 import { useSendMessage, useWhatsAppConnected } from '@/hooks/use-messages'
 import { useAuthStore } from '@/stores/auth.store'
 import { supabase } from '@/lib/supabase'
@@ -15,6 +16,7 @@ interface ChatInputProps {
 const ChatInput = ({ leadId, onTyping }: ChatInputProps) => {
   const [content, setContent] = useState('')
   const [uploading, setUploading] = useState(false)
+  const [isRecording, setIsRecording] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const sendMessage = useSendMessage()
@@ -91,55 +93,65 @@ const ChatInput = ({ leadId, onTyping }: ChatInputProps) => {
   return (
     <div className="border-t bg-background p-3">
       <div className="relative flex items-end gap-2">
-        <div className="relative">
-          <ReplyTemplatesPopover onSelect={(t) => { setContent(t); textareaRef.current?.focus() }} />
-        </div>
+        {!isRecording && (
+          <>
+            <div className="relative">
+              <ReplyTemplatesPopover onSelect={(t) => { setContent(t); textareaRef.current?.focus() }} />
+            </div>
 
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 text-muted-foreground hover:text-foreground"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploading}
-        >
-          {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
-        </Button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          className="hidden"
-          accept="image/*,audio/*,video/*,.pdf,.doc,.docx,.xls,.xlsx"
-          onChange={handleFileUpload}
-        />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+            >
+              {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              accept="image/*,audio/*,video/*,.pdf,.doc,.docx,.xls,.xlsx"
+              onChange={handleFileUpload}
+            />
+          </>
+        )}
 
-        <textarea
-          ref={textareaRef}
-          value={content}
-          onChange={(e) => {
-            setContent(e.target.value)
-            adjustHeight()
-            onTyping?.()
-          }}
-          onKeyDown={handleKeyDown}
-          placeholder="Digite uma mensagem..."
-          rows={1}
-          className="flex-1 resize-none rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring input-clean"
-        />
+        <AudioRecorder leadId={leadId} onRecordingChange={setIsRecording} />
 
-        <Button
-          size="icon"
-          className="h-8 w-8 shrink-0"
-          onClick={handleSend}
-          disabled={!content.trim() || sendMessage.isPending}
-          title={whatsAppConnected === false ? 'WhatsApp nao conectado - mensagem sera salva como manual' : undefined}
-        >
-          {sendMessage.isPending ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Send className="h-4 w-4" />
-          )}
-        </Button>
+        {!isRecording && (
+          <>
+            <textarea
+              ref={textareaRef}
+              value={content}
+              onChange={(e) => {
+                setContent(e.target.value)
+                adjustHeight()
+                onTyping?.()
+              }}
+              onKeyDown={handleKeyDown}
+              placeholder="Digite uma mensagem..."
+              rows={1}
+              className="flex-1 resize-none rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring input-clean"
+            />
+
+            <Button
+              size="icon"
+              className="h-8 w-8 shrink-0"
+              onClick={handleSend}
+              disabled={!content.trim() || sendMessage.isPending}
+              title={whatsAppConnected === false ? 'WhatsApp nao conectado - mensagem sera salva como manual' : undefined}
+            >
+              {sendMessage.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+            </Button>
+          </>
+        )}
       </div>
     </div>
   )

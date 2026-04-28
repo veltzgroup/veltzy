@@ -160,7 +160,7 @@ Deno.serve(async (req) => {
 
     const isNewLead = !lead.assigned_to && lead.id
 
-    await supabase.from('messages').insert({
+    const { data: savedMessage } = await supabase.from('messages').insert({
       lead_id: lead.id,
       company_id: companyId,
       content,
@@ -171,7 +171,44 @@ Deno.serve(async (req) => {
       file_mime_type: fileMimeType,
       source: 'whatsapp',
       external_id: payload.messageId,
-    })
+    }).select('id').single()
+
+    // Transcricao assincrona de audio via Whisper (nao bloqueia o webhook)
+    if ((messageType === 'audio' || payload.type === 'ptt') && fileUrl && savedMessage?.id) {
+      const openaiKey = Deno.env.get('OPENAI_API_KEY')
+      if (openaiKey) {
+        const transcribeAudio = async (audioUrl: string, messageId: string) => {
+          try {
+            const audioResponse = await fetch(audioUrl)
+            const audioBuffer = await audioResponse.arrayBuffer()
+
+            const formData = new FormData()
+            formData.append('file', new Blob([audioBuffer], { type: 'audio/ogg' }), 'audio.ogg')
+            formData.append('model', 'whisper-1')
+            formData.append('language', 'pt')
+
+            const whisperResponse = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${openaiKey}` },
+              body: formData,
+            })
+
+            const result = await whisperResponse.json()
+            const transcription = result.text ?? null
+
+            if (transcription) {
+              await supabase.from('messages')
+                .update({ content: transcription })
+                .eq('id', messageId)
+            }
+          } catch (err) {
+            console.error('Transcription failed:', err)
+          }
+        }
+        // Nao bloqueia — fire and forget
+        transcribeAudio(fileUrl, savedMessage.id)
+      }
+    }
 
     const supabaseUrl = url
     const serviceKey = key
