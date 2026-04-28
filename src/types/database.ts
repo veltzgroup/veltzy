@@ -469,3 +469,21 @@ export interface TaskWithRelations extends Task {
   leads?: Pick<Lead, 'id' | 'name' | 'phone'> | null
   profiles?: Pick<Profile, 'id' | 'name' | 'email'> | null
 }
+
+export type ReminderChannel = 'whatsapp' | 'email' | 'both'
+export type ReminderStatus = 'pending' | 'sent' | 'edited' | 'cancelled' | 'failed'
+
+export interface TaskReminder {
+  id: string
+  task_id: string
+  company_id: string
+  lead_id: string | null
+  channel: ReminderChannel
+  scheduled_at: string
+  content: string
+  status: ReminderStatus
+  sent_at: string | null
+  error_message: string | null
+  created_at: string
+  updated_at: string
+}

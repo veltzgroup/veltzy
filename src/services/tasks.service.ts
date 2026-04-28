@@ -1,4 +1,4 @@
-import { veltzy as db } from '@/lib/supabase'
+import { veltzy as db, supabase } from '@/lib/supabase'
 import type { Task, TaskWithRelations, TaskStatus, TaskType } from '@/types/database'
 
 export interface TaskFilters {
@@ -21,6 +21,10 @@ export interface CreateTaskPayload {
   title: string
   description?: string | null
   due_date?: string | null
+  meeting_date?: string | null
+  meeting_duration?: number | null
+  meeting_link?: string | null
+  meeting_lead_email?: string | null
 }
 
 export interface UpdateTaskPayload {
@@ -95,6 +99,27 @@ export const createTask = async (
     .select()
     .single()
   if (error) throw error
+
+  // Google Calendar: tentar criar evento se meeting e integracao existir
+  if (payload.type === 'meeting' && payload.meeting_date) {
+    try {
+      await supabase.functions.invoke('create-calendar-event', {
+        body: {
+          taskId: data.id,
+          companyId,
+          title: payload.title,
+          meetingDate: payload.meeting_date,
+          meetingDuration: payload.meeting_duration ?? 60,
+          meetingLink: payload.meeting_link,
+          meetingLeadEmail: payload.meeting_lead_email,
+          description: payload.description,
+        },
+      })
+    } catch {
+      // Nao bloqueia criacao se Calendar nao estiver configurado
+    }
+  }
+
   return data
 }
 

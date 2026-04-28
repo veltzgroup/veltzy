@@ -1,8 +1,11 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Loader2, CheckSquare, MessageCircle, Phone, Video, Trash2 } from 'lucide-react'
+import {
+  Loader2, CheckSquare, MessageCircle, Phone, Video, Trash2,
+  Bell, Mail, X, Pencil, Save,
+} from 'lucide-react'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from '@/components/ui/dialog'
@@ -14,8 +17,9 @@ import {
 } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 import { useUpdateTask, useDeleteTask } from '@/hooks/use-tasks'
+import { useTaskReminders, useUpdateReminder, useCancelReminder } from '@/hooks/use-task-reminders'
 import { useTeamMembers } from '@/hooks/use-team'
-import type { TaskWithRelations, TaskType, TaskStatus } from '@/types/database'
+import type { TaskWithRelations, TaskType, TaskStatus, TaskReminder } from '@/types/database'
 
 const schema = z.object({
   title: z.string().min(1, 'Titulo obrigatorio'),
@@ -195,6 +199,10 @@ const EditTaskModal = ({ task, open, onClose }: EditTaskModalProps) => {
             </div>
           )}
 
+          {task.type === 'meeting' && (
+            <RemindersList taskId={task.id} />
+          )}
+
           <div className="flex items-center justify-between pt-2">
             <Button type="button" variant="destructive" size="sm" onClick={handleDelete} disabled={deleteTask.isPending}>
               <Trash2 className="mr-1 h-4 w-4" />
@@ -211,6 +219,112 @@ const EditTaskModal = ({ task, open, onClose }: EditTaskModalProps) => {
         </form>
       </DialogContent>
     </Dialog>
+  )
+}
+
+const channelIcon = (ch: string) => {
+  if (ch === 'email') return <Mail className="h-3 w-3" />
+  if (ch === 'both') return <><MessageCircle className="h-3 w-3" /><Mail className="h-3 w-3" /></>
+  return <MessageCircle className="h-3 w-3" />
+}
+
+const statusBadge: Record<string, { label: string; cls: string }> = {
+  pending: { label: 'Pendente', cls: 'bg-yellow-500/15 text-yellow-600' },
+  sent: { label: 'Enviado', cls: 'bg-emerald-500/15 text-emerald-600' },
+  edited: { label: 'Editado', cls: 'bg-blue-500/15 text-blue-600' },
+  cancelled: { label: 'Cancelado', cls: 'bg-muted text-muted-foreground' },
+  failed: { label: 'Falhou', cls: 'bg-red-500/15 text-red-500' },
+}
+
+const RemindersList = ({ taskId }: { taskId: string }) => {
+  const { data: reminders, isLoading } = useTaskReminders(taskId)
+  const updateReminder = useUpdateReminder()
+  const cancelRem = useCancelReminder()
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editContent, setEditContent] = useState('')
+
+  if (isLoading) return <Loader2 className="h-4 w-4 animate-spin mx-auto" />
+  if (!reminders?.length) return null
+
+  const canEdit = (r: TaskReminder) =>
+    (r.status === 'pending' || r.status === 'edited') &&
+    new Date(r.scheduled_at).getTime() > Date.now() + 30 * 60 * 1000
+
+  const handleSaveEdit = async (id: string) => {
+    await updateReminder.mutateAsync({ reminderId: id, content: editContent })
+    setEditingId(null)
+  }
+
+  const handleCancel = async (id: string) => {
+    if (confirm('Cancelar este lembrete?')) {
+      await cancelRem.mutateAsync(id)
+    }
+  }
+
+  return (
+    <div className="space-y-2 border-t pt-3">
+      <div className="flex items-center gap-1.5">
+        <Bell className="h-3.5 w-3.5 text-muted-foreground" />
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Lembretes agendados</p>
+      </div>
+      {reminders.map((r) => {
+        const badge = statusBadge[r.status] ?? statusBadge.pending
+        const isEditing = editingId === r.id
+        return (
+          <div key={r.id} className="rounded-lg border border-border/30 p-2.5 space-y-1.5">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 text-muted-foreground">{channelIcon(r.channel)}</div>
+              <span className="text-[10px] text-muted-foreground flex-1">
+                {new Date(r.scheduled_at).toLocaleString('pt-BR', {
+                  day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
+                })}
+              </span>
+              <span className={cn('rounded-full px-1.5 py-0.5 text-[9px] font-medium', badge.cls)}>
+                {badge.label}
+              </span>
+            </div>
+
+            {isEditing ? (
+              <div className="space-y-1.5">
+                <textarea
+                  value={editContent}
+                  onChange={(e) => setEditContent(e.target.value)}
+                  className="flex min-h-[50px] w-full rounded-md border border-input bg-background px-2 py-1.5 text-xs input-clean"
+                />
+                <div className="flex gap-1 justify-end">
+                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditingId(null)}>
+                    <X className="h-3 w-3" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleSaveEdit(r.id)} disabled={updateReminder.isPending}>
+                    <Save className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <p className="text-xs text-muted-foreground line-clamp-2">{r.content}</p>
+                {canEdit(r) && (
+                  <div className="flex gap-1 justify-end">
+                    <Button
+                      variant="ghost" size="icon" className="h-6 w-6"
+                      onClick={() => { setEditingId(r.id); setEditContent(r.content) }}
+                    >
+                      <Pencil className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive"
+                      onClick={() => handleCancel(r.id)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )
+      })}
+    </div>
   )
 }
 
