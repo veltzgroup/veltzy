@@ -262,9 +262,7 @@ export interface Notification {
 
 export interface SdrConfig {
   enabled: boolean
-  model: string
   prompt: string
-  api_key?: string
 }
 
 export interface AutoReplyConfig {

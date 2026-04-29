@@ -2,11 +2,7 @@ import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { useSdrConfig, useSaveSdrConfig } from '@/hooks/use-sdr-config'
 import type { SdrConfig } from '@/types/database'
@@ -15,18 +11,18 @@ const SdrSettings = () => {
   const { data: config, isLoading } = useSdrConfig()
   const saveConfig = useSaveSdrConfig()
 
-  const { register, handleSubmit, setValue, watch, reset } = useForm<SdrConfig>({
-    defaultValues: { enabled: false, model: 'gpt-4o-mini', prompt: '' },
+  const { register, handleSubmit, watch, reset } = useForm<SdrConfig>({
+    defaultValues: { enabled: false, prompt: '' },
   })
 
   useEffect(() => {
-    if (config) reset(config)
+    if (config) reset({ enabled: config.enabled, prompt: config.prompt })
   }, [config, reset])
 
   const enabled = watch('enabled')
 
   const onSubmit = (values: SdrConfig) => {
-    saveConfig.mutate(values)
+    saveConfig.mutate({ enabled: values.enabled, prompt: values.prompt })
   }
 
   if (isLoading) return <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
@@ -47,22 +43,10 @@ const SdrSettings = () => {
             <span className="text-sm">{enabled ? 'SDR Ativo' : 'SDR Desativado'}</span>
           </div>
 
-          <div className="space-y-2">
-            <Label>Modelo de IA</Label>
-            <Select value={watch('model')} onValueChange={(v) => setValue('model', v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="gpt-4o-mini">GPT-4o Mini</SelectItem>
-                <SelectItem value="gpt-4o">GPT-4o</SelectItem>
-                <SelectItem value="gemini-1.5-flash">Gemini Flash</SelectItem>
-                <SelectItem value="gemini-1.5-pro">Gemini Pro</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label>API Key (opcional)</Label>
-            <Input type="password" placeholder="Deixe vazio para usar chave padrao" {...register('api_key')} />
+          <div className="rounded-lg bg-muted/50 p-3">
+            <p className="text-xs text-muted-foreground">
+              Modelo e provider gerenciados pelo Hub. Para alterar, entre em contato com o suporte.
+            </p>
           </div>
 
           <div className="space-y-2">
