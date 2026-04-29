@@ -3,7 +3,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { cn } from '@/lib/utils'
 import {
   CheckSquare, MessageCircle, Phone, Video, MoreVertical,
-  Pencil, Check, Trash2, Calendar,
+  Pencil, Check, Trash2, Calendar, GripVertical,
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
@@ -75,10 +75,8 @@ const TaskCard = ({ task, onEdit, onLeadClick }: TaskCardProps) => {
     <div
       ref={setNodeRef}
       style={style}
-      {...attributes}
-      {...listeners}
       className={cn(
-        'glass-card rounded-lg p-3 cursor-grab active:cursor-grabbing animate-fade-in border-l-2',
+        'glass-card rounded-lg p-3 animate-fade-in border-l-2',
         isDragging && 'opacity-50 scale-105 shadow-xl z-50',
         task.status === 'done' && 'opacity-60',
         dueStatus === 'overdue' && 'border-l-red-500',
@@ -86,11 +84,19 @@ const TaskCard = ({ task, onEdit, onLeadClick }: TaskCardProps) => {
         dueStatus === 'normal' && 'border-l-transparent',
         !task.due_date && 'border-l-transparent',
       )}
-      onClick={() => { if (!isDragging) onEdit(task) }}
+      onClick={() => onEdit(task)}
     >
       <div className="space-y-2">
         <div className="flex items-start gap-2">
-          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-primary/10">
+          <button
+            {...attributes}
+            {...listeners}
+            className="mt-0.5 cursor-grab active:cursor-grabbing touch-none text-muted-foreground/40 hover:text-muted-foreground transition-smooth shrink-0"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <GripVertical className="h-4 w-4" />
+          </button>
+          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-primary/10" title={config.label}>
             <Icon className="h-3.5 w-3.5 text-primary" />
           </div>
 

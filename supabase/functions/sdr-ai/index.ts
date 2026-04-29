@@ -19,7 +19,53 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { leadId, companyId, messageContent, conversationHistory } = await req.json()
+    const body = await req.json()
+
+    // Mode: meeting-reminders — gera lembretes personalizados para reuniao
+    if (body.mode === 'meeting-reminders') {
+      const { leadName, meetingDate, meetingLink } = body
+      const apiKey = Deno.env.get('OPENAI_API_KEY')
+      if (!apiKey) {
+        return new Response(JSON.stringify({
+          reminder_48h: `Ola ${leadName}! Lembrete: temos uma reuniao agendada para ${meetingDate}. Nos vemos la!`,
+          reminder_2h: `Ola ${leadName}! Nossa reuniao comeca em 2 horas. ${meetingLink ? `Link: ${meetingLink}` : 'Ate logo!'}`,
+          reminder_15min: `${leadName}, nossa reuniao comeca em 15 minutos! ${meetingLink || ''}`,
+        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+
+      const prompt = `Voce e um assistente de vendas. Gere 3 mensagens de lembrete para uma reuniao comercial.
+Lead: ${leadName}
+Data/hora: ${meetingDate}
+Link: ${meetingLink || 'nao informado'}
+Tom: profissional mas amigavel, natural, sem ser robotico.
+
+Retorne JSON com exatamente este formato:
+{
+  "reminder_48h": "mensagem completa para 48h antes",
+  "reminder_2h": "mensagem completa para 2h antes",
+  "reminder_15min": "mensagem completa para 15min antes"
+}
+Retorne apenas o JSON, sem texto adicional.`
+
+      const aiRes = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [{ role: 'user', content: prompt }],
+          temperature: 0.7,
+          response_format: { type: 'json_object' },
+        }),
+      })
+
+      const aiData = await aiRes.json()
+      const content = aiData.choices?.[0]?.message?.content
+      if (!content) throw new Error('Empty AI response')
+
+      return new Response(content, { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
+    const { leadId, companyId, messageContent, conversationHistory } = body
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,

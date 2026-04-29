@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import {
   DndContext, DragOverlay, closestCorners, PointerSensor, useSensor, useSensors,
   type DragStartEvent, type DragEndEvent,
@@ -139,6 +139,14 @@ const TarefasPage = () => {
   const [typeFilter, setTypeFilter] = useState<TaskType | 'all'>('all')
   const [assignedFilter, setAssignedFilter] = useState<string>('all')
   const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined)
+  const handleSearch = useCallback((value: string) => {
+    setSearch(value)
+    clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => setDebouncedSearch(value), 300)
+  }, [])
+  useEffect(() => () => clearTimeout(debounceRef.current), [])
   const [createOpen, setCreateOpen] = useState(false)
   const [editTask, setEditTask] = useState<TaskWithRelations | null>(null)
 
@@ -161,13 +169,13 @@ const TarefasPage = () => {
 
     if (typeFilter !== 'all') result = result.filter((t) => t.type === typeFilter)
     if (assignedFilter !== 'all') result = result.filter((t) => t.assigned_to === assignedFilter)
-    if (search) {
-      const q = search.toLowerCase()
+    if (debouncedSearch) {
+      const q = debouncedSearch.toLowerCase()
       result = result.filter((t) => t.title.toLowerCase().includes(q))
     }
 
     return result
-  }, [allTasks, tab, typeFilter, assignedFilter, search, profile?.id])
+  }, [allTasks, tab, typeFilter, assignedFilter, debouncedSearch, profile?.id])
 
   const columnTasks = (status: TaskStatus) => filtered.filter((t) => t.status === status)
 
@@ -261,7 +269,7 @@ const TarefasPage = () => {
             <Input
               placeholder="Buscar tarefa..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => handleSearch(e.target.value)}
               className="h-9 w-52 pl-8"
             />
           </div>
