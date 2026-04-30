@@ -121,7 +121,7 @@ Todas as tabelas de dominio possuem `company_id` para isolamento via RLS.
 `useRealtimeHub` (canal central para chat, notificacoes, presenca)
 
 ### Leads e Pipeline
-`useLeads`, `useLeadSources`, `usePipelineStages`, `useConversationList`, `useFallbackOwner`
+`useLeads`, `useLeadSources`, `usePipelineStages`, `useConversationList`, `useFallbackOwner`, `useImportLeads`
 
 ### Mensagens e Chat
 `useMessages`, `useTypingIndicator`, `useReplyTemplates`
@@ -177,6 +177,7 @@ Todas as tabelas de dominio possuem `company_id` para isolamento via RLS.
 | `activity-logs.service.ts` | Logs de auditoria |
 | `support.service.ts` | Tickets de suporte |
 | `super-admin.service.ts` | Funcoes super admin |
+| `import-leads.service.ts` | Importacao de leads via CSV (batch insert, validacao, duplicatas) |
 
 ## 7. SEGURANCA (RLS)
 
