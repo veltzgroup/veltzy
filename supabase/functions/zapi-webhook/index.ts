@@ -215,6 +215,15 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Se mensagem chegou, WhatsApp esta funcionando - garante status connected
+    if (config.instance_id) {
+      await supabase
+        .from('whatsapp_configs')
+        .update({ status: 'connected', updated_at: new Date().toISOString() })
+        .eq('instance_id', config.instance_id)
+        .neq('status', 'connected')
+    }
+
     const isNewLead = !lead.assigned_to && lead.id
 
     const { data: savedMessage } = await supabase.from('messages').insert({
