@@ -195,8 +195,8 @@ Deno.serve(async (req) => {
             .update({ avatar_url: urlData.publicUrl })
             .eq('id', lead.id)
         }
-      } catch {
-        // falha silenciosa — nao bloqueia o webhook
+      } catch (err) {
+        console.error('Avatar fetch failed:', err)
       }
     }
 
