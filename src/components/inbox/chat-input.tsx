@@ -76,7 +76,6 @@ const ChatInput = ({ leadId, onTyping }: ChatInputProps) => {
         .createSignedUrl(path, 3600)
       if (signedUrlError) throw signedUrlError
       const fileUrl = signedUrlData.signedUrl
-      console.log('[chat-input] file_url gerado:', fileUrl)
 
       const messageType = file.type.startsWith('image/') ? 'image'
         : file.type.startsWith('audio/') ? 'audio'

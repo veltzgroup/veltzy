@@ -168,13 +168,6 @@ export const routeMessage = async (
   const { phone, sourceSlug } = await getLeadPhoneAndSource(companyId, payload.leadId)
   const whatsAppConnected = phone ? await isWhatsAppConnected(companyId) : false
 
-  console.log('[routeMessage]', {
-    phone,
-    sourceSlug,
-    whatsAppConnected,
-    route: phone && whatsAppConnected ? 'whatsapp' : sourceSlug === 'instagram' ? 'instagram' : 'manual',
-  })
-
   // Lead com phone + WhatsApp conectado: envia via Z-API independente da source
   if (phone && whatsAppConnected) {
     const { data, error } = await supabase.functions.invoke('zapi-send', {

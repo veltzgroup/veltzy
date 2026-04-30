@@ -42,7 +42,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    console.log('Headers recebidos:', Object.fromEntries(req.headers.entries()))
     const payload: ZAPIPayload = await req.json()
 
     if (payload.fromMe || payload.isGroup) {

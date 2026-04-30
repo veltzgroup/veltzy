@@ -15,23 +15,42 @@ Deno.serve(async (req) => {
     const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(url, key, { db: { schema: 'veltzy' } })
 
-    const SLA_MINUTES = 30
     const now = new Date()
-    const threshold = new Date(now.getTime() - SLA_MINUTES * 60 * 1000).toISOString()
+    const breached: string[] = []
 
-    // Leads aguardando resposta ha mais de 30 min (nao resolvidos, nao breached ainda)
+    // Busca leads pendentes (nao breached, nao resolvidos, com mensagem do cliente)
     const { data: pendingLeads } = await supabase
       .from('leads')
       .select('id, name, phone, company_id, assigned_to, last_customer_message_at')
       .eq('sla_breached', false)
       .neq('conversation_status', 'resolved')
       .not('last_customer_message_at', 'is', null)
-      .lt('last_customer_message_at', threshold)
-
-    const breached: string[] = []
 
     if (pendingLeads && pendingLeads.length > 0) {
+      // Busca config de SLA por empresa
+      const companyIds = [...new Set(pendingLeads.map((l) => l.company_id))]
+      const slaByCompany: Record<string, number> = {}
+
+      for (const cid of companyIds) {
+        const { data: settings } = await supabase
+          .from('system_settings')
+          .select('value')
+          .eq('company_id', cid)
+          .eq('key', 'business_rules')
+          .maybeSingle()
+        const rules = settings?.value as Record<string, unknown> | null
+        const slaHours = Number(rules?.sla_hours) || 0
+        // sla_hours e em horas no admin, converte para minutos. Fallback: 30min
+        slaByCompany[cid] = slaHours > 0 ? slaHours * 60 : 30
+      }
+
       for (const lead of pendingLeads) {
+        const slaMinutes = slaByCompany[lead.company_id] ?? 30
+        const threshold = new Date(now.getTime() - slaMinutes * 60 * 1000)
+
+        // Ainda dentro do prazo
+        if (new Date(lead.last_customer_message_at) >= threshold) continue
+
         // Verifica se ja tem resposta humana apos a ultima mensagem do cliente
         const { data: lastHumanMsg } = await supabase
           .from('messages')
@@ -43,10 +62,7 @@ Deno.serve(async (req) => {
           .limit(1)
           .maybeSingle()
 
-        if (lastHumanMsg) {
-          // Ja respondeu, nao precisa breach
-          continue
-        }
+        if (lastHumanMsg) continue
 
         // Marca como breached
         await supabase
