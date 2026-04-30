@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react'
-import { Send, Paperclip, Loader2 } from 'lucide-react'
+import { SendHorizonal, Paperclip, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { ReplyTemplatesPopover } from '@/components/inbox/reply-templates-popover'
@@ -140,19 +140,18 @@ const ChatInput = ({ leadId, onTyping }: ChatInputProps) => {
               className="flex-1 resize-none rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring input-clean"
             />
 
-            <Button
-              size="icon"
-              className="h-8 w-8 shrink-0"
+            <button
               onClick={handleSend}
               disabled={!content.trim() || sendMessage.isPending}
               title={whatsAppConnected === false ? 'WhatsApp nao conectado - mensagem sera salva como manual' : undefined}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-all duration-150 hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {sendMessage.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <Send className="h-4 w-4" />
+                <SendHorizonal className="h-4 w-4" />
               )}
-            </Button>
+            </button>
           </>
         )}
       </div>
