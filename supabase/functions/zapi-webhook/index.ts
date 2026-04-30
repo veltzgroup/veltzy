@@ -180,7 +180,7 @@ Deno.serve(async (req) => {
         )
         const photoData = await photoRes.json()
         console.log('Z-API profile-picture response:', JSON.stringify(photoData))
-        const photoUrl = photoData?.value
+        const photoUrl = photoData?.link ?? photoData?.value
 
         if (photoUrl) {
           console.log('Baixando imagem de:', photoUrl)
