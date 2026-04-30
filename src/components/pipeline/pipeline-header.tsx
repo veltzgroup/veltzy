@@ -1,4 +1,5 @@
-import { Search, Plus, Settings2, Flame, Download } from 'lucide-react'
+import { useState } from 'react'
+import { Search, Plus, Settings2, Flame, Download, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -13,6 +14,7 @@ import { useRoles } from '@/hooks/use-roles'
 import type { LeadTemperature, LeadWithDetails } from '@/types/database'
 import { leadTemperatureConfig } from '@/lib/lead-config'
 import { exportToCsv, exportToPdf } from '@/lib/export-leads'
+import { ImportLeadsModal } from '@/components/pipeline/import-leads-modal'
 import { cn } from '@/lib/utils'
 
 const TemperatureIcon = ({ temperature }: { temperature: LeadTemperature }) => {
@@ -71,6 +73,7 @@ const PipelineHeader = ({ onAddLead, onManageStages, fireOnly, onToggleFireOnly,
   const { filters, setFilters } = usePipelineStore()
   const { data: sources } = useLeadSources()
   const { isAdmin, isManager } = useRoles()
+  const [importModalOpen, setImportModalOpen] = useState(false)
 
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -143,6 +146,12 @@ const PipelineHeader = ({ onAddLead, onManageStages, fireOnly, onToggleFireOnly,
           </Button>
         )}
 
+        {(isAdmin || isManager) && (
+          <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => setImportModalOpen(true)} title="Importar CSV">
+            <Upload className="h-4 w-4" />
+          </Button>
+        )}
+
         {leads && leads.length > 0 && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -166,6 +175,8 @@ const PipelineHeader = ({ onAddLead, onManageStages, fireOnly, onToggleFireOnly,
           Novo Lead
         </Button>
       </div>
+
+      <ImportLeadsModal open={importModalOpen} onClose={() => setImportModalOpen(false)} />
     </div>
   )
 }
