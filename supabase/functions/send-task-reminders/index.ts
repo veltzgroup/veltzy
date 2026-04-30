@@ -40,32 +40,17 @@ Deno.serve(async (req) => {
         const companyId = task.company_id
         const channel = reminder.channel as string
 
-        // WhatsApp
+        // WhatsApp - insere na fila para respeitar rate limit
         if (channel === 'whatsapp' || channel === 'both') {
           if (reminder.lead_id) {
-            const { data: lead } = await supabase
-              .from('leads')
-              .select('phone')
-              .eq('id', reminder.lead_id)
-              .single()
-
-            if (lead?.phone) {
-              const { data: config } = await supabase
-                .from('whatsapp_configs')
-                .select('instance_id, instance_token, client_token, status')
-                .eq('company_id', companyId)
-                .eq('status', 'connected')
-                .maybeSingle()
-
-              if (config) {
-                const baseUrl = `https://api.z-api.io/instances/${config.instance_id}/token/${config.instance_token}`
-                await fetch(`${baseUrl}/send-text`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json', 'Client-Token': config.client_token },
-                  body: JSON.stringify({ phone: lead.phone, message: reminder.content }),
-                })
-              }
-            }
+            await supabase.from('message_queue').insert({
+              company_id: companyId,
+              lead_id: reminder.lead_id,
+              content: reminder.content,
+              message_type: 'text',
+              scheduled_at: new Date(Date.now() + sent * 3000).toISOString(),
+              source: 'reminder',
+            })
           }
         }
 

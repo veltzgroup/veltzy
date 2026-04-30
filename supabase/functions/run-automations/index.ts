@@ -122,6 +122,18 @@ Deno.serve(async (req) => {
               source: 'manual',
             })
             break
+          case 'send_whatsapp':
+            // Insere na fila com delay escalonado para rate limit
+            await supabase.from('message_queue').insert({
+              company_id: companyId,
+              lead_id: leadId,
+              content: actionData.message as string,
+              message_type: (actionData.message_type as string) ?? 'text',
+              file_url: (actionData.file_url as string) ?? null,
+              scheduled_at: new Date(Date.now() + executed * 3000).toISOString(),
+              source: 'automation',
+            })
+            break
         }
 
         await supabase.from('automation_logs').insert({
