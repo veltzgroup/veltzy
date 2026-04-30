@@ -12,10 +12,11 @@ interface MessageBubbleProps {
 const MediaContent = ({ message }: { message: Message }) => {
   switch (message.message_type) {
     case 'image':
+      if (!message.file_url) return null
       return (
-        <a href={message.file_url ?? '#'} target="_blank" rel="noopener noreferrer">
+        <a href={message.file_url} target="_blank" rel="noopener noreferrer">
           <img
-            src={message.file_url ?? ''}
+            src={message.file_url}
             alt="imagem"
             className="max-w-[240px] rounded-lg"
             loading="lazy"
@@ -74,7 +75,10 @@ const MessageBubble = ({ message, senderName }: MessageBubbleProps) => {
         {message.message_type !== 'text' && <MediaContent message={message} />}
 
         {message.content && message.message_type !== 'audio' && (
-          <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+          <p className={cn(
+            'whitespace-pre-wrap break-words',
+            message.message_type === 'text' ? 'text-sm' : 'text-xs opacity-70',
+          )}>{message.content}</p>
         )}
 
         <p className={cn('text-[10px] text-right', isLead ? 'opacity-40' : 'opacity-60')}>

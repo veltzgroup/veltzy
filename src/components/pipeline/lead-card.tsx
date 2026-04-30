@@ -12,7 +12,6 @@ import { useRoles } from '@/hooks/use-roles'
 import { useLeadTaskCount } from '@/hooks/use-tasks'
 import { usePipelineStages } from '@/hooks/use-pipeline-stages'
 import { useMoveLeadToStage } from '@/hooks/use-leads'
-import { getAvatarUrl } from '@/lib/avatar'
 import { timeAgo } from '@/lib/time'
 import type { LeadWithDetails } from '@/types/database'
 import { useNavigate } from 'react-router-dom'
@@ -67,7 +66,7 @@ const LeadCard = ({ lead, onTransfer, fireOnly }: LeadCardProps) => {
     transition,
   }
 
-  const avatarSrc = lead.avatar_url || getAvatarUrl(lead.phone)
+  const avatarSrc = lead.avatar_url || undefined
 
   const assigneeName = lead.profiles?.name
   const assigneeInitials = assigneeName

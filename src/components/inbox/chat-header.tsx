@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button'
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
 } from '@/components/ui/dropdown-menu'
-import { getAvatarUrl } from '@/lib/avatar'
 import { MoreVertical, Kanban, CheckCircle } from 'lucide-react'
 import { useUpdateLead } from '@/hooks/use-leads'
 import type { LeadWithLastMessage } from '@/types/database'
@@ -16,7 +15,7 @@ interface ChatHeaderProps {
 const ChatHeader = ({ lead }: ChatHeaderProps) => {
   const navigate = useNavigate()
   const updateLead = useUpdateLead()
-  const avatarSrc = lead.avatar_url || getAvatarUrl(lead.phone)
+  const avatarSrc = lead.avatar_url || undefined
 
   const handleResolve = () => {
     updateLead.mutate({ leadId: lead.id, data: { conversation_status: 'resolved' } })

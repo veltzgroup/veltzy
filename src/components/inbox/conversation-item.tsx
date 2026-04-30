@@ -1,6 +1,5 @@
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
-import { getAvatarUrl } from '@/lib/avatar'
 import { timeAgo } from '@/lib/time'
 import type { LeadWithLastMessage } from '@/types/database'
 
@@ -36,7 +35,7 @@ const messagePreview = (lead: LeadWithLastMessage): string => {
 }
 
 const ConversationItem = ({ lead, isSelected, onClick }: ConversationItemProps) => {
-  const avatarSrc = lead.avatar_url || getAvatarUrl(lead.phone)
+  const avatarSrc = lead.avatar_url || undefined
   const lastTime = lead.last_message?.created_at ?? lead.updated_at
 
   return (
