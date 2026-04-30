@@ -177,6 +177,7 @@ Deno.serve(async (req) => {
           { headers: { 'Client-Token': config.client_token } }
         )
         const photoData = await photoRes.json()
+        console.log('Z-API profile-picture response:', JSON.stringify(photoData))
         const photoUrl = photoData?.value
 
         if (photoUrl) {
