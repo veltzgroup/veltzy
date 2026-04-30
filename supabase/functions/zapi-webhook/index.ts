@@ -34,6 +34,7 @@ Deno.serve(async (req) => {
   }
 
   try {
+    console.log('Headers recebidos:', Object.fromEntries(req.headers.entries()))
     const payload: ZAPIPayload = await req.json()
 
     if (payload.fromMe || payload.isGroup) {
@@ -49,14 +50,16 @@ Deno.serve(async (req) => {
     const supabase = createClient(url, key, { db: { schema: 'veltzy' } })
     const supabasePublic = createClient(url, key, { db: { schema: 'public' } })
 
+    // Valida autenticidade via client token da Z-API
+    const clientToken = req.headers.get('clienttoken')
     const { data: config } = await supabase
       .from('whatsapp_configs')
-      .select('company_id')
+      .select('company_id, client_token')
       .eq('instance_id', payload.instanceId)
       .single()
 
-    if (!config) {
-      return new Response(JSON.stringify({ error: 'Instance not found' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    if (!clientToken || !config?.client_token || clientToken !== config.client_token) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
     const companyId = config.company_id
