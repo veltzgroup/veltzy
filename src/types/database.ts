@@ -1,7 +1,7 @@
 export type AppRole = 'super_admin' | 'admin' | 'manager' | 'seller' | 'representative'
 export type LeadStatus = 'new' | 'qualifying' | 'open' | 'deal' | 'lost'
 export type LeadTemperature = 'cold' | 'warm' | 'hot' | 'fire'
-export type SenderType = 'ai' | 'human' | 'lead'
+export type SenderType = 'ai' | 'human' | 'lead' | 'internal'
 export type ConversationStatus = 'unread' | 'read' | 'replied' | 'waiting_client' | 'waiting_internal' | 'resolved'
 export type IntegrationType = 'manual' | 'webhook' | 'whatsapp_api' | 'instagram_api' | 'linkedin_api'
 
@@ -162,6 +162,7 @@ export interface Message {
   source: MessageSource
   external_id: string | null
   replied_message_id: string | null
+  is_internal: boolean
   is_scheduled: boolean
   scheduled_at: string | null
   is_read: boolean
@@ -176,6 +177,7 @@ export interface SendMessagePayload {
   fileName?: string
   mimeType?: string
   repliedMessageId?: string
+  isInternal?: boolean
 }
 
 export interface WhatsAppConfig {

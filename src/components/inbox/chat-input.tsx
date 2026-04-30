@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from 'react'
-import { SendHorizonal, Paperclip, Loader2 } from 'lucide-react'
+import { SendHorizonal, Paperclip, Loader2, StickyNote } from 'lucide-react'
 import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { ReplyTemplatesPopover } from '@/components/inbox/reply-templates-popover'
 import { AudioRecorder } from '@/components/inbox/audio-recorder'
@@ -15,6 +16,7 @@ interface ChatInputProps {
 
 const ChatInput = ({ leadId, onTyping }: ChatInputProps) => {
   const [content, setContent] = useState('')
+  const [isInternal, setIsInternal] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [isRecording, setIsRecording] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -37,7 +39,7 @@ const ChatInput = ({ leadId, onTyping }: ChatInputProps) => {
     setContent('')
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
 
-    await sendMessage.mutateAsync({ leadId, content: text })
+    await sendMessage.mutateAsync({ leadId, content: text, isInternal })
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -106,6 +108,22 @@ const ChatInput = ({ leadId, onTyping }: ChatInputProps) => {
               type="button"
               variant="ghost"
               size="icon"
+              title="Nota visivel apenas para a equipe"
+              className={cn(
+                'h-8 w-8',
+                isInternal
+                  ? 'bg-amber-500/20 text-amber-600 hover:bg-amber-500/30 hover:text-amber-700'
+                  : 'text-muted-foreground hover:text-foreground',
+              )}
+              onClick={() => setIsInternal((v) => !v)}
+            >
+              <StickyNote className="h-4 w-4" />
+            </Button>
+
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
               className="h-8 w-8 text-muted-foreground hover:text-foreground"
               onClick={() => fileInputRef.current?.click()}
               disabled={uploading}
@@ -135,9 +153,14 @@ const ChatInput = ({ leadId, onTyping }: ChatInputProps) => {
                 onTyping?.()
               }}
               onKeyDown={handleKeyDown}
-              placeholder="Digite uma mensagem..."
+              placeholder={isInternal ? 'Escrever nota interna...' : 'Digite uma mensagem...'}
               rows={1}
-              className="flex-1 resize-none rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring input-clean"
+              className={cn(
+                'flex-1 resize-none rounded-lg border px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring input-clean',
+                isInternal
+                  ? 'border-amber-500/30 bg-amber-500/5'
+                  : 'border-input bg-background',
+              )}
             />
 
             <button
