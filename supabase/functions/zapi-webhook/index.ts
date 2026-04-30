@@ -58,13 +58,14 @@ Deno.serve(async (req) => {
     const supabase = createClient(url, key, { db: { schema: 'veltzy' } })
     const supabasePublic = createClient(url, key, { db: { schema: 'public' } })
 
+    const zapiToken = req.headers.get('z-api-token')
     const { data: config } = await supabase
       .from('whatsapp_configs')
       .select('company_id, instance_id, instance_token, client_token')
       .eq('instance_id', payload.instanceId)
       .single()
 
-    if (!config) {
+    if (!config || !zapiToken || zapiToken !== config.instance_token) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
@@ -170,6 +171,7 @@ Deno.serve(async (req) => {
     // Busca foto de perfil do WhatsApp se o lead nao tem avatar
     if (!lead.avatar_url) {
       try {
+        console.log('Buscando avatar para lead:', lead.id, 'phone:', phone)
         const photoRes = await fetch(
           `https://api.z-api.io/instances/${config.instance_id}/token/${config.instance_token}/profile-picture?phone=${phone}`,
           { headers: { 'Client-Token': config.client_token } }
@@ -196,7 +198,7 @@ Deno.serve(async (req) => {
             .eq('id', lead.id)
         }
       } catch (err) {
-        console.error('Avatar fetch failed:', err)
+        console.error('Avatar fetch failed:', JSON.stringify(err))
       }
     }
 
