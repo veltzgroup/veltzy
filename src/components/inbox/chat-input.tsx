@@ -108,22 +108,6 @@ const ChatInput = ({ leadId, onTyping }: ChatInputProps) => {
               type="button"
               variant="ghost"
               size="icon"
-              title="Nota visivel apenas para a equipe"
-              className={cn(
-                'h-8 w-8',
-                isInternal
-                  ? 'bg-amber-500/20 text-amber-600 hover:bg-amber-500/30 hover:text-amber-700'
-                  : 'text-muted-foreground hover:text-foreground',
-              )}
-              onClick={() => setIsInternal((v) => !v)}
-            >
-              <StickyNote className="h-4 w-4" />
-            </Button>
-
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
               className="h-8 w-8 text-muted-foreground hover:text-foreground"
               onClick={() => fileInputRef.current?.click()}
               disabled={uploading}
@@ -139,6 +123,22 @@ const ChatInput = ({ leadId, onTyping }: ChatInputProps) => {
             />
           </>
         )}
+
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          title="Nota visivel apenas para a equipe"
+          className={cn(
+            'h-8 w-8 shrink-0',
+            isInternal
+              ? 'bg-amber-500/20 text-amber-600 hover:bg-amber-500/30 hover:text-amber-700'
+              : 'text-muted-foreground hover:text-foreground',
+          )}
+          onClick={() => setIsInternal((v) => !v)}
+        >
+          <StickyNote className="h-4 w-4" />
+        </Button>
 
         <AudioRecorder leadId={leadId} onRecordingChange={setIsRecording} />
 
