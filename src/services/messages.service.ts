@@ -74,6 +74,9 @@ export const getConversationList = async (companyId: string): Promise<LeadWithLa
     observations: row.observations as string | null,
     avatar_url: row.avatar_url as string | null,
     ad_context: row.ad_context ?? null,
+    last_customer_message_at: (row.last_customer_message_at as string) ?? null,
+    sla_breached: (row.sla_breached as boolean) ?? false,
+    first_response_at: (row.first_response_at as string) ?? null,
     created_at: row.created_at as string,
     updated_at: row.updated_at as string,
     profiles: row.assigned_to ? {

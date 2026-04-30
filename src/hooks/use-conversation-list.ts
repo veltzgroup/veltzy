@@ -19,7 +19,7 @@ export const useConversationList = () => {
 
   const filtered = useMemo(() => {
     if (!query.data) return []
-    let result = query.data
+    let result = [...query.data]
 
     if (filters.search) {
       const q = filters.search.toLowerCase()
@@ -40,6 +40,15 @@ export const useConversationList = () => {
     } else if (filters.assignedTo !== 'all') {
       result = result.filter((l) => l.assigned_to === filters.assignedTo)
     }
+
+    // Ordenar por urgencia: SLA breached primeiro, depois por ultima mensagem
+    result.sort((a, b) => {
+      if (a.sla_breached && !b.sla_breached) return -1
+      if (!a.sla_breached && b.sla_breached) return 1
+      const aTime = a.last_message?.created_at ?? a.updated_at
+      const bTime = b.last_message?.created_at ?? b.updated_at
+      return new Date(bTime).getTime() - new Date(aTime).getTime()
+    })
 
     return result
   }, [query.data, filters, profileId])

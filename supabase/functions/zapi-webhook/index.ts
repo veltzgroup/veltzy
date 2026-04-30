@@ -224,6 +224,12 @@ Deno.serve(async (req) => {
         .neq('status', 'connected')
     }
 
+    // Atualiza timestamp da ultima mensagem do cliente para SLA
+    await supabase
+      .from('leads')
+      .update({ last_customer_message_at: new Date().toISOString() })
+      .eq('id', lead.id)
+
     const isNewLead = !lead.assigned_to && lead.id
 
     const { data: savedMessage } = await supabase.from('messages').insert({

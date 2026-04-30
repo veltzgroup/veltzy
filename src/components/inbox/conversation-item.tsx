@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+import { Clock } from 'lucide-react'
 import { timeAgo } from '@/lib/time'
 import type { LeadWithLastMessage } from '@/types/database'
 
@@ -34,9 +35,20 @@ const messagePreview = (lead: LeadWithLastMessage): string => {
   return prefix + msg.content
 }
 
+const getWaitingMinutes = (lead: LeadWithLastMessage): number | null => {
+  if (!lead.last_customer_message_at) return null
+  const lastMsg = lead.last_message
+  // Se a ultima mensagem e do vendedor/IA, nao esta aguardando
+  if (lastMsg && (lastMsg.sender_type === 'human' || lastMsg.sender_type === 'ai')) return null
+  const diff = Date.now() - new Date(lead.last_customer_message_at).getTime()
+  return Math.round(diff / 60000)
+}
+
 const ConversationItem = ({ lead, isSelected, onClick }: ConversationItemProps) => {
   const avatarSrc = lead.avatar_url || undefined
   const lastTime = lead.last_message?.created_at ?? lead.updated_at
+  const waitingMinutes = getWaitingMinutes(lead)
+  const isWarning = waitingMinutes !== null && waitingMinutes >= 15 && !lead.sla_breached
 
   return (
     <button
@@ -45,7 +57,9 @@ const ConversationItem = ({ lead, isSelected, onClick }: ConversationItemProps) 
         'flex w-full items-start gap-3 px-3 py-3 text-left transition-smooth border-l-4',
         isSelected
           ? 'bg-primary/10 border-l-primary'
-          : 'border-l-transparent hover:bg-muted/50'
+          : lead.sla_breached
+            ? 'border-l-destructive bg-destructive/5 hover:bg-destructive/10'
+            : 'border-l-transparent hover:bg-muted/50'
       )}
     >
       <div className="relative shrink-0">
@@ -63,7 +77,19 @@ const ConversationItem = ({ lead, isSelected, onClick }: ConversationItemProps) 
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2">
           <p className="text-sm font-medium truncate">{lead.name || lead.phone}</p>
-          <span className="text-[10px] text-muted-foreground shrink-0">{timeAgo(lastTime)}</span>
+          <div className="flex items-center gap-1 shrink-0">
+            {lead.sla_breached && (
+              <Clock className="h-3 w-3 text-destructive" />
+            )}
+            <span className={cn(
+              'text-[10px]',
+              lead.sla_breached ? 'text-destructive font-medium' :
+              isWarning ? 'text-yellow-600 font-medium' :
+              'text-muted-foreground',
+            )}>
+              {timeAgo(lastTime)}
+            </span>
+          </div>
         </div>
         <p className="text-xs text-muted-foreground truncate">{messagePreview(lead)}</p>
       </div>

@@ -104,6 +104,9 @@ export interface Lead {
   observations: string | null
   avatar_url: string | null
   ad_context: AdContext | null
+  last_customer_message_at: string | null
+  sla_breached: boolean
+  first_response_at: string | null
   created_at: string
   updated_at: string
 }
