@@ -171,9 +171,11 @@ Deno.serve(async (req) => {
     // Busca foto de perfil do WhatsApp se o lead nao tem avatar
     if (!lead.avatar_url) {
       try {
-        console.log('Buscando avatar para lead:', lead.id, 'phone:', phone)
+        // Z-API espera numero com codigo do pais (55)
+        const intlPhone = phone.length === 11 ? `55${phone}` : phone
+        console.log('Buscando avatar para lead:', lead.id, 'phone:', intlPhone)
         const photoRes = await fetch(
-          `https://api.z-api.io/instances/${config.instance_id}/token/${config.instance_token}/profile-picture?phone=${phone}`,
+          `https://api.z-api.io/instances/${config.instance_id}/token/${config.instance_token}/profile-picture?phone=${intlPhone}`,
           { headers: { 'Client-Token': config.client_token } }
         )
         const photoData = await photoRes.json()
@@ -181,25 +183,35 @@ Deno.serve(async (req) => {
         const photoUrl = photoData?.value
 
         if (photoUrl) {
+          console.log('Baixando imagem de:', photoUrl)
           const imgRes = await fetch(photoUrl)
-          const imgBlob = await imgRes.blob()
+          const imgBuffer = await imgRes.arrayBuffer()
           const path = `avatars/${lead.id}.jpg`
 
-          await supabase.storage
+          // Usa client sem schema customizado para storage
+          const storageClient = createClient(url, key)
+          const { error: uploadError } = await storageClient.storage
             .from('chat-attachments')
-            .upload(path, imgBlob, { contentType: 'image/jpeg', upsert: true })
+            .upload(path, imgBuffer, { contentType: 'image/jpeg', upsert: true })
 
-          const { data: urlData } = supabase.storage
-            .from('chat-attachments')
-            .getPublicUrl(path)
+          if (uploadError) {
+            console.error('Avatar upload error:', JSON.stringify(uploadError))
+          } else {
+            const { data: urlData } = storageClient.storage
+              .from('chat-attachments')
+              .getPublicUrl(path)
 
-          await supabase
-            .from('leads')
-            .update({ avatar_url: urlData.publicUrl })
-            .eq('id', lead.id)
+            console.log('Avatar URL gerada:', urlData.publicUrl)
+            await supabase
+              .from('leads')
+              .update({ avatar_url: urlData.publicUrl })
+              .eq('id', lead.id)
+          }
+        } else {
+          console.log('Z-API nao retornou foto para este numero')
         }
       } catch (err) {
-        console.error('Avatar fetch failed:', JSON.stringify(err))
+        console.error('Avatar fetch failed:', err instanceof Error ? err.message : JSON.stringify(err))
       }
     }
 
