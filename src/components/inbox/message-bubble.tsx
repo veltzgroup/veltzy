@@ -10,6 +10,7 @@ interface MessageBubbleProps {
 }
 
 const MediaContent = ({ message }: { message: Message }) => {
+  console.log('[message-bubble] renderizando midia:', message.file_url, message.message_type)
   switch (message.message_type) {
     case 'image':
       if (!message.file_url) return null
