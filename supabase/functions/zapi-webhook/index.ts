@@ -50,15 +50,13 @@ Deno.serve(async (req) => {
     const supabase = createClient(url, key, { db: { schema: 'veltzy' } })
     const supabasePublic = createClient(url, key, { db: { schema: 'public' } })
 
-    // Valida autenticidade via client token da Z-API
-    const clientToken = req.headers.get('clienttoken')
     const { data: config } = await supabase
       .from('whatsapp_configs')
       .select('company_id, client_token')
       .eq('instance_id', payload.instanceId)
       .single()
 
-    if (!clientToken || !config?.client_token || clientToken !== config.client_token) {
+    if (!config) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
