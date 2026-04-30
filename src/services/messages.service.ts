@@ -36,6 +36,13 @@ export const sendMessage = async (companyId: string, payload: SendMessagePayload
     .update({ conversation_status: 'replied' })
     .eq('id', payload.leadId)
 
+  // F3: Popula first_response_at na primeira resposta do vendedor
+  await db()
+    .from('leads')
+    .update({ first_response_at: new Date().toISOString() })
+    .eq('id', payload.leadId)
+    .is('first_response_at', null)
+
   return data
 }
 

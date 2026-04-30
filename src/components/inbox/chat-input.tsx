@@ -71,11 +71,10 @@ const ChatInput = ({ leadId, onTyping }: ChatInputProps) => {
         .upload(path, file)
       if (uploadError) throw uploadError
 
-      const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+      const { data: publicUrlData } = supabase.storage
         .from('chat-attachments')
-        .createSignedUrl(path, 3600)
-      if (signedUrlError) throw signedUrlError
-      const fileUrl = signedUrlData.signedUrl
+        .getPublicUrl(path)
+      const fileUrl = publicUrlData.publicUrl
 
       const messageType = file.type.startsWith('image/') ? 'image'
         : file.type.startsWith('audio/') ? 'audio'

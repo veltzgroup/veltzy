@@ -172,17 +172,14 @@ Deno.serve(async (req) => {
       try {
         // Z-API espera numero com codigo do pais (55)
         const intlPhone = phone.length === 11 ? `55${phone}` : phone
-        console.log('Buscando avatar para lead:', lead.id, 'phone:', intlPhone)
         const photoRes = await fetch(
           `https://api.z-api.io/instances/${config.instance_id}/token/${config.instance_token}/profile-picture?phone=${intlPhone}`,
           { headers: { 'Client-Token': config.client_token } }
         )
         const photoData = await photoRes.json()
-        console.log('Z-API profile-picture response:', JSON.stringify(photoData))
         const photoUrl = photoData?.link ?? photoData?.value
 
         if (photoUrl) {
-          console.log('Baixando imagem de:', photoUrl)
           const imgRes = await fetch(photoUrl)
           const imgBuffer = await imgRes.arrayBuffer()
           const path = `avatars/${lead.id}.jpg`
@@ -200,14 +197,11 @@ Deno.serve(async (req) => {
               .from('chat-attachments')
               .getPublicUrl(path)
 
-            console.log('Avatar URL gerada:', urlData.publicUrl)
             await supabase
               .from('leads')
               .update({ avatar_url: urlData.publicUrl })
               .eq('id', lead.id)
           }
-        } else {
-          console.log('Z-API nao retornou foto para este numero')
         }
       } catch (err) {
         console.error('Avatar fetch failed:', err instanceof Error ? err.message : JSON.stringify(err))

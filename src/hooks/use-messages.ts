@@ -40,6 +40,17 @@ export const useMessages = (leadId: string | null) => {
           })
         }
       )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'veltzy', table: 'messages', filter: `lead_id=eq.${leadId}` },
+        (payload) => {
+          queryClient.setQueryData<Message[]>(['messages', leadId], (old) => {
+            if (!old) return old ?? []
+            const updated = payload.new as Message
+            return old.map((m) => m.id === updated.id ? { ...m, ...updated } : m)
+          })
+        }
+      )
       .subscribe()
 
     return () => {

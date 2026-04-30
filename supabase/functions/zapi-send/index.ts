@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
         }
       }
 
-      await fetch(`${baseUrl}${endpoints[msgType] ?? '/send-text'}`, {
+      const zapiResponse = await fetch(`${baseUrl}${endpoints[msgType] ?? '/send-text'}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -101,6 +101,12 @@ Deno.serve(async (req) => {
         },
         body: JSON.stringify(body),
       })
+
+      // I1: Valida resposta da Z-API antes de salvar mensagem
+      const zapiData = await zapiResponse.json()
+      if (!zapiResponse.ok || zapiData.error) {
+        throw new Error(`Z-API error: ${zapiData.error ?? zapiResponse.status}`)
+      }
     }
 
     const { data: message } = await supabase
@@ -124,6 +130,13 @@ Deno.serve(async (req) => {
       .from('leads')
       .update({ conversation_status: 'replied' })
       .eq('id', payload.leadId)
+
+    // F3: Popula first_response_at na primeira resposta do vendedor
+    await supabase
+      .from('leads')
+      .update({ first_response_at: new Date().toISOString() })
+      .eq('id', payload.leadId)
+      .is('first_response_at', null)
 
     return new Response(JSON.stringify(message), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
   } catch (err) {
