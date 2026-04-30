@@ -28,6 +28,14 @@ interface ZAPIPayload {
   }
 }
 
+const normalizePhone = (phone: string) => {
+  const digits = phone.replace(/\D/g, '')
+  if (digits.startsWith('55') && digits.length === 13) {
+    return digits.slice(2)
+  }
+  return digits
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -52,7 +60,7 @@ Deno.serve(async (req) => {
 
     const { data: config } = await supabase
       .from('whatsapp_configs')
-      .select('company_id, client_token')
+      .select('company_id, instance_id, instance_token, client_token')
       .eq('instance_id', payload.instanceId)
       .single()
 
@@ -61,7 +69,7 @@ Deno.serve(async (req) => {
     }
 
     const companyId = config.company_id
-    const phone = payload.phone.replace(/\D/g, '')
+    const phone = normalizePhone(payload.phone)
 
     let content = ''
     let messageType = 'text'
@@ -95,7 +103,7 @@ Deno.serve(async (req) => {
 
     let { data: lead } = await supabase
       .from('leads')
-      .select('id, assigned_to')
+      .select('id, assigned_to, avatar_url')
       .eq('company_id', companyId)
       .eq('phone', phone)
       .maybeSingle()
@@ -149,7 +157,7 @@ Deno.serve(async (req) => {
           is_queued: !assignedTo,
           ad_context: adContext,
         })
-        .select('id, assigned_to')
+        .select('id, assigned_to, avatar_url')
         .single()
 
       lead = newLead
@@ -157,6 +165,39 @@ Deno.serve(async (req) => {
 
     if (!lead) {
       return new Response(JSON.stringify({ error: 'Failed to create lead' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
+    // Busca foto de perfil do WhatsApp se o lead nao tem avatar
+    if (!lead.avatar_url) {
+      try {
+        const photoRes = await fetch(
+          `https://api.z-api.io/instances/${config.instance_id}/token/${config.instance_token}/profile-picture?phone=${phone}`,
+          { headers: { 'Client-Token': config.client_token } }
+        )
+        const photoData = await photoRes.json()
+        const photoUrl = photoData?.value
+
+        if (photoUrl) {
+          const imgRes = await fetch(photoUrl)
+          const imgBlob = await imgRes.blob()
+          const path = `avatars/${lead.id}.jpg`
+
+          await supabase.storage
+            .from('chat-attachments')
+            .upload(path, imgBlob, { contentType: 'image/jpeg', upsert: true })
+
+          const { data: urlData } = supabase.storage
+            .from('chat-attachments')
+            .getPublicUrl(path)
+
+          await supabase
+            .from('leads')
+            .update({ avatar_url: urlData.publicUrl })
+            .eq('id', lead.id)
+        }
+      } catch {
+        // falha silenciosa — nao bloqueia o webhook
+      }
     }
 
     const isNewLead = !lead.assigned_to && lead.id
