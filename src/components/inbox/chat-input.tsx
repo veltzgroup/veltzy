@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button'
 import { ReplyTemplatesPopover } from '@/components/inbox/reply-templates-popover'
 import { AudioRecorder } from '@/components/inbox/audio-recorder'
 import { useSendMessage, useWhatsAppConnected } from '@/hooks/use-messages'
+import { useBusinessRules } from '@/hooks/use-business-rules'
+import { useRoles } from '@/hooks/use-roles'
 import { useAuthStore } from '@/stores/auth.store'
 import { supabase } from '@/lib/supabase'
 
@@ -23,7 +25,10 @@ const ChatInput = ({ leadId, onTyping }: ChatInputProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const sendMessage = useSendMessage()
   const { data: whatsAppConnected } = useWhatsAppConnected()
+  const { data: businessRules } = useBusinessRules()
+  const { isManager } = useRoles()
   const companyId = useAuthStore((s) => s.company?.id)
+  const canCreateNotes = isManager && businessRules?.enable_internal_notes !== false
 
   const adjustHeight = useCallback(() => {
     const el = textareaRef.current
@@ -124,21 +129,23 @@ const ChatInput = ({ leadId, onTyping }: ChatInputProps) => {
           </>
         )}
 
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          title="Nota visivel apenas para a equipe"
-          className={cn(
-            'h-8 w-8 shrink-0',
-            isInternal
-              ? 'bg-amber-500/20 text-amber-600 hover:bg-amber-500/30 hover:text-amber-700'
-              : 'text-muted-foreground hover:text-foreground',
-          )}
-          onClick={() => setIsInternal((v) => !v)}
-        >
-          <StickyNote className="h-4 w-4" />
-        </Button>
+        {canCreateNotes && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            title="Nota visivel apenas para a equipe"
+            className={cn(
+              'h-8 w-8 shrink-0',
+              isInternal
+                ? 'bg-amber-500/20 text-amber-600 hover:bg-amber-500/30 hover:text-amber-700'
+                : 'text-muted-foreground hover:text-foreground',
+            )}
+            onClick={() => setIsInternal((v) => !v)}
+          >
+            <StickyNote className="h-4 w-4" />
+          </Button>
+        )}
 
         <AudioRecorder leadId={leadId} onRecordingChange={setIsRecording} />
 
