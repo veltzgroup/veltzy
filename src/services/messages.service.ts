@@ -99,17 +99,6 @@ export const getConversationList = async (companyId: string): Promise<LeadWithLa
   })) as LeadWithLastMessage[]
 }
 
-export const getLeadSourceSlug = async (companyId: string, leadId: string): Promise<string | null> => {
-  const { data } = await db()
-    .from('leads')
-    .select('lead_sources:source_id(slug)')
-    .eq('id', leadId)
-    .eq('company_id', companyId)
-    .single()
-  const sources = (data as Record<string, unknown>)?.lead_sources as { slug: string } | null
-  return sources?.slug ?? null
-}
-
 export const isWhatsAppConnected = async (companyId: string): Promise<boolean> => {
   const { data } = await db()
     .from('whatsapp_configs')
@@ -130,26 +119,47 @@ export const isInstagramConnected = async (companyId: string): Promise<boolean> 
   return !!data
 }
 
+export const getLeadPhoneAndSource = async (
+  companyId: string,
+  leadId: string,
+): Promise<{ phone: string | null; sourceSlug: string | null }> => {
+  const { data } = await db()
+    .from('leads')
+    .select('phone, lead_sources:source_id(slug)')
+    .eq('id', leadId)
+    .eq('company_id', companyId)
+    .single()
+  const sources = (data as Record<string, unknown>)?.lead_sources as { slug: string } | null
+  return {
+    phone: (data as Record<string, unknown>)?.phone as string | null,
+    sourceSlug: sources?.slug ?? null,
+  }
+}
+
 export const routeMessage = async (
   companyId: string,
   payload: SendMessagePayload,
 ): Promise<Message> => {
-  const slug = await getLeadSourceSlug(companyId, payload.leadId)
+  const { phone, sourceSlug } = await getLeadPhoneAndSource(companyId, payload.leadId)
+  const whatsAppConnected = phone ? await isWhatsAppConnected(companyId) : false
 
-  if (slug === 'whatsapp') {
-    const connected = await isWhatsAppConnected(companyId)
-    if (connected) {
-      const { data, error } = await supabase.functions.invoke('zapi-send', {
-        body: payload,
-      })
-      if (error) throw error
-      return data as Message
-    }
-    // WhatsApp nao conectado: salva como manual
-    return sendMessage(companyId, payload)
+  console.log('[routeMessage]', {
+    phone,
+    sourceSlug,
+    whatsAppConnected,
+    route: phone && whatsAppConnected ? 'whatsapp' : sourceSlug === 'instagram' ? 'instagram' : 'manual',
+  })
+
+  // Lead com phone + WhatsApp conectado: envia via Z-API independente da source
+  if (phone && whatsAppConnected) {
+    const { data, error } = await supabase.functions.invoke('zapi-send', {
+      body: payload,
+    })
+    if (error) throw error
+    return data as Message
   }
 
-  if (slug === 'instagram') {
+  if (sourceSlug === 'instagram') {
     const connected = await isInstagramConnected(companyId)
     if (connected) {
       const { data, error } = await supabase.functions.invoke('instagram-send', {
@@ -158,10 +168,8 @@ export const routeMessage = async (
       if (error) throw error
       return data as Message
     }
-    // Instagram nao conectado: salva como manual
-    return sendMessage(companyId, payload)
   }
 
-  // Manual ou outra source: insere direto
+  // Sem phone, sem WhatsApp, ou sem integracao: salva como manual
   return sendMessage(companyId, payload)
 }
