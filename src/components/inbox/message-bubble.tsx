@@ -55,9 +55,10 @@ const MessageBubble = ({ message, senderName }: MessageBubbleProps) => {
   const isLead = message.sender_type === 'lead'
   const isAi = message.sender_type === 'ai'
   const isHuman = message.sender_type === 'human'
+  const isOptimistic = message.id.startsWith('optimistic-')
 
   return (
-    <div className={cn('flex', isLead ? 'justify-start' : 'justify-end')}>
+    <div className={cn('flex', isLead ? 'justify-start' : 'justify-end', isOptimistic && 'opacity-70')}>
       <div
         className={cn(
           'max-w-[75%] space-y-1 px-3 py-2 rounded-xl',

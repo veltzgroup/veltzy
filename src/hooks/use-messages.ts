@@ -28,9 +28,15 @@ export const useMessages = (leadId: string | null) => {
         (payload) => {
           queryClient.setQueryData<Message[]>(['messages', leadId], (old) => {
             if (!old) return [payload.new as Message]
-            const exists = old.some((m) => m.id === (payload.new as Message).id)
+            const newMsg = payload.new as Message
+            const exists = old.some((m) => m.id === newMsg.id)
             if (exists) return old
-            return [...old, payload.new as Message]
+            // Remove mensagem otimista se a real chegou (mesmo content + sender_type + proximidade temporal)
+            const filtered = old.filter((m) => {
+              if (!m.id.startsWith('optimistic-')) return true
+              return m.content !== newMsg.content || m.sender_type !== newMsg.sender_type
+            })
+            return [...filtered, newMsg]
           })
         }
       )
@@ -51,12 +57,47 @@ export const useSendMessage = () => {
   return useMutation({
     mutationFn: (payload: SendMessagePayload) =>
       messagesService.routeMessage(companyId!, payload),
+    onMutate: async (payload) => {
+      await queryClient.cancelQueries({ queryKey: ['messages', payload.leadId] })
+
+      const previous = queryClient.getQueryData<Message[]>(['messages', payload.leadId])
+
+      const optimisticMessage: Message & { _optimistic?: boolean } = {
+        id: `optimistic-${Date.now()}`,
+        lead_id: payload.leadId,
+        company_id: companyId!,
+        content: payload.content,
+        sender_type: 'human',
+        message_type: payload.messageType ?? 'text',
+        file_url: payload.fileUrl ?? null,
+        file_name: payload.fileName ?? null,
+        file_mime_type: payload.mimeType ?? null,
+        file_size: null,
+        source: 'manual',
+        external_id: null,
+        replied_message_id: payload.repliedMessageId ?? null,
+        is_scheduled: false,
+        scheduled_at: null,
+        is_read: true,
+        created_at: new Date().toISOString(),
+        _optimistic: true,
+      }
+
+      queryClient.setQueryData<Message[]>(['messages', payload.leadId], (old) =>
+        [...(old ?? []), optimisticMessage]
+      )
+
+      return { previous, leadId: payload.leadId }
+    },
+    onError: (_err, _payload, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['messages', context.leadId], context.previous)
+      }
+      toast.error('Erro ao enviar mensagem')
+    },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['messages', variables.leadId] })
       queryClient.invalidateQueries({ queryKey: ['conversations'] })
-    },
-    onError: (err: Error) => {
-      toast.error(err.message || 'Erro ao enviar mensagem')
     },
   })
 }
