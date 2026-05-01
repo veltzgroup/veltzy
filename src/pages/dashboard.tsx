@@ -81,14 +81,14 @@ interface BreakdownItem {
 const Breakdown = ({ items }: { items: BreakdownItem[] }) => (
   <>
     <div className="border-t border-border/30 my-3" />
-    <div className="grid grid-cols-3 gap-2">
+    <div className="flex flex-col gap-1.5">
       {items.map((item) => (
-        <div key={item.label} className="flex flex-col items-center gap-0.5">
-          <span className={cn('text-sm font-medium', item.color)}>{item.value}</span>
-          <span className="text-xs text-muted-foreground">
-            <span className={cn('inline-block w-1.5 h-1.5 rounded-full mr-1 align-middle', item.dotColor)} />
+        <div key={item.label} className="flex items-center justify-between">
+          <span className="text-xs text-muted-foreground flex items-center gap-1">
+            <span className={cn('inline-block w-1.5 h-1.5 rounded-full shrink-0', item.dotColor)} />
             {item.label}
           </span>
+          <span className={cn('text-xs font-medium', item.color)}>{item.value}</span>
         </div>
       ))}
     </div>
