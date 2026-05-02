@@ -45,7 +45,76 @@ export interface Profile {
 export interface UserRole {
   id: string
   user_id: string
+  company_id: string | null
   role: AppRole
+}
+
+export interface CompanyWithRole {
+  id: string
+  name: string
+  slug: string
+  role: AppRole
+}
+
+export interface Permission {
+  id: string
+  key: string
+  description: string | null
+  product: string
+}
+
+export interface Invitation {
+  id: string
+  company_id: string
+  invited_by: string
+  email: string
+  role: AppRole
+  token: string
+  status: 'pending' | 'accepted' | 'rejected' | 'expired' | 'revoked'
+  expires_at: string
+  accepted_at: string | null
+  created_at: string
+}
+
+export type TransferRequestType = 'duplicate_conflict' | 'queue_transfer' | 'manual_transfer'
+export type TransferRequestStatus = 'pending' | 'approved' | 'rejected'
+
+export interface LeadTransferRequest {
+  id: string
+  company_id: string
+  lead_id: string
+  requested_by: string
+  requested_to: string
+  type: TransferRequestType
+  status: TransferRequestStatus
+  resolved_by: string | null
+  notes: string | null
+  created_at: string
+  resolved_at: string | null
+}
+
+export type AuthAuditEvent =
+  | 'login_success'
+  | 'login_failed'
+  | 'logout'
+  | 'invite_sent'
+  | 'invite_accepted'
+  | 'invite_revoked'
+  | 'role_changed'
+  | 'company_switched'
+  | 'password_reset'
+  | 'google_oauth_linked'
+  | 'login_new_device'
+
+export interface AuthAuditLog {
+  id: string
+  user_id: string | null
+  company_id: string | null
+  event: AuthAuditEvent
+  ip_address: string | null
+  user_agent: string | null
+  metadata: Record<string, unknown>
+  created_at: string
 }
 
 export interface SystemSetting {

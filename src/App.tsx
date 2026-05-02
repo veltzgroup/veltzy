@@ -22,6 +22,8 @@ const GestaoPage = lazy(() => import('@/pages/gestao'))
 const TarefasPage = lazy(() => import('@/pages/tarefas'))
 const DealsPage = lazy(() => import('@/pages/deals'))
 const MinhaContaPage = lazy(() => import('@/pages/minha-conta'))
+const AceitarConvitePage = lazy(() => import('@/pages/aceitar-convite'))
+const AcessoNegadoPage = lazy(() => import('@/pages/acesso-negado'))
 const NotFoundPage = lazy(() => import('@/pages/not-found'))
 
 const queryClient = new QueryClient({
@@ -52,6 +54,8 @@ const App = () => {
           <Suspense fallback={<PageLoadingSkeleton />}>
             <Routes>
               <Route path="/auth" element={<AuthPage />} />
+              <Route path="/aceitar-convite" element={<AceitarConvitePage />} />
+              <Route path="/acesso-negado" element={<AcessoNegadoPage />} />
 
               <Route
                 path="/onboarding"
