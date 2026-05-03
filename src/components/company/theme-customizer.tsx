@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { Check, Loader2, RotateCcw } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -98,18 +98,48 @@ const ThemeCustomizer = () => {
 
   const initialHsl = company?.primary_color ?? '158 64% 42%'
   const [primaryHsl, setPrimaryHsl] = useState(initialHsl)
-  const [primaryHex, setPrimaryHex] = useState(() => hslToHex(initialHsl))
+  const [primaryHex, setPrimaryHex] = useState(() => {
+    const match = swatches.find((s) => s.hsl === initialHsl)
+    return match ? match.hex : hslToHex(initialHsl)
+  })
   const [cardStyle, setCardStyle] = useState('glass')
   const [sidebarStyle, setSidebarStyle] = useState('solid')
   const [saving, setSaving] = useState(false)
 
+  useEffect(() => {
+    if (!companyId) return
+    veltzy()
+      .from('system_settings')
+      .select('value')
+      .eq('company_id', companyId)
+      .eq('key', 'theme_config')
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.value) {
+          const cfg = data.value as { card_style?: string; sidebar_style?: string }
+          if (cfg.card_style) setCardStyle(cfg.card_style)
+          if (cfg.sidebar_style) setSidebarStyle(cfg.sidebar_style)
+        }
+      })
+  }, [companyId])
+
   const applyPreview = (hsl: string, hex: string) => {
     setPrimaryHsl(hsl)
     setPrimaryHex(hex)
-    document.documentElement.style.setProperty('--primary', hsl)
-    document.documentElement.style.setProperty('--ring', hsl)
-    document.documentElement.style.setProperty('--sidebar-primary', hsl)
-    document.documentElement.style.setProperty('--glow-primary', hsl)
+    const root = document.documentElement
+    const isDark = root.classList.contains('dark')
+    root.style.setProperty('--primary', hsl)
+    root.style.setProperty('--ring', hsl)
+    root.style.setProperty('--sidebar-primary', hsl)
+    root.style.setProperty('--glow-primary', hsl)
+    const match = hsl.match(/(\d+)\s+(\d+)%?\s+(\d+)%?/)
+    if (match) {
+      const [, h, s] = match.map(Number)
+      root.style.setProperty('--accent-foreground', isDark ? `${h} ${s}% 58%` : `${h} ${s}% 32%`)
+      if (!root.classList.contains('sand')) {
+        root.style.setProperty('--accent', isDark ? `${h} ${Math.round(s * 0.1)}% 16%` : `${h} ${Math.round(s * 0.6)}% 94%`)
+      }
+    }
   }
 
   const handleColorPicker = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -121,12 +151,7 @@ const ThemeCustomizer = () => {
     const hex = e.target.value
     setPrimaryHex(hex)
     if (/^#[0-9a-fA-F]{6}$/.test(hex)) {
-      const hsl = hexToHsl(hex)
-      setPrimaryHsl(hsl)
-      document.documentElement.style.setProperty('--primary', hsl)
-      document.documentElement.style.setProperty('--ring', hsl)
-      document.documentElement.style.setProperty('--sidebar-primary', hsl)
-      document.documentElement.style.setProperty('--glow-primary', hsl)
+      applyPreview(hexToHsl(hex), hex)
     }
   }
 
