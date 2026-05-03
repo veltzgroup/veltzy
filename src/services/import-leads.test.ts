@@ -3,8 +3,8 @@ import { mapCsvRowToLead, validateRow } from './import-leads.service'
 import type { PipelineStage, LeadSourceRecord } from '@/types/database'
 
 const mockStages: PipelineStage[] = [
-  { id: 'stage-1', company_id: 'c1', name: 'Novo', slug: 'novo', position: 0, color: '#000', is_final: false, is_positive: null, created_at: '', updated_at: '' },
-  { id: 'stage-2', company_id: 'c1', name: 'Qualificando', slug: 'qualificando', position: 1, color: '#000', is_final: false, is_positive: null, created_at: '', updated_at: '' },
+  { id: 'stage-1', company_id: 'c1', pipeline_id: 'p1', name: 'Novo', slug: 'novo', position: 0, color: '#000', is_final: false, is_positive: null, created_at: '', updated_at: '' },
+  { id: 'stage-2', company_id: 'c1', pipeline_id: 'p1', name: 'Qualificando', slug: 'qualificando', position: 1, color: '#000', is_final: false, is_positive: null, created_at: '', updated_at: '' },
 ]
 
 const mockSources: LeadSourceRecord[] = [

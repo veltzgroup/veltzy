@@ -277,3 +277,9 @@ Configuracoes chave/valor por empresa:
 - **Transicoes:** `PageTransition` entre rotas
 - **Celebracao visual:** confetti ao fechar negocio (`celebration.ts`)
 - **Reporte de erros:** `ErrorReportButton` em toda a interface
+
+## 17. FEATURE SPECS
+
+| Feature | Spec |
+|---|---|
+| Multiplos Pipelines | [docs/features/multiplos-pipelines/Spec.md](features/multiplos-pipelines/Spec.md) |

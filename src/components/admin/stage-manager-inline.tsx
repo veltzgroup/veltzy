@@ -58,9 +58,13 @@ const SortableStageRow = ({ stage }: { stage: PipelineStage }) => {
   )
 }
 
-const StageManagerInline = () => {
-  const { data: stages, isLoading } = usePipelineStages()
-  const createStage = useCreateStage()
+interface StageManagerInlineProps {
+  pipelineId?: string | null
+}
+
+const StageManagerInline = ({ pipelineId }: StageManagerInlineProps) => {
+  const { data: stages, isLoading } = usePipelineStages(pipelineId)
+  const createStage = useCreateStage(pipelineId)
   const reorderStages = useReorderStages()
   const [newName, setNewName] = useState('')
   const [newColor, setNewColor] = useState('#6366f1')
@@ -90,11 +94,22 @@ const StageManagerInline = () => {
     setNewName('')
   }
 
+  if (!pipelineId) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Etapas do Funil</CardTitle>
+          <CardDescription>Selecione um pipeline acima para gerenciar suas etapas</CardDescription>
+        </CardHeader>
+      </Card>
+    )
+  }
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Etapas do Funil</CardTitle>
-        <CardDescription>Gerencie as fases do pipeline</CardDescription>
+        <CardDescription>Gerencie as fases do pipeline selecionado</CardDescription>
       </CardHeader>
       <CardContent className="space-y-2">
         {isLoading && <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>}

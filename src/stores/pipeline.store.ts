@@ -9,15 +9,18 @@ interface PipelineFilters {
 }
 
 interface PipelineState {
+  activePipelineId: string | null
   activeLeadId: string | null
   selectedLeadId: string | null
   filters: PipelineFilters
+  setActivePipelineId: (id: string | null) => void
   setActiveLeadId: (id: string | null) => void
   setSelectedLeadId: (id: string | null) => void
   setFilters: (filters: Partial<PipelineFilters>) => void
 }
 
 export const usePipelineStore = create<PipelineState>((set) => ({
+  activePipelineId: null,
   activeLeadId: null,
   selectedLeadId: null,
   filters: {
@@ -26,6 +29,7 @@ export const usePipelineStore = create<PipelineState>((set) => ({
     temperature: null,
     assignedTo: null,
   },
+  setActivePipelineId: (id) => set({ activePipelineId: id }),
   setActiveLeadId: (id) => set({ activeLeadId: id }),
   setSelectedLeadId: (id) => set({ selectedLeadId: id }),
   setFilters: (filters) =>

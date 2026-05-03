@@ -1,4 +1,5 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
+import { cn } from '@/lib/utils'
 import {
   DndContext,
   DragOverlay,
@@ -11,15 +12,18 @@ import {
 } from '@dnd-kit/core'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { AlertCircle, Loader2 } from 'lucide-react'
+import { AlertCircle, Loader2, Inbox } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { StageColumn } from '@/components/pipeline/stage-column'
 import { LeadCard } from '@/components/pipeline/lead-card'
 import { CreateLeadModal } from '@/components/pipeline/create-lead-modal'
 import { EditLeadModal } from '@/components/pipeline/edit-lead-modal'
 import { PipelineHeader } from '@/components/pipeline/pipeline-header'
+import { PipelineSelector } from '@/components/pipeline/pipeline-selector'
 import { StageManagerModal } from '@/components/pipeline/stage-manager-modal'
 import { TransferLeadModal } from '@/components/pipeline/transfer-lead-modal'
+import { MovePipelineModal } from '@/components/pipeline/move-pipeline-modal'
+import { usePipelines } from '@/hooks/use-pipelines'
 import { usePipelineStages } from '@/hooks/use-pipeline-stages'
 import { useLeads, useMoveLeadToStage } from '@/hooks/use-leads'
 import { usePipelineStore } from '@/stores/pipeline.store'
@@ -28,8 +32,21 @@ import type { LeadWithDetails } from '@/types/database'
 
 const PipelineBoard = () => {
   const queryClient = useQueryClient()
-  const { data: stages, isLoading: stagesLoading, isError: stagesError, refetch: refetchStages } = usePipelineStages()
-  const { data: leads, isLoading: leadsLoading, isError: leadsError, refetch: refetchLeads } = useLeads()
+  const { data: pipelines, isLoading: pipelinesLoading } = usePipelines()
+  const { activePipelineId, setActivePipelineId } = usePipelineStore()
+
+  useEffect(() => {
+    if (!pipelines || pipelines.length === 0) return
+    const activeExists = activePipelineId && pipelines.some((p) => p.id === activePipelineId)
+    if (!activeExists) {
+      const defaultPipeline = pipelines.find((p) => p.is_default) ?? pipelines[0]
+      setActivePipelineId(defaultPipeline.id)
+    }
+  }, [pipelines, activePipelineId, setActivePipelineId])
+
+  const { data: stages, isLoading: stagesLoading, isFetching: stagesFetching, isError: stagesError, refetch: refetchStages } = usePipelineStages()
+  const { data: leads, isLoading: leadsLoading, isFetching: leadsFetching, isError: leadsError, refetch: refetchLeads } = useLeads()
+  const isRefetching = (stagesFetching && !stagesLoading) || (leadsFetching && !leadsLoading)
   const moveLeadToStage = useMoveLeadToStage()
 
   const { activeLeadId, setActiveLeadId, selectedLeadId, setSelectedLeadId, filters } = usePipelineStore()
@@ -38,6 +55,7 @@ const PipelineBoard = () => {
   const [createModalStageId, setCreateModalStageId] = useState<string>()
   const [stageManagerOpen, setStageManagerOpen] = useState(false)
   const [transferLeadId, setTransferLeadId] = useState<string | null>(null)
+  const [movePipelineLead, setMovePipelineLead] = useState<LeadWithDetails | null>(null)
   const [fireOnly, setFireOnly] = useState(false)
 
   const sensors = useSensors(
@@ -131,7 +149,7 @@ const PipelineBoard = () => {
     setCreateModalOpen(true)
   }, [])
 
-  if (stagesLoading || leadsLoading) {
+  if (pipelinesLoading || (stagesLoading && !!activePipelineId) || (leadsLoading && !!activePipelineId)) {
     return (
       <div className="flex h-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -152,14 +170,22 @@ const PipelineBoard = () => {
   }
 
   return (
-    <div className="flex flex-col h-full animate-fade-in">
-      <div className="shrink-0 p-6 pb-4">
+    <div className="relative flex flex-col h-full animate-fade-in">
+      <div className="shrink-0 p-6 pb-4 space-y-3">
+        {pipelines && activePipelineId && (
+          <PipelineSelector
+            pipelines={pipelines}
+            activePipelineId={activePipelineId}
+            onSelect={setActivePipelineId}
+          />
+        )}
         <PipelineHeader
           onAddLead={() => handleAddLead()}
           onManageStages={() => setStageManagerOpen(true)}
           fireOnly={fireOnly}
           onToggleFireOnly={() => setFireOnly((v) => !v)}
           leads={filteredLeads}
+          pipelineName={pipelines && pipelines.length > 1 ? pipelines.find((p) => p.id === activePipelineId)?.name : undefined}
         />
       </div>
 
@@ -169,7 +195,10 @@ const PipelineBoard = () => {
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex-1 flex gap-4 overflow-x-auto overflow-y-hidden px-6 pb-4">
+        <div className={cn(
+          'flex-1 flex gap-4 overflow-x-auto overflow-y-hidden px-6 pb-4 transition-opacity duration-200',
+          isRefetching && 'opacity-50 pointer-events-none'
+        )}>
           {stages?.map((stage) => (
             <StageColumn
               key={stage.id}
@@ -177,10 +206,21 @@ const PipelineBoard = () => {
               leads={leadsByStage[stage.id] ?? []}
               onAddLead={handleAddLead}
               onTransferLead={setTransferLeadId}
+              onMovePipeline={setMovePipelineLead}
               fireOnly={fireOnly}
             />
           ))}
         </div>
+
+        {!isRefetching && stages && stages.length > 0 && filteredLeads.length === 0 && !filters.search && !filters.sourceId && !filters.temperature && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 pointer-events-none" style={{ top: '40%' }}>
+            <Inbox className="h-10 w-10 text-muted-foreground/40" />
+            <p className="text-sm text-muted-foreground">Nenhum lead neste pipeline</p>
+            <Button size="sm" className="pointer-events-auto" onClick={() => handleAddLead()}>
+              Criar primeiro lead
+            </Button>
+          </div>
+        )}
 
         <DragOverlay>
           {activeLead ? (
@@ -195,6 +235,7 @@ const PipelineBoard = () => {
         open={createModalOpen}
         onClose={() => setCreateModalOpen(false)}
         defaultStageId={createModalStageId}
+        pipelineId={activePipelineId ?? undefined}
       />
 
       <EditLeadModal
@@ -213,6 +254,14 @@ const PipelineBoard = () => {
         leadId={transferLeadId}
         open={!!transferLeadId}
         onClose={() => setTransferLeadId(null)}
+      />
+
+      <MovePipelineModal
+        leadId={movePipelineLead?.id ?? null}
+        leadName={movePipelineLead?.name || movePipelineLead?.phone || ''}
+        currentPipelineId={activePipelineId ?? ''}
+        open={!!movePipelineLead}
+        onClose={() => setMovePipelineLead(null)}
       />
     </div>
   )

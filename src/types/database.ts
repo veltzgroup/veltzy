@@ -126,9 +126,23 @@ export interface SystemSetting {
   updated_at: string
 }
 
+export interface Pipeline {
+  id: string
+  company_id: string
+  name: string
+  slug: string
+  color: string
+  position: number
+  is_default: boolean
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
 export interface PipelineStage {
   id: string
   company_id: string
+  pipeline_id: string
   name: string
   slug: string
   position: number
@@ -154,6 +168,7 @@ export interface AdContext {
 export interface Lead {
   id: string
   company_id: string
+  pipeline_id: string
   name: string | null
   phone: string
   email: string | null
@@ -184,6 +199,7 @@ export interface LeadWithDetails extends Lead {
   profiles?: Partial<Profile> | null
   lead_sources?: LeadSourceRecord | null
   pipeline_stages?: PipelineStage | null
+  pipelines?: Pipeline | null
 }
 
 export interface CreateLeadInput {
@@ -192,6 +208,7 @@ export interface CreateLeadInput {
   email?: string
   source_id?: string
   stage_id: string
+  pipeline_id: string
   temperature?: LeadTemperature
   deal_value?: number
   observations?: string

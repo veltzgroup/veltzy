@@ -36,9 +36,10 @@ interface CreateLeadModalProps {
   open: boolean
   onClose: () => void
   defaultStageId?: string
+  pipelineId?: string
 }
 
-const CreateLeadModal = ({ open, onClose, defaultStageId }: CreateLeadModalProps) => {
+const CreateLeadModal = ({ open, onClose, defaultStageId, pipelineId }: CreateLeadModalProps) => {
   const createLead = useCreateLead()
   const { data: stages } = usePipelineStages()
   const { data: sources } = useLeadSources()
@@ -53,8 +54,10 @@ const CreateLeadModal = ({ open, onClose, defaultStageId }: CreateLeadModalProps
   })
 
   const onSubmit = async (values: FormValues) => {
+    if (!pipelineId) return
     const input = {
       ...values,
+      pipeline_id: pipelineId,
       deal_value: values.deal_value || undefined,
       email: values.email || undefined,
       name: values.name || undefined,

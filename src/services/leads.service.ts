@@ -4,7 +4,8 @@ import type { Lead, LeadWithDetails, CreateLeadInput, UpdateLeadInput } from '@/
 const LEAD_WITH_DETAILS_SELECT = `
   *,
   lead_sources:source_id(*),
-  pipeline_stages:stage_id(*)
+  pipeline_stages:stage_id(*),
+  pipelines:pipeline_id(*)
 `
 
 interface LeadFilters {
@@ -12,6 +13,7 @@ interface LeadFilters {
   sourceId?: string | null
   temperature?: string | null
   assignedTo?: string | null
+  pipelineId?: string
   search?: string
   limit?: number
   offset?: number
@@ -31,6 +33,9 @@ export const getLeadsByCompany = async (companyId: string, filters?: LeadFilters
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1)
 
+  if (filters?.pipelineId) {
+    query = query.eq('pipeline_id', filters.pipelineId)
+  }
   if (filters?.stageId) {
     query = query.eq('stage_id', filters.stageId)
   }
@@ -99,6 +104,27 @@ export const moveLeadToStage = async (companyId: string, leadId: string, stageId
   const { data, error } = await veltzy()
     .from('leads')
     .update({ stage_id: stageId })
+    .eq('id', leadId)
+    .eq('company_id', companyId)
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export const moveLeadToPipeline = async (companyId: string, leadId: string, targetPipelineId: string): Promise<Lead> => {
+  const { data: firstStage, error: stageError } = await veltzy()
+    .from('pipeline_stages')
+    .select('id')
+    .eq('pipeline_id', targetPipelineId)
+    .order('position')
+    .limit(1)
+    .single()
+  if (stageError) throw stageError
+
+  const { data, error } = await veltzy()
+    .from('leads')
+    .update({ pipeline_id: targetPipelineId, stage_id: firstStage.id })
     .eq('id', leadId)
     .eq('company_id', companyId)
     .select()

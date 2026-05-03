@@ -109,10 +109,30 @@ Deno.serve(async (req) => {
       .maybeSingle()
 
     if (!lead) {
+      // Buscar pipeline padrao
+      let { data: defaultPipeline } = await supabase
+        .from('pipelines')
+        .select('id')
+        .eq('company_id', companyId)
+        .eq('is_default', true)
+        .maybeSingle()
+
+      if (!defaultPipeline) {
+        const { data: fallback } = await supabase
+          .from('pipelines')
+          .select('id')
+          .eq('company_id', companyId)
+          .eq('is_active', true)
+          .order('position')
+          .limit(1)
+          .single()
+        defaultPipeline = fallback
+      }
+
       const { data: defaultStage } = await supabase
         .from('pipeline_stages')
         .select('id')
-        .eq('company_id', companyId)
+        .eq('pipeline_id', defaultPipeline?.id)
         .order('position')
         .limit(1)
         .single()
@@ -151,6 +171,7 @@ Deno.serve(async (req) => {
           company_id: companyId,
           phone,
           name: payload.senderName ?? payload.chatName ?? null,
+          pipeline_id: defaultPipeline?.id,
           stage_id: defaultStage?.id,
           source_id: whatsappSource?.id,
           assigned_to: assignedTo,

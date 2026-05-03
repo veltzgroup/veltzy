@@ -15,13 +15,14 @@ import { useMoveLeadToStage } from '@/hooks/use-leads'
 import { timeAgo } from '@/lib/time'
 import type { LeadWithDetails } from '@/types/database'
 import { useNavigate } from 'react-router-dom'
-import { Phone, Mail, MoreVertical, Pencil, ArrowRightLeft, UserRoundPen, Clock, MessageSquare, Bot, CheckSquare } from 'lucide-react'
+import { Phone, Mail, MoreVertical, Pencil, ArrowRightLeft, UserRoundPen, Clock, MessageSquare, Bot, CheckSquare, FolderInput } from 'lucide-react'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import type { LeadTemperature } from '@/types/database'
 
 interface LeadCardProps {
   lead: LeadWithDetails
   onTransfer?: (leadId: string) => void
+  onMovePipeline?: (lead: LeadWithDetails) => void
   fireOnly?: boolean
 }
 
@@ -44,7 +45,7 @@ const TemperatureBar = ({ temperature }: { temperature: LeadTemperature }) => {
   )
 }
 
-const LeadCard = ({ lead, onTransfer, fireOnly }: LeadCardProps) => {
+const LeadCard = ({ lead, onTransfer, onMovePipeline, fireOnly }: LeadCardProps) => {
   const navigate = useNavigate()
   const setSelectedLeadId = usePipelineStore((s) => s.setSelectedLeadId)
   const { isAdmin, isManager } = useRoles()
@@ -156,6 +157,12 @@ const LeadCard = ({ lead, onTransfer, fireOnly }: LeadCardProps) => {
                     <UserRoundPen className="h-4 w-4" />
                     Transferir lead
                   </DropdownMenuItem>
+                  {onMovePipeline && (
+                    <DropdownMenuItem onClick={() => onMovePipeline(lead)}>
+                      <FolderInput className="h-4 w-4" />
+                      Mover para pipeline...
+                    </DropdownMenuItem>
+                  )}
                 </>
               )}
             </DropdownMenuContent>
