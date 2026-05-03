@@ -1,9 +1,10 @@
-import { useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useAuthStore } from '@/stores/auth.store'
 
 type Theme = 'light' | 'dark' | 'sand'
 
 const THEME_KEY = 'veltzy-theme'
+const THEME_CHANGE_EVENT = 'veltzy-theme-change'
 
 const applyTheme = (theme: Theme) => {
   const root = document.documentElement
@@ -59,32 +60,38 @@ const applyCompanyColors = (primaryColor?: string, secondaryColor?: string) => {
   }
 }
 
+const readTheme = (): Theme => (localStorage.getItem(THEME_KEY) as Theme) || 'dark'
+
 export const useThemeConfig = () => {
   const company = useAuthStore((s) => s.company)
+  const [theme, setThemeState] = useState<Theme>(readTheme)
 
-  const getTheme = useCallback((): Theme => {
-    return (localStorage.getItem(THEME_KEY) as Theme) || 'dark'
+  useEffect(() => {
+    const handler = () => setThemeState(readTheme())
+    window.addEventListener(THEME_CHANGE_EVENT, handler)
+    return () => window.removeEventListener(THEME_CHANGE_EVENT, handler)
   }, [])
 
-  const setTheme = useCallback((theme: Theme) => {
-    localStorage.setItem(THEME_KEY, theme)
-    applyTheme(theme)
+  const setTheme = useCallback((next: Theme) => {
+    localStorage.setItem(THEME_KEY, next)
+    applyTheme(next)
     if (company) {
       applyCompanyColors(company.primary_color, company.secondary_color)
     }
+    window.dispatchEvent(new Event(THEME_CHANGE_EVENT))
   }, [company])
 
   const cycleTheme = useCallback(() => {
-    const current = getTheme()
+    const current = readTheme()
     const themes: Theme[] = ['light', 'dark', 'sand']
     const next = themes[(themes.indexOf(current) + 1) % themes.length]
     setTheme(next)
     return next
-  }, [getTheme, setTheme])
+  }, [setTheme])
 
   useEffect(() => {
-    applyTheme(getTheme())
-  }, [getTheme])
+    applyTheme(readTheme())
+  }, [])
 
   useEffect(() => {
     if (company) {
@@ -92,9 +99,5 @@ export const useThemeConfig = () => {
     }
   }, [company])
 
-  return {
-    theme: getTheme(),
-    setTheme,
-    cycleTheme,
-  }
+  return { theme, setTheme, cycleTheme }
 }

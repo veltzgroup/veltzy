@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { Sun, Moon, Palette } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useThemeConfig } from '@/hooks/use-theme-config'
@@ -11,17 +10,10 @@ const icons = {
 
 const ThemeToggle = () => {
   const { theme, cycleTheme } = useThemeConfig()
-  const [current, setCurrent] = useState(theme)
-
-  const handleClick = () => {
-    const next = cycleTheme()
-    setCurrent(next)
-  }
-
-  const Icon = icons[current]
+  const Icon = icons[theme]
 
   return (
-    <Button variant="ghost" size="icon" onClick={handleClick} title={`Tema: ${current}`}>
+    <Button variant="ghost" size="icon" onClick={() => cycleTheme()} title={`Tema: ${theme}`}>
       <Icon className="h-4 w-4" />
     </Button>
   )
