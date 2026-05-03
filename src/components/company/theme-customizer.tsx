@@ -206,36 +206,26 @@ const ThemeCustomizer = () => {
 
         <div className="space-y-3">
           <Label>Cor Primaria</Label>
-          <div className="grid grid-cols-7 gap-2">
+          <div className="flex flex-wrap gap-2">
             {swatches.map((s) => {
               const isActive = primaryHsl === s.hsl
               return (
                 <button
                   key={s.hsl}
                   onClick={() => applyPreview(s.hsl, s.hex)}
-                  className="group relative flex flex-col items-center gap-1.5"
                   title={s.label}
+                  className={cn(
+                    'flex h-8 w-8 items-center justify-center rounded-full transition-all',
+                    isActive
+                      ? 'ring-2 ring-offset-2 ring-offset-background'
+                      : 'hover:scale-110'
+                  )}
+                  style={{
+                    backgroundColor: s.hex,
+                    ...(isActive ? { boxShadow: `0 0 0 2px ${s.hex}` } : {}),
+                  }}
                 >
-                  <span
-                    className={cn(
-                      'flex h-9 w-9 items-center justify-center rounded-full transition-all',
-                      isActive
-                        ? 'ring-2 ring-offset-2 ring-offset-background'
-                        : 'hover:scale-110'
-                    )}
-                    style={{
-                      backgroundColor: s.hex,
-                      ...(isActive ? { boxShadow: `0 0 0 2px ${s.hex}` } : {}),
-                    }}
-                  >
-                    {isActive && <Check className="h-4 w-4 text-white drop-shadow-sm" />}
-                  </span>
-                  <span className={cn(
-                    'text-[10px] leading-none',
-                    isActive ? 'text-foreground font-medium' : 'text-muted-foreground'
-                  )}>
-                    {s.label}
-                  </span>
+                  {isActive && <Check className="h-3.5 w-3.5 text-white drop-shadow-sm" />}
                 </button>
               )
             })}
