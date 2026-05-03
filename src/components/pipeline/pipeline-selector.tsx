@@ -20,12 +20,10 @@ const PipelineSelector = ({ pipelines, activePipelineId, onSelect }: PipelineSel
             onClick={() => onSelect(p.id)}
             className={cn(
               'shrink-0 rounded-md px-3 py-1.5 text-sm font-medium transition-smooth',
-              'border border-transparent',
               isActive
-                ? 'bg-accent text-accent-foreground shadow-sm'
+                ? 'bg-primary text-primary-foreground'
                 : 'text-muted-foreground hover:text-foreground hover:bg-muted'
             )}
-            style={isActive ? { borderColor: p.color } : undefined}
           >
             <span className="flex items-center gap-2">
               <span
