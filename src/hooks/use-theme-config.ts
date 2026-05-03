@@ -22,6 +22,22 @@ function ensureContrastOnDark(hslColor: string, isDark: boolean): string {
   return hslColor
 }
 
+function deriveAccentColors(hslColor: string, isDark: boolean): { accent: string; accentForeground: string } {
+  const match = hslColor.match(/(\d+)\s+(\d+)%?\s+(\d+)%?/)
+  if (!match) return { accent: hslColor, accentForeground: hslColor }
+  const [, h, s] = match.map(Number)
+  if (isDark) {
+    return {
+      accent: `${h} ${Math.round(s * 0.1)}% 16%`,
+      accentForeground: `${h} ${s}% 58%`,
+    }
+  }
+  return {
+    accent: `${h} ${Math.round(s * 0.6)}% 94%`,
+    accentForeground: `${h} ${s}% 32%`,
+  }
+}
+
 const applyCompanyColors = (primaryColor?: string, secondaryColor?: string) => {
   const root = document.documentElement
   const isDark = root.classList.contains('dark')
@@ -31,6 +47,12 @@ const applyCompanyColors = (primaryColor?: string, secondaryColor?: string) => {
     root.style.setProperty('--ring', adjusted)
     root.style.setProperty('--sidebar-primary', adjusted)
     root.style.setProperty('--glow-primary', adjusted)
+
+    const { accent, accentForeground } = deriveAccentColors(primaryColor, isDark)
+    root.style.setProperty('--accent-foreground', accentForeground)
+    if (!root.classList.contains('sand')) {
+      root.style.setProperty('--accent', accent)
+    }
   }
   if (secondaryColor) {
     root.style.setProperty('--secondary', secondaryColor)
