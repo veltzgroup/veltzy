@@ -5,8 +5,8 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useLeads } from '@/hooks/use-leads'
-import { usePipelineStages } from '@/hooks/use-pipeline-stages'
+import { useDashboardLeads } from '@/hooks/use-dashboard-leads'
+import { useDashboardStages } from '@/hooks/use-dashboard-stages'
 import type { LeadWithDetails, PipelineStage } from '@/types/database'
 
 interface ActionItem {
@@ -116,9 +116,9 @@ const buildActions = (leads: LeadWithDetails[], stages: PipelineStage[]): Action
   ].filter((item) => item.count > 0)
 }
 
-const NextActionsCard = () => {
-  const { data: leads, isLoading: leadsLoading } = useLeads()
-  const { data: stages, isLoading: stagesLoading } = usePipelineStages()
+const NextActionsCard = ({ pipelineId }: { pipelineId?: string | null }) => {
+  const { data: leads, isLoading: leadsLoading } = useDashboardLeads(pipelineId)
+  const { data: stages, isLoading: stagesLoading } = useDashboardStages(pipelineId)
   const navigate = useNavigate()
 
   const actions = useMemo(() => {
