@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { Loader2, RotateCcw } from 'lucide-react'
+import { Check, Loader2, RotateCcw } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,11 +13,19 @@ import { useQueryClient } from '@tanstack/react-query'
 
 const swatches = [
   { label: 'Veltzy', hsl: '158 64% 42%', hex: '#22a06b' },
+  { label: 'Teal', hsl: '175 70% 40%', hex: '#1a9e8f' },
   { label: 'Azul', hsl: '217 91% 60%', hex: '#3b82f6' },
+  { label: 'Indigo', hsl: '234 89% 63%', hex: '#4f46e5' },
   { label: 'Roxo', hsl: '271 81% 56%', hex: '#8b5cf6' },
-  { label: 'Laranja', hsl: '25 95% 53%', hex: '#f97316' },
+  { label: 'Violeta', hsl: '293 69% 49%', hex: '#a855f7' },
   { label: 'Rosa', hsl: '330 81% 60%', hex: '#ec4899' },
   { label: 'Vermelho', hsl: '0 72% 51%', hex: '#ef4444' },
+  { label: 'Laranja', hsl: '25 95% 53%', hex: '#f97316' },
+  { label: 'Amber', hsl: '38 92% 50%', hex: '#f59e0b' },
+  { label: 'Lima', hsl: '84 81% 44%', hex: '#65a30d' },
+  { label: 'Ciano', hsl: '199 89% 48%', hex: '#0ea5e9' },
+  { label: 'Slate', hsl: '215 20% 40%', hex: '#4b5e75' },
+  { label: 'Zinc', hsl: '240 6% 35%', hex: '#52525b' },
 ]
 
 const cardStyles = [
@@ -173,12 +181,46 @@ const ThemeCustomizer = () => {
 
         <div className="space-y-3">
           <Label>Cor Primaria</Label>
-          <div className="flex items-center gap-3">
+          <div className="grid grid-cols-7 gap-2">
+            {swatches.map((s) => {
+              const isActive = primaryHsl === s.hsl
+              return (
+                <button
+                  key={s.hsl}
+                  onClick={() => applyPreview(s.hsl, s.hex)}
+                  className="group relative flex flex-col items-center gap-1.5"
+                  title={s.label}
+                >
+                  <span
+                    className={cn(
+                      'flex h-9 w-9 items-center justify-center rounded-full transition-all',
+                      isActive
+                        ? 'ring-2 ring-offset-2 ring-offset-background'
+                        : 'hover:scale-110'
+                    )}
+                    style={{
+                      backgroundColor: s.hex,
+                      ...(isActive ? { boxShadow: `0 0 0 2px ${s.hex}` } : {}),
+                    }}
+                  >
+                    {isActive && <Check className="h-4 w-4 text-white drop-shadow-sm" />}
+                  </span>
+                  <span className={cn(
+                    'text-[10px] leading-none',
+                    isActive ? 'text-foreground font-medium' : 'text-muted-foreground'
+                  )}>
+                    {s.label}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+          <div className="flex items-center gap-3 pt-1">
             <input
               type="color"
               value={primaryHex}
               onChange={handleColorPicker}
-              className="h-10 w-10 cursor-pointer rounded-lg border-0 bg-transparent"
+              className="h-9 w-9 cursor-pointer rounded-lg border-0 bg-transparent"
             />
             <Input
               value={primaryHex}
@@ -186,28 +228,10 @@ const ThemeCustomizer = () => {
               placeholder="#000000"
               className="w-28 text-xs font-mono"
             />
-            <div
-              className="h-6 w-6 rounded-full border border-border/50"
-              style={{ backgroundColor: `hsl(${primaryHsl})` }}
-            />
+            <span className="text-[11px] text-muted-foreground">
+              Cor personalizada
+            </span>
           </div>
-          <div className="flex gap-2">
-            {swatches.map((s) => (
-              <button
-                key={s.hsl}
-                onClick={() => applyPreview(s.hsl, s.hex)}
-                className={cn(
-                  'h-10 w-10 rounded-lg ring-2 transition-smooth',
-                  primaryHsl === s.hsl ? 'ring-foreground' : 'ring-transparent hover:ring-border'
-                )}
-                style={{ backgroundColor: s.hex }}
-                title={s.label}
-              />
-            ))}
-          </div>
-          <p className="text-[11px] text-muted-foreground">
-            Escolha um preset ou use o seletor de cores para qualquer cor
-          </p>
         </div>
 
         <div className="space-y-3">
