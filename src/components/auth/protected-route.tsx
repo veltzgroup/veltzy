@@ -7,10 +7,16 @@ interface ProtectedRouteProps {
   children: React.ReactNode
   skipCompanyCheck?: boolean
   requireRole?: AppRole[]
+  requirePermission?: string
 }
 
-const ProtectedRoute = ({ children, skipCompanyCheck = false, requireRole }: ProtectedRouteProps) => {
-  const { user, company, roles, isLoading } = useAuthStore()
+const ProtectedRoute = ({
+  children,
+  skipCompanyCheck = false,
+  requireRole,
+  requirePermission,
+}: ProtectedRouteProps) => {
+  const { user, company, roles, permissions, isLoading } = useAuthStore()
 
   if (isLoading) {
     return (
@@ -29,7 +35,11 @@ const ProtectedRoute = ({ children, skipCompanyCheck = false, requireRole }: Pro
   }
 
   if (requireRole && !requireRole.some((r) => roles.includes(r))) {
-    return <Navigate to="/" replace />
+    return <Navigate to="/acesso-negado" replace />
+  }
+
+  if (requirePermission && !permissions.includes(requirePermission)) {
+    return <Navigate to="/acesso-negado" replace />
   }
 
   return <>{children}</>
