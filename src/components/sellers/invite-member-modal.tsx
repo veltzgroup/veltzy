@@ -39,7 +39,7 @@ const InviteMemberModal = ({ open, onClose }: InviteMemberModalProps) => {
 
   const onSubmit = async (values: FormValues) => {
     const invite = await inviteMember.mutateAsync({ email: values.email, role: values.role as AppRole })
-    const link = `${window.location.origin}/auth?invite=${invite.invite_code}`
+    const link = `${window.location.origin}/aceitar-convite?token=${invite.token}`
     setInviteLink(link)
   }
 

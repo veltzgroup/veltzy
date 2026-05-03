@@ -353,12 +353,13 @@ export interface AutoReplyConfig {
 export interface CompanyInvite {
   id: string
   company_id: string
+  invited_by: string
   email: string
   role: AppRole
-  invite_code: string
-  invited_by: string | null
-  accepted_at: string | null
+  token: string
+  status: 'pending' | 'accepted' | 'rejected' | 'expired' | 'revoked'
   expires_at: string
+  accepted_at: string | null
   created_at: string
 }
 
