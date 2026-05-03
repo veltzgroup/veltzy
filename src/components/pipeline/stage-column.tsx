@@ -11,10 +11,11 @@ interface StageColumnProps {
   leads: LeadWithDetails[]
   onAddLead: (stageId: string) => void
   onTransferLead?: (leadId: string) => void
+  onMovePipeline?: (lead: LeadWithDetails) => void
   fireOnly?: boolean
 }
 
-const StageColumn = ({ stage, leads, onAddLead, onTransferLead, fireOnly }: StageColumnProps) => {
+const StageColumn = ({ stage, leads, onAddLead, onTransferLead, onMovePipeline, fireOnly }: StageColumnProps) => {
   const { setNodeRef, isOver } = useDroppable({ id: stage.id })
 
   const leadIds = leads.map((l) => l.id)
@@ -45,7 +46,7 @@ const StageColumn = ({ stage, leads, onAddLead, onTransferLead, fireOnly }: Stag
           )}
         >
           {leads.map((lead) => (
-            <LeadCard key={lead.id} lead={lead} onTransfer={onTransferLead} fireOnly={fireOnly} />
+            <LeadCard key={lead.id} lead={lead} onTransfer={onTransferLead} onMovePipeline={onMovePipeline} fireOnly={fireOnly} />
           ))}
 
           {leads.length === 0 && (

@@ -67,9 +67,10 @@ interface PipelineHeaderProps {
   fireOnly: boolean
   onToggleFireOnly: () => void
   leads?: LeadWithDetails[]
+  pipelineName?: string
 }
 
-const PipelineHeader = ({ onAddLead, onManageStages, fireOnly, onToggleFireOnly, leads }: PipelineHeaderProps) => {
+const PipelineHeader = ({ onAddLead, onManageStages, fireOnly, onToggleFireOnly, leads, pipelineName }: PipelineHeaderProps) => {
   const { filters, setFilters } = usePipelineStore()
   const { data: sources } = useLeadSources()
   const { isAdmin, isManager } = useRoles()
@@ -77,7 +78,7 @@ const PipelineHeader = ({ onAddLead, onManageStages, fireOnly, onToggleFireOnly,
 
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <h1 className="text-2xl font-bold">Pipeline</h1>
+      <h1 className="text-2xl font-bold">{pipelineName || 'Pipeline'}</h1>
 
       <div className="flex flex-wrap items-center gap-2">
         <Button

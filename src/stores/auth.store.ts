@@ -26,7 +26,7 @@ interface AuthState {
   clear: () => void
 }
 
-export const useAuthStore = create<AuthState>((set, get) => ({
+export const useAuthStore = create<AuthState>((set, _get) => ({
   user: null,
   profile: null,
   company: null,
@@ -81,6 +81,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           slug: (r.companies as unknown as { slug: string }).slug,
           role: r.role as AppRole,
         }))
+
+      // Super admin sem empresa vinculada: busca primeira empresa do sistema
+      if (companies.length === 0 && roles.includes('super_admin')) {
+        const { data: allCompanies } = await supabase
+          .from('companies')
+          .select('id, name, slug')
+          .eq('is_active', true)
+          .order('created_at')
+          .limit(1)
+        if (allCompanies && allCompanies.length > 0) {
+          companies.push({
+            id: allCompanies[0].id,
+            name: allCompanies[0].name,
+            slug: allCompanies[0].slug,
+            role: 'super_admin',
+          })
+        }
+      }
 
       // Define empresa ativa
       const saved = localStorage.getItem('activeCompanyId')
