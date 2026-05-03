@@ -123,10 +123,11 @@ const fmtCurrency = (v: number) =>
 interface MonthlyComparisonGridProps {
   months: number
   onMonthsChange: (months: number) => void
+  pipelineId?: string | null
 }
 
-const MonthlyComparisonGrid = ({ months, onMonthsChange }: MonthlyComparisonGridProps) => {
-  const { data, isLoading } = useMonthlyComparisonGrid(months)
+const MonthlyComparisonGrid = ({ months, onMonthsChange, pipelineId }: MonthlyComparisonGridProps) => {
+  const { data, isLoading } = useMonthlyComparisonGrid(months, pipelineId)
 
   return (
     <div className="space-y-4">

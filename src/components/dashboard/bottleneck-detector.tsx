@@ -2,8 +2,8 @@ import { useMemo } from 'react'
 import { Activity, AlertCircle, TrendingDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useLeads } from '@/hooks/use-leads'
-import { usePipelineStages } from '@/hooks/use-pipeline-stages'
+import { useDashboardLeads } from '@/hooks/use-dashboard-leads'
+import { useDashboardStages } from '@/hooks/use-dashboard-stages'
 import { useHistoricalConversionRates } from '@/hooks/use-dashboard-metrics'
 import type { LeadWithDetails, PipelineStage } from '@/types/database'
 import type { HistoricalConversionRate } from '@/services/dashboard.service'
@@ -84,10 +84,10 @@ const detectBottlenecks = (
   return insights
 }
 
-const BottleneckDetector = () => {
-  const { data: leads, isLoading: leadsLoading } = useLeads()
-  const { data: stages, isLoading: stagesLoading } = usePipelineStages()
-  const { data: rates, isLoading: ratesLoading } = useHistoricalConversionRates()
+const BottleneckDetector = ({ pipelineId }: { pipelineId?: string | null }) => {
+  const { data: leads, isLoading: leadsLoading } = useDashboardLeads(pipelineId)
+  const { data: stages, isLoading: stagesLoading } = useDashboardStages(pipelineId)
+  const { data: rates, isLoading: ratesLoading } = useHistoricalConversionRates(90, pipelineId)
 
   const isLoading = leadsLoading || stagesLoading || ratesLoading
 

@@ -2,8 +2,8 @@ import { useMemo } from 'react'
 import { TrendingUp } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useLeads } from '@/hooks/use-leads'
-import { usePipelineStages } from '@/hooks/use-pipeline-stages'
+import { useDashboardLeads } from '@/hooks/use-dashboard-leads'
+import { useDashboardStages } from '@/hooks/use-dashboard-stages'
 import { useHistoricalConversionRates } from '@/hooks/use-dashboard-metrics'
 import { useGoals } from '@/hooks/use-goals'
 import { calculateForecast } from '@/lib/forecast'
@@ -11,10 +11,10 @@ import { calculateForecast } from '@/lib/forecast'
 const fmt = (value: number) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(value)
 
-const ForecastCard = () => {
-  const { data: leads, isLoading: leadsLoading } = useLeads()
-  const { data: stages, isLoading: stagesLoading } = usePipelineStages()
-  const { data: rates, isLoading: ratesLoading } = useHistoricalConversionRates()
+const ForecastCard = ({ pipelineId }: { pipelineId?: string | null }) => {
+  const { data: leads, isLoading: leadsLoading } = useDashboardLeads(pipelineId)
+  const { data: stages, isLoading: stagesLoading } = useDashboardStages(pipelineId)
+  const { data: rates, isLoading: ratesLoading } = useHistoricalConversionRates(90, pipelineId)
   const { data: goals, isLoading: goalsLoading } = useGoals()
 
   const isLoading = leadsLoading || stagesLoading || ratesLoading || goalsLoading

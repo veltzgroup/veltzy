@@ -5,8 +5,10 @@ import {
   DollarSign, Users, TrendingUp, Plus, MessageSquare, Download,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useLeads } from '@/hooks/use-leads'
+import { useDashboardLeads } from '@/hooks/use-dashboard-leads'
 import { usePipelineStages } from '@/hooks/use-pipeline-stages'
+import { usePipelines } from '@/hooks/use-pipelines'
+import { PipelineFilter } from '@/components/shared/pipeline-filter'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -46,12 +48,16 @@ const thClass = 'pb-3 text-xs font-medium text-muted-foreground uppercase tracki
 
 const DealsPage = () => {
   const navigate = useNavigate()
-  const { data: allLeads, isLoading, isError, refetch } = useLeads()
-  const { data: stages } = usePipelineStages()
   const [selectedDays, setSelectedDays] = useState<number | undefined>(30)
+  const [selectedPipelineId, setSelectedPipelineId] = useState<string | null>(null)
   const [createModalOpen, setCreateModalOpen] = useState(false)
   const [selectedLead, setSelectedLead] = useState<LeadWithDetails | null>(null)
+  const { data: pipelines } = usePipelines()
+  const { data: allLeads, isLoading, isError, refetch } = useDashboardLeads(selectedPipelineId)
+  const { data: stages } = usePipelineStages()
+  const showPipelineColumn = (pipelines ?? []).filter((p) => p.is_active).length > 1
 
+  const pipelineMap = new Map((pipelines ?? []).map((p) => [p.id, p]))
   const leads = filterByPeriod(allLeads ?? [], selectedDays)
 
   const openLeads = leads.filter((l) => l.status === 'new' || l.status === 'qualifying' || l.status === 'open')
@@ -81,6 +87,11 @@ const DealsPage = () => {
             </p>
           </div>
           <div className="flex items-center gap-3">
+            <PipelineFilter
+              value={selectedPipelineId}
+              onChange={setSelectedPipelineId}
+              pipelines={pipelines ?? []}
+            />
             <div className="flex gap-1.5">
               {periodOptions.map((p) => {
                 const active = selectedDays === p.days
@@ -230,13 +241,14 @@ const DealsPage = () => {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border/30">
-                  <th className={cn(thClass, 'text-left w-[22%]')}>Contato</th>
+                  <th className={cn(thClass, 'text-left w-[20%]')}>Contato</th>
                   <th className={cn(thClass, 'text-left w-[5%]')}>Chat</th>
-                  <th className={cn(thClass, 'text-left w-[12%]')}>Valor</th>
-                  <th className={cn(thClass, 'text-left w-[12%]')}>Etapa</th>
-                  <th className={cn(thClass, 'text-left w-[14%]')}>Temperatura</th>
-                  <th className={cn(thClass, 'text-left w-[11%]')}>Origem</th>
-                  <th className={cn(thClass, 'text-left w-[12%]')}>Responsavel</th>
+                  <th className={cn(thClass, 'text-left w-[11%]')}>Valor</th>
+                  {showPipelineColumn && <th className={cn(thClass, 'text-left w-[10%]')}>Pipeline</th>}
+                  <th className={cn(thClass, 'text-left w-[11%]')}>Etapa</th>
+                  <th className={cn(thClass, 'text-left w-[12%]')}>Temperatura</th>
+                  <th className={cn(thClass, 'text-left w-[10%]')}>Origem</th>
+                  <th className={cn(thClass, 'text-left w-[11%]')}>Responsavel</th>
                   <th className={cn(thClass, 'text-left w-[10%]')}>Criado em</th>
                 </tr>
               </thead>
@@ -286,6 +298,23 @@ const DealsPage = () => {
                       <td className={cn('py-3 text-left font-semibold', lead.status === 'deal' ? 'text-emerald-500' : 'text-primary')}>
                         {lead.deal_value ? fmt(lead.deal_value) : '-'}
                       </td>
+
+                      {/* Pipeline */}
+                      {showPipelineColumn && (() => {
+                        const pipeline = pipelineMap.get(lead.pipeline_id)
+                        return (
+                          <td className="py-3 text-left">
+                            {pipeline ? (
+                              <span className="inline-flex items-center gap-1.5 text-xs">
+                                <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: pipeline.color }} />
+                                {pipeline.name}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">-</span>
+                            )}
+                          </td>
+                        )
+                      })()}
 
                       {/* Etapa */}
                       <td className="py-3 text-left">
@@ -343,7 +372,7 @@ const DealsPage = () => {
                 })}
                 {leads.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="py-12 text-center text-sm text-muted-foreground">
+                    <td colSpan={showPipelineColumn ? 9 : 8} className="py-12 text-center text-sm text-muted-foreground">
                       Nenhum negocio encontrado
                     </td>
                   </tr>

@@ -3,7 +3,7 @@ import { Users } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
-import { useLeads } from '@/hooks/use-leads'
+import { useDashboardLeads } from '@/hooks/use-dashboard-leads'
 import { useTeamMembers } from '@/hooks/use-team'
 import type { LeadWithDetails } from '@/types/database'
 
@@ -17,8 +17,8 @@ const filterByPeriod = (leads: LeadWithDetails[], days: number | undefined) => {
 const getInitials = (name: string) =>
   name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
 
-const TeamHighlightCard = ({ days }: { days?: number }) => {
-  const { data: allLeads, isLoading: leadsLoading } = useLeads()
+const TeamHighlightCard = ({ days, pipelineId }: { days?: number; pipelineId?: string | null }) => {
+  const { data: allLeads, isLoading: leadsLoading } = useDashboardLeads(pipelineId)
   const { data: members, isLoading: membersLoading } = useTeamMembers()
 
   const sellers = useMemo(() => {

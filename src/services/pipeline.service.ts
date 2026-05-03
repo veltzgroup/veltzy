@@ -12,6 +12,16 @@ export const getPipelineStages = async (companyId: string, pipelineId: string): 
   return data
 }
 
+export const getAllPipelineStages = async (companyId: string): Promise<PipelineStage[]> => {
+  const { data, error } = await veltzy()
+    .from('pipeline_stages')
+    .select('*')
+    .eq('company_id', companyId)
+    .order('position')
+  if (error) throw error
+  return data
+}
+
 export const createStage = async (
   companyId: string,
   pipelineId: string,

@@ -6,10 +6,11 @@ import { useRoles } from '@/hooks/use-roles'
 
 interface SellerPerformanceTableProps {
   days?: number
+  pipelineId?: string | null
 }
 
-const SellerPerformanceTable = ({ days }: SellerPerformanceTableProps) => {
-  const { data: sellers, isLoading } = useSellerPerformance(days)
+const SellerPerformanceTable = ({ days, pipelineId }: SellerPerformanceTableProps) => {
+  const { data: sellers, isLoading } = useSellerPerformance(days, pipelineId)
   const { isAdmin, isManager } = useRoles()
 
   if (!isAdmin && !isManager) return null
