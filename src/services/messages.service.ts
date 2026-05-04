@@ -110,9 +110,10 @@ export const getConversationList = async (companyId: string): Promise<LeadWithLa
 }
 
 export const isWhatsAppConnected = async (companyId: string): Promise<boolean> => {
-  const { data } = await db()
-    .from('whatsapp_configs')
+  const { data } = await supabase
+    .from('oauth_integrations')
     .select('id')
+    .eq('provider', 'zapi')
     .eq('company_id', companyId)
     .eq('status', 'connected')
     .maybeSingle()
