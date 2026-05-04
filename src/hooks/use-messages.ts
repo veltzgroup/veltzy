@@ -87,7 +87,6 @@ export const useSendMessage = () => {
         source: 'manual',
         external_id: null,
         replied_message_id: payload.repliedMessageId ?? null,
-        is_internal: payload.isInternal ?? false,
         is_scheduled: false,
         scheduled_at: null,
         is_read: true,

@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils'
 import { timeAgo } from '@/lib/time'
-import { Download, FileText, StickyNote } from 'lucide-react'
+import { Download, FileText } from 'lucide-react'
 import { AudioBubble } from '@/components/inbox/audio-bubble'
 import type { Message } from '@/types/database'
 
@@ -54,30 +54,22 @@ const MessageBubble = ({ message, senderName }: MessageBubbleProps) => {
   const isLead = message.sender_type === 'lead'
   const isAi = message.sender_type === 'ai'
   const isHuman = message.sender_type === 'human'
-  const isInternal = message.is_internal === true
   const isOptimistic = message.id.startsWith('optimistic-')
 
   return (
-    <div className={cn('flex', isLead && !isInternal ? 'justify-start' : 'justify-end', isOptimistic && 'opacity-70')}>
+    <div className={cn('flex', isLead ? 'justify-start' : 'justify-end', isOptimistic && 'opacity-70')}>
       <div
         className={cn(
           'max-w-[75%] space-y-1 px-3 py-2 rounded-xl',
-          isInternal && 'bg-amber-500/10 border border-amber-500/20 text-foreground rounded-br-sm',
-          !isInternal && isLead && 'bg-muted text-foreground rounded-bl-sm',
-          !isInternal && isHuman && 'bg-primary text-primary-foreground rounded-br-sm',
-          !isInternal && isAi && 'bg-accent text-accent-foreground rounded-bl-sm border border-primary/20',
+          isLead && 'bg-muted text-foreground rounded-bl-sm',
+          isHuman && 'bg-primary text-primary-foreground rounded-br-sm',
+          isAi && 'bg-accent text-accent-foreground rounded-bl-sm border border-primary/20',
         )}
       >
-        {isInternal && (
-          <div className="flex items-center gap-1">
-            <StickyNote className="h-3 w-3 text-amber-600" />
-            <p className="text-xs text-amber-600 font-medium">Nota interna</p>
-          </div>
-        )}
-        {!isInternal && isHuman && senderName && (
+        {isHuman && senderName && (
           <p className="text-[10px] font-medium opacity-70">{senderName}</p>
         )}
-        {!isInternal && isAi && (
+        {isAi && (
           <p className="text-[10px] font-medium opacity-70">IA SDR</p>
         )}
 

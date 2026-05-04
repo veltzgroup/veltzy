@@ -251,7 +251,6 @@ export interface Message {
   source: MessageSource
   external_id: string | null
   replied_message_id: string | null
-  is_internal: boolean
   is_scheduled: boolean
   scheduled_at: string | null
   is_read: boolean
@@ -266,7 +265,6 @@ export interface SendMessagePayload {
   fileName?: string
   mimeType?: string
   repliedMessageId?: string
-  isInternal?: boolean
 }
 
 export interface WhatsAppConfig {
