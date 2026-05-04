@@ -47,12 +47,18 @@ Deno.serve(async (req) => {
           .maybeSingle()
 
         if (!lead) {
-          const { data: stage } = await supabase.from('pipeline_stages').select('id').eq('company_id', connection.company_id).order('position').limit(1).single()
+          let { data: defaultPipeline } = await supabase.from('pipelines').select('id').eq('company_id', connection.company_id).eq('is_default', true).maybeSingle()
+          if (!defaultPipeline) {
+            const { data: fallback } = await supabase.from('pipelines').select('id').eq('company_id', connection.company_id).eq('is_active', true).order('position').limit(1).single()
+            defaultPipeline = fallback
+          }
+          const { data: stage } = await supabase.from('pipeline_stages').select('id').eq('pipeline_id', defaultPipeline?.id).order('position').limit(1).single()
           const { data: source } = await supabase.from('lead_sources').select('id').eq('company_id', connection.company_id).eq('slug', 'instagram').maybeSingle()
           const { data: newLead } = await supabase.from('leads').insert({
             company_id: connection.company_id,
             phone: senderId,
             instagram_id: senderId,
+            pipeline_id: defaultPipeline?.id,
             stage_id: stage?.id,
             source_id: source?.id,
           }).select('id').single()

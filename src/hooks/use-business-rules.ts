@@ -21,7 +21,6 @@ interface BusinessRules {
   require_deal_value: boolean
   min_score_to_advance: boolean
   min_score_value: number
-  enable_internal_notes: boolean
 }
 
 const defaults: BusinessRules = {
@@ -43,7 +42,6 @@ const defaults: BusinessRules = {
   require_deal_value: false,
   min_score_to_advance: false,
   min_score_value: 0,
-  enable_internal_notes: true,
 }
 
 export const useBusinessRules = () => {

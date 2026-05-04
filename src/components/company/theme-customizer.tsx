@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
-import { Loader2, RotateCcw } from 'lucide-react'
+import { Check, Loader2, RotateCcw } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,11 +13,19 @@ import { useQueryClient } from '@tanstack/react-query'
 
 const swatches = [
   { label: 'Veltzy', hsl: '158 64% 42%', hex: '#22a06b' },
+  { label: 'Teal', hsl: '175 70% 40%', hex: '#1a9e8f' },
   { label: 'Azul', hsl: '217 91% 60%', hex: '#3b82f6' },
+  { label: 'Indigo', hsl: '234 89% 63%', hex: '#4f46e5' },
   { label: 'Roxo', hsl: '271 81% 56%', hex: '#8b5cf6' },
-  { label: 'Laranja', hsl: '25 95% 53%', hex: '#f97316' },
+  { label: 'Violeta', hsl: '293 69% 49%', hex: '#a855f7' },
   { label: 'Rosa', hsl: '330 81% 60%', hex: '#ec4899' },
   { label: 'Vermelho', hsl: '0 72% 51%', hex: '#ef4444' },
+  { label: 'Laranja', hsl: '25 95% 53%', hex: '#f97316' },
+  { label: 'Amber', hsl: '38 92% 50%', hex: '#f59e0b' },
+  { label: 'Lima', hsl: '84 81% 44%', hex: '#65a30d' },
+  { label: 'Ciano', hsl: '199 89% 48%', hex: '#0ea5e9' },
+  { label: 'Slate', hsl: '215 20% 40%', hex: '#4b5e75' },
+  { label: 'Zinc', hsl: '240 6% 35%', hex: '#52525b' },
 ]
 
 const cardStyles = [
@@ -90,18 +98,48 @@ const ThemeCustomizer = () => {
 
   const initialHsl = company?.primary_color ?? '158 64% 42%'
   const [primaryHsl, setPrimaryHsl] = useState(initialHsl)
-  const [primaryHex, setPrimaryHex] = useState(() => hslToHex(initialHsl))
+  const [primaryHex, setPrimaryHex] = useState(() => {
+    const match = swatches.find((s) => s.hsl === initialHsl)
+    return match ? match.hex : hslToHex(initialHsl)
+  })
   const [cardStyle, setCardStyle] = useState('glass')
   const [sidebarStyle, setSidebarStyle] = useState('solid')
   const [saving, setSaving] = useState(false)
 
+  useEffect(() => {
+    if (!companyId) return
+    veltzy()
+      .from('system_settings')
+      .select('value')
+      .eq('company_id', companyId)
+      .eq('key', 'theme_config')
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.value) {
+          const cfg = data.value as { card_style?: string; sidebar_style?: string }
+          if (cfg.card_style) setCardStyle(cfg.card_style)
+          if (cfg.sidebar_style) setSidebarStyle(cfg.sidebar_style)
+        }
+      })
+  }, [companyId])
+
   const applyPreview = (hsl: string, hex: string) => {
     setPrimaryHsl(hsl)
     setPrimaryHex(hex)
-    document.documentElement.style.setProperty('--primary', hsl)
-    document.documentElement.style.setProperty('--ring', hsl)
-    document.documentElement.style.setProperty('--sidebar-primary', hsl)
-    document.documentElement.style.setProperty('--glow-primary', hsl)
+    const root = document.documentElement
+    const isDark = root.classList.contains('dark')
+    root.style.setProperty('--primary', hsl)
+    root.style.setProperty('--ring', hsl)
+    root.style.setProperty('--sidebar-primary', hsl)
+    root.style.setProperty('--glow-primary', hsl)
+    const match = hsl.match(/(\d+)\s+(\d+)%?\s+(\d+)%?/)
+    if (match) {
+      const [, h, s] = match.map(Number)
+      root.style.setProperty('--accent-foreground', isDark ? `${h} ${s}% 58%` : `${h} ${s}% 32%`)
+      if (!root.classList.contains('sand')) {
+        root.style.setProperty('--accent', isDark ? `${h} ${Math.round(s * 0.1)}% 16%` : `${h} ${Math.round(s * 0.6)}% 94%`)
+      }
+    }
   }
 
   const handleColorPicker = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -113,12 +151,7 @@ const ThemeCustomizer = () => {
     const hex = e.target.value
     setPrimaryHex(hex)
     if (/^#[0-9a-fA-F]{6}$/.test(hex)) {
-      const hsl = hexToHsl(hex)
-      setPrimaryHsl(hsl)
-      document.documentElement.style.setProperty('--primary', hsl)
-      document.documentElement.style.setProperty('--ring', hsl)
-      document.documentElement.style.setProperty('--sidebar-primary', hsl)
-      document.documentElement.style.setProperty('--glow-primary', hsl)
+      applyPreview(hexToHsl(hex), hex)
     }
   }
 
@@ -173,12 +206,36 @@ const ThemeCustomizer = () => {
 
         <div className="space-y-3">
           <Label>Cor Primaria</Label>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap gap-2">
+            {swatches.map((s) => {
+              const isActive = primaryHsl === s.hsl
+              return (
+                <button
+                  key={s.hsl}
+                  onClick={() => applyPreview(s.hsl, s.hex)}
+                  title={s.label}
+                  className={cn(
+                    'flex h-8 w-8 items-center justify-center rounded-full transition-all',
+                    isActive
+                      ? 'ring-2 ring-offset-2 ring-offset-background'
+                      : 'hover:scale-110'
+                  )}
+                  style={{
+                    backgroundColor: s.hex,
+                    ...(isActive ? { boxShadow: `0 0 0 2px ${s.hex}` } : {}),
+                  }}
+                >
+                  {isActive && <Check className="h-3.5 w-3.5 text-white drop-shadow-sm" />}
+                </button>
+              )
+            })}
+          </div>
+          <div className="flex items-center gap-3 pt-1">
             <input
               type="color"
               value={primaryHex}
               onChange={handleColorPicker}
-              className="h-10 w-10 cursor-pointer rounded-lg border-0 bg-transparent"
+              className="h-9 w-9 cursor-pointer rounded-lg border-0 bg-transparent"
             />
             <Input
               value={primaryHex}
@@ -186,28 +243,10 @@ const ThemeCustomizer = () => {
               placeholder="#000000"
               className="w-28 text-xs font-mono"
             />
-            <div
-              className="h-6 w-6 rounded-full border border-border/50"
-              style={{ backgroundColor: `hsl(${primaryHsl})` }}
-            />
+            <span className="text-[11px] text-muted-foreground">
+              Cor personalizada
+            </span>
           </div>
-          <div className="flex gap-2">
-            {swatches.map((s) => (
-              <button
-                key={s.hsl}
-                onClick={() => applyPreview(s.hsl, s.hex)}
-                className={cn(
-                  'h-10 w-10 rounded-lg ring-2 transition-smooth',
-                  primaryHsl === s.hsl ? 'ring-foreground' : 'ring-transparent hover:ring-border'
-                )}
-                style={{ backgroundColor: s.hex }}
-                title={s.label}
-              />
-            ))}
-          </div>
-          <p className="text-[11px] text-muted-foreground">
-            Escolha um preset ou use o seletor de cores para qualquer cor
-          </p>
         </div>
 
         <div className="space-y-3">

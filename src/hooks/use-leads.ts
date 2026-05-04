@@ -9,12 +9,14 @@ import type { CreateLeadInput, UpdateLeadInput, LeadWithDetails } from '@/types/
 export const useLeads = () => {
   const companyId = useAuthStore((s) => s.company?.id)
   const filters = usePipelineStore((s) => s.filters)
+  const activePipelineId = usePipelineStore((s) => s.activePipelineId)
   const { data: members } = useTeamMembers()
 
   return useQuery({
-    queryKey: ['leads', companyId, filters.sourceId, filters.temperature, filters.assignedTo],
+    queryKey: ['leads', companyId, activePipelineId, filters.sourceId, filters.temperature, filters.assignedTo],
     queryFn: async () => {
       const leads = await leadsService.getLeadsByCompany(companyId!, {
+        pipelineId: activePipelineId!,
         sourceId: filters.sourceId,
         temperature: filters.temperature,
         assignedTo: filters.assignedTo,
@@ -27,7 +29,7 @@ export const useLeads = () => {
         profiles: lead.assigned_to ? profileMap.get(lead.assigned_to) ?? null : null,
       }))
     },
-    enabled: !!companyId,
+    enabled: !!companyId && !!activePipelineId,
     staleTime: 30 * 1000,
   })
 }
@@ -35,7 +37,8 @@ export const useLeads = () => {
 const useLeadsQueryKey = () => {
   const companyId = useAuthStore((s) => s.company?.id)
   const filters = usePipelineStore((s) => s.filters)
-  return ['leads', companyId, filters.sourceId, filters.temperature, filters.assignedTo] as const
+  const activePipelineId = usePipelineStore((s) => s.activePipelineId)
+  return ['leads', companyId, activePipelineId, filters.sourceId, filters.temperature, filters.assignedTo] as const
 }
 
 export const useCreateLead = () => {
@@ -114,6 +117,23 @@ export const useMoveLeadToStage = () => {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['leads'] })
+    },
+  })
+}
+
+export const useMoveLeadToPipeline = () => {
+  const queryClient = useQueryClient()
+  const companyId = useAuthStore((s) => s.company?.id)
+
+  return useMutation({
+    mutationFn: ({ leadId, targetPipelineId }: { leadId: string; targetPipelineId: string }) =>
+      leadsService.moveLeadToPipeline(companyId!, leadId, targetPipelineId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['leads'] })
+      toast.success('Lead movido para outro pipeline')
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || 'Erro ao mover lead')
     },
   })
 }

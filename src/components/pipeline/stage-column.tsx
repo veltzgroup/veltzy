@@ -11,10 +11,11 @@ interface StageColumnProps {
   leads: LeadWithDetails[]
   onAddLead: (stageId: string) => void
   onTransferLead?: (leadId: string) => void
+  onMovePipeline?: (lead: LeadWithDetails) => void
   fireOnly?: boolean
 }
 
-const StageColumn = ({ stage, leads, onAddLead, onTransferLead, fireOnly }: StageColumnProps) => {
+const StageColumn = ({ stage, leads, onAddLead, onTransferLead, onMovePipeline, fireOnly }: StageColumnProps) => {
   const { setNodeRef, isOver } = useDroppable({ id: stage.id })
 
   const leadIds = leads.map((l) => l.id)
@@ -22,14 +23,27 @@ const StageColumn = ({ stage, leads, onAddLead, onTransferLead, fireOnly }: Stag
   return (
     <div className="flex w-[300px] min-w-[280px] max-w-[320px] flex-shrink-0 flex-col h-full">
       <div
-        className="mb-2 rounded-t-xl px-3 py-2"
-        style={{ borderTop: `4px solid ${stage.color}` }}
+        className="mb-2 rounded-t-xl px-3 py-2.5"
+        style={{
+          background: `linear-gradient(135deg, color-mix(in srgb, ${stage.color} 18%, transparent), color-mix(in srgb, ${stage.color} 4%, transparent))`,
+          borderBottom: `1px solid color-mix(in srgb, ${stage.color} 15%, transparent)`,
+        }}
       >
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold">{stage.name}</h3>
+          <h3
+            className="text-sm font-semibold"
+            style={{ color: `color-mix(in srgb, ${stage.color} 75%, hsl(var(--foreground)))` }}
+          >
+            {stage.name}
+          </h3>
           <span
-            className="flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-medium"
-            style={{ backgroundColor: `${stage.color}20`, color: stage.color }}
+            className="flex items-center justify-center rounded-full text-[10px] font-semibold"
+            style={{
+              width: 22,
+              height: 22,
+              backgroundColor: stage.color,
+              color: '#fff',
+            }}
           >
             {leads.length}
           </span>
@@ -45,7 +59,7 @@ const StageColumn = ({ stage, leads, onAddLead, onTransferLead, fireOnly }: Stag
           )}
         >
           {leads.map((lead) => (
-            <LeadCard key={lead.id} lead={lead} onTransfer={onTransferLead} fireOnly={fireOnly} />
+            <LeadCard key={lead.id} lead={lead} onTransfer={onTransferLead} onMovePipeline={onMovePipeline} fireOnly={fireOnly} />
           ))}
 
           {leads.length === 0 && (

@@ -110,9 +110,10 @@ export const getConversationList = async (companyId: string): Promise<LeadWithLa
 }
 
 export const isWhatsAppConnected = async (companyId: string): Promise<boolean> => {
-  const { data } = await db()
-    .from('whatsapp_configs')
+  const { data } = await supabase
+    .from('oauth_integrations')
     .select('id')
+    .eq('provider', 'zapi')
     .eq('company_id', companyId)
     .eq('status', 'connected')
     .maybeSingle()
@@ -146,32 +147,10 @@ export const getLeadPhoneAndSource = async (
   }
 }
 
-export const sendInternalNote = async (companyId: string, payload: SendMessagePayload): Promise<Message> => {
-  const { data, error } = await db()
-    .from('messages')
-    .insert({
-      lead_id: payload.leadId,
-      company_id: companyId,
-      content: payload.content,
-      sender_type: 'human',
-      message_type: 'text',
-      is_internal: true,
-      source: 'manual',
-    })
-    .select()
-    .single()
-  if (error) throw error
-  return data
-}
-
 export const routeMessage = async (
   companyId: string,
   payload: SendMessagePayload,
 ): Promise<Message> => {
-  if (payload.isInternal) {
-    return sendInternalNote(companyId, payload)
-  }
-
   const { phone, sourceSlug } = await getLeadPhoneAndSource(companyId, payload.leadId)
   const whatsAppConnected = phone ? await isWhatsAppConnected(companyId) : false
 

@@ -49,7 +49,7 @@ interface EditLeadModalProps {
 const EditLeadModal = ({ lead, open, onClose }: EditLeadModalProps) => {
   const updateLead = useUpdateLead()
   const deleteLead = useDeleteLead()
-  const { data: stages } = usePipelineStages()
+  const { data: stages } = usePipelineStages(lead?.pipeline_id)
   const { data: sources } = useLeadSources()
 
   const { register, handleSubmit, control, reset, formState: { errors } } = useForm<FormValues>({

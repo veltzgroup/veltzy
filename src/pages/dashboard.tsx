@@ -10,6 +10,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useAuthStore } from '@/stores/auth.store'
 import { useDashboardKpis } from '@/hooks/use-dashboard-metrics'
 import { useDashboardRealtime } from '@/hooks/use-dashboard-realtime'
+import { usePipelines } from '@/hooks/use-pipelines'
+import { PipelineFilter } from '@/components/shared/pipeline-filter'
 import { calculatePeriodChange } from '@/lib/dashboard-utils'
 import { PipelineOverviewCard } from '@/components/dashboard/pipeline-overview-card'
 import { LeadsBySourceChart } from '@/components/dashboard/leads-by-source-chart'
@@ -141,7 +143,9 @@ const DashboardPage = () => {
   const profile = useAuthStore((s) => s.profile)
   const [selectedDays, setSelectedDays] = useState<number | undefined>(30)
   const [monthlyRange, setMonthlyRange] = useState(6)
-  const { data: kpis, isLoading, isError, refetch } = useDashboardKpis(selectedDays)
+  const [selectedPipelineId, setSelectedPipelineId] = useState<string | null>(null)
+  const { data: pipelines } = usePipelines()
+  const { data: kpis, isLoading, isError, refetch } = useDashboardKpis(selectedDays, selectedPipelineId)
   useDashboardRealtime()
 
   const displayName = profile?.name || company?.name || 'usuario'
@@ -168,8 +172,13 @@ const DashboardPage = () => {
             </div>
           </div>
 
-          {/* SELETOR DE PERIODO */}
+          {/* SELETOR DE PERIODO + PIPELINE */}
           <div className="flex items-center gap-3">
+            <PipelineFilter
+              value={selectedPipelineId}
+              onChange={setSelectedPipelineId}
+              pipelines={pipelines ?? []}
+            />
             <span className="text-sm text-muted-foreground">Exibir:</span>
             <div className="flex gap-1.5">
               {periodOptions.map((p) => {
@@ -326,9 +335,9 @@ const DashboardPage = () => {
 
         {/* INTELIGENCIA: ACOES + GARGALOS + PREVISAO */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <NextActionsCard />
-          <BottleneckDetector />
-          <ForecastCard />
+          <NextActionsCard pipelineId={selectedPipelineId} />
+          <BottleneckDetector pipelineId={selectedPipelineId} />
+          <ForecastCard pipelineId={selectedPipelineId} />
         </div>
 
         {/* COPILOTO DE VENDAS */}
@@ -336,24 +345,24 @@ const DashboardPage = () => {
 
         {/* VISAO DO PIPELINE + DICAS DE FOLLOW-UP */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <PipelineOverviewCard days={selectedDays} />
+          <PipelineOverviewCard days={selectedDays} pipelineId={selectedPipelineId} />
           <FollowUpTips />
         </div>
 
         {/* LEADS POR ORIGEM + EQUIPE EM DESTAQUE */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <LeadsBySourceChart days={selectedDays} />
-          <TeamHighlightCard days={selectedDays} />
+          <LeadsBySourceChart days={selectedDays} pipelineId={selectedPipelineId} />
+          <TeamHighlightCard days={selectedDays} pipelineId={selectedPipelineId} />
         </div>
 
         {/* PERFORMANCE VENDEDORES */}
-        <SellerPerformanceTable days={selectedDays} />
+        <SellerPerformanceTable days={selectedDays} pipelineId={selectedPipelineId} />
 
         {/* COMPARATIVO MENSAL */}
-        <MonthlyComparisonGrid months={monthlyRange} onMonthsChange={setMonthlyRange} />
+        <MonthlyComparisonGrid months={monthlyRange} onMonthsChange={setMonthlyRange} pipelineId={selectedPipelineId} />
 
         {/* EVOLUCAO DAS METRICAS */}
-        <MetricsLineChart months={monthlyRange} />
+        <MetricsLineChart months={monthlyRange} pipelineId={selectedPipelineId} />
 
       </div>
     </div>

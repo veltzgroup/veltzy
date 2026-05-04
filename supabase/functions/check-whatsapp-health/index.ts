@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { getAllConnectedZApiConfigs, updateZApiMetadata, buildZApiUrl } from '../_shared/zapi-config.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') ?? 'https://app.veltzy.com',
@@ -14,14 +15,11 @@ Deno.serve(async (req) => {
     const url = Deno.env.get('SUPABASE_URL')!
     const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(url, key, { db: { schema: 'veltzy' } })
-    const supabasePublic = createClient(url, key, { db: { schema: 'public' } })
+    const supabasePublic = createClient(url, key)
 
-    const { data: configs } = await supabase
-      .from('whatsapp_configs')
-      .select('id, company_id, instance_id, instance_token, client_token, status')
-      .eq('status', 'connected')
+    const configs = await getAllConnectedZApiConfigs(supabasePublic)
 
-    if (!configs || configs.length === 0) {
+    if (configs.length === 0) {
       return new Response(
         JSON.stringify({ ok: true, checked: 0 }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
@@ -35,7 +33,7 @@ Deno.serve(async (req) => {
 
       try {
         const res = await fetch(
-          `https://api.z-api.io/instances/${config.instance_id}/token/${config.instance_token}/status`,
+          `${buildZApiUrl(config)}/status`,
           { headers: { 'Client-Token': config.client_token } },
         )
         const data = await res.json()
@@ -50,10 +48,7 @@ Deno.serve(async (req) => {
       }
 
       if (newStatus !== 'connected') {
-        await supabase
-          .from('whatsapp_configs')
-          .update({ status: newStatus, updated_at: new Date().toISOString() })
-          .eq('id', config.id)
+        await updateZApiMetadata(supabasePublic, config.id, { status: newStatus })
 
         // Notificar admins da empresa
         const { data: admins } = await supabasePublic

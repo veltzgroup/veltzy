@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { getZApiConfigByCompany, buildZApiUrl, buildZApiHeaders } from '../_shared/zapi-config.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') ?? 'https://app.veltzy.com',
@@ -16,6 +17,7 @@ Deno.serve(async (req) => {
     const url = Deno.env.get('SUPABASE_URL')!
     const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(url, key, { db: { schema: 'veltzy' } })
+    const supabasePublic = createClient(url, key)
 
     const now = new Date().toISOString()
 
@@ -40,12 +42,7 @@ Deno.serve(async (req) => {
     for (const item of items) {
       try {
         // Busca config WhatsApp da empresa
-        const { data: config } = await supabase
-          .from('whatsapp_configs')
-          .select('instance_id, instance_token, client_token, status')
-          .eq('company_id', item.company_id)
-          .eq('status', 'connected')
-          .maybeSingle()
+        const config = await getZApiConfigByCompany(supabasePublic, item.company_id, { status: 'connected' })
 
         if (!config) {
           await supabase
@@ -73,7 +70,7 @@ Deno.serve(async (req) => {
         }
 
         // Envia via Z-API
-        const baseUrl = `https://api.z-api.io/instances/${config.instance_id}/token/${config.instance_token}`
+        const baseUrl = buildZApiUrl(config)
         const msgType = item.message_type ?? 'text'
 
         const endpoints: Record<string, string> = {
@@ -97,10 +94,7 @@ Deno.serve(async (req) => {
 
         const res = await fetch(`${baseUrl}${endpoints[msgType] ?? '/send-text'}`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Client-Token': config.client_token,
-          },
+          headers: buildZApiHeaders(config),
           body: JSON.stringify(body),
         })
 

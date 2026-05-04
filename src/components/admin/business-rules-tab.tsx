@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import {
   Loader2, RotateCcw, Shuffle, UserCheck, Bot, Star,
-  Mic, Users, Bell, TrendingUp, ShieldCheck, CalendarClock, Pencil, StickyNote,
+  Mic, Users, Bell, TrendingUp, ShieldCheck, CalendarClock, Pencil,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -33,7 +33,6 @@ interface BusinessRules {
   require_deal_value: boolean
   min_score_to_advance: boolean
   min_score_value: number
-  enable_internal_notes: boolean
 }
 
 const defaults: BusinessRules = {
@@ -55,7 +54,6 @@ const defaults: BusinessRules = {
   require_deal_value: false,
   min_score_to_advance: false,
   min_score_value: 0,
-  enable_internal_notes: true,
 }
 
 interface RuleConfig {
@@ -152,12 +150,6 @@ const rules: RuleConfig[] = [
     extraLabel: 'Score minimo',
     extraMin: 0,
     extraMax: 100,
-  },
-  {
-    key: 'enable_internal_notes',
-    icon: StickyNote,
-    title: 'Notas internas no chat',
-    description: 'Permite que gestores e admins deixem notas visiveis apenas para a equipe dentro das conversas.',
   },
 ]
 

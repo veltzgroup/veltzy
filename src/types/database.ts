@@ -45,7 +45,76 @@ export interface Profile {
 export interface UserRole {
   id: string
   user_id: string
+  company_id: string | null
   role: AppRole
+}
+
+export interface CompanyWithRole {
+  id: string
+  name: string
+  slug: string
+  role: AppRole
+}
+
+export interface Permission {
+  id: string
+  key: string
+  description: string | null
+  product: string
+}
+
+export interface Invitation {
+  id: string
+  company_id: string
+  invited_by: string
+  email: string
+  role: AppRole
+  token: string
+  status: 'pending' | 'accepted' | 'rejected' | 'expired' | 'revoked'
+  expires_at: string
+  accepted_at: string | null
+  created_at: string
+}
+
+export type TransferRequestType = 'duplicate_conflict' | 'queue_transfer' | 'manual_transfer'
+export type TransferRequestStatus = 'pending' | 'approved' | 'rejected'
+
+export interface LeadTransferRequest {
+  id: string
+  company_id: string
+  lead_id: string
+  requested_by: string
+  requested_to: string
+  type: TransferRequestType
+  status: TransferRequestStatus
+  resolved_by: string | null
+  notes: string | null
+  created_at: string
+  resolved_at: string | null
+}
+
+export type AuthAuditEvent =
+  | 'login_success'
+  | 'login_failed'
+  | 'logout'
+  | 'invite_sent'
+  | 'invite_accepted'
+  | 'invite_revoked'
+  | 'role_changed'
+  | 'company_switched'
+  | 'password_reset'
+  | 'google_oauth_linked'
+  | 'login_new_device'
+
+export interface AuthAuditLog {
+  id: string
+  user_id: string | null
+  company_id: string | null
+  event: AuthAuditEvent
+  ip_address: string | null
+  user_agent: string | null
+  metadata: Record<string, unknown>
+  created_at: string
 }
 
 export interface SystemSetting {
@@ -57,9 +126,23 @@ export interface SystemSetting {
   updated_at: string
 }
 
+export interface Pipeline {
+  id: string
+  company_id: string
+  name: string
+  slug: string
+  color: string
+  position: number
+  is_default: boolean
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
 export interface PipelineStage {
   id: string
   company_id: string
+  pipeline_id: string
   name: string
   slug: string
   position: number
@@ -85,6 +168,7 @@ export interface AdContext {
 export interface Lead {
   id: string
   company_id: string
+  pipeline_id: string
   name: string | null
   phone: string
   email: string | null
@@ -115,6 +199,7 @@ export interface LeadWithDetails extends Lead {
   profiles?: Partial<Profile> | null
   lead_sources?: LeadSourceRecord | null
   pipeline_stages?: PipelineStage | null
+  pipelines?: Pipeline | null
 }
 
 export interface CreateLeadInput {
@@ -123,6 +208,7 @@ export interface CreateLeadInput {
   email?: string
   source_id?: string
   stage_id: string
+  pipeline_id: string
   temperature?: LeadTemperature
   deal_value?: number
   observations?: string
@@ -165,7 +251,6 @@ export interface Message {
   source: MessageSource
   external_id: string | null
   replied_message_id: string | null
-  is_internal: boolean
   is_scheduled: boolean
   scheduled_at: string | null
   is_read: boolean
@@ -180,7 +265,6 @@ export interface SendMessagePayload {
   fileName?: string
   mimeType?: string
   repliedMessageId?: string
-  isInternal?: boolean
 }
 
 export interface WhatsAppConfig {
@@ -284,12 +368,13 @@ export interface AutoReplyConfig {
 export interface CompanyInvite {
   id: string
   company_id: string
+  invited_by: string
   email: string
   role: AppRole
-  invite_code: string
-  invited_by: string | null
-  accepted_at: string | null
+  token: string
+  status: 'pending' | 'accepted' | 'rejected' | 'expired' | 'revoked'
   expires_at: string
+  accepted_at: string | null
   created_at: string
 }
 

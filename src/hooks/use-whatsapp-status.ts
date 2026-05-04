@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/auth.store'
-import { veltzy } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
 import type { WhatsAppStatus } from '@/types/database'
 
 export const useWhatsAppStatus = () => {
@@ -9,9 +9,10 @@ export const useWhatsAppStatus = () => {
   return useQuery({
     queryKey: ['whatsapp-status', companyId],
     queryFn: async (): Promise<WhatsAppStatus | null> => {
-      const { data } = await veltzy()
-        .from('whatsapp_configs')
+      const { data } = await supabase
+        .from('oauth_integrations')
         .select('status')
+        .eq('provider', 'zapi')
         .eq('company_id', companyId!)
         .maybeSingle()
       return (data?.status as WhatsAppStatus) ?? null

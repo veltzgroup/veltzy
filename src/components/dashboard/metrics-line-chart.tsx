@@ -30,8 +30,8 @@ const CustomTooltip = ({ active, payload, label }: {
   )
 }
 
-const MetricsLineChart = ({ months }: { months: number }) => {
-  const { data, isLoading } = useMonthlyComparisonGrid(months)
+const MetricsLineChart = ({ months, pipelineId }: { months: number; pipelineId?: string | null }) => {
+  const { data, isLoading } = useMonthlyComparisonGrid(months, pipelineId)
 
   if (isLoading) {
     return (

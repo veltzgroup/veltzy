@@ -1,7 +1,8 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { getZApiConfigByCompany, updateZApiMetadata, buildZApiUrl } from '../_shared/zapi-config.ts'
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') ?? 'https://app.veltzy.com',
+  'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
@@ -16,25 +17,21 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    const supabase = createClient(
+    const supabasePublic = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-      { db: { schema: 'veltzy' } }
+      { global: { headers: { Authorization: authHeader } } }
     )
 
     const { companyId, action } = await req.json()
 
-    const { data: config } = await supabase
-      .from('whatsapp_configs')
-      .select('*')
-      .eq('company_id', companyId)
-      .single()
+    const config = await getZApiConfigByCompany(supabasePublic, companyId)
 
     if (!config) {
       return new Response(JSON.stringify({ error: 'No config found' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    const baseUrl = `https://api.z-api.io/instances/${config.instance_id}/token/${config.instance_token}`
+    const baseUrl = buildZApiUrl(config)
     const headers = { 'Client-Token': config.client_token }
 
     if (action === 'status') {
@@ -42,14 +39,11 @@ Deno.serve(async (req) => {
       const data = await res.json()
 
       const status = data.connected ? 'connected' : 'disconnected'
-      await supabase
-        .from('whatsapp_configs')
-        .update({
-          status,
-          phone_number: data.phoneNumber ?? config.phone_number,
-          connected_at: data.connected ? new Date().toISOString() : config.connected_at,
-        })
-        .eq('id', config.id)
+      await updateZApiMetadata(supabasePublic, config.id, {
+        status,
+        phone_number: data.phoneNumber ?? config.phone_number,
+        connected_at: data.connected ? new Date().toISOString() : config.connected_at,
+      })
 
       return new Response(JSON.stringify({ status, phone_number: data.phoneNumber }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
@@ -58,10 +52,10 @@ Deno.serve(async (req) => {
       const res = await fetch(`${baseUrl}/qr-code`, { headers })
       const data = await res.json()
 
-      await supabase
-        .from('whatsapp_configs')
-        .update({ qr_code: data.value, status: 'connecting' })
-        .eq('id', config.id)
+      await updateZApiMetadata(supabasePublic, config.id, {
+        status: 'connecting',
+        qr_code: data.value,
+      })
 
       return new Response(JSON.stringify({ qr_code: data.value }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
@@ -69,10 +63,10 @@ Deno.serve(async (req) => {
     if (action === 'disconnect') {
       await fetch(`${baseUrl}/disconnect`, { method: 'POST', headers })
 
-      await supabase
-        .from('whatsapp_configs')
-        .update({ status: 'disconnected', qr_code: null })
-        .eq('id', config.id)
+      await updateZApiMetadata(supabasePublic, config.id, {
+        status: 'disconnected',
+        qr_code: null,
+      })
 
       return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }

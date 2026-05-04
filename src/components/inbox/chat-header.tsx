@@ -6,6 +6,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { MoreVertical, Kanban, CheckCircle } from 'lucide-react'
 import { useUpdateLead } from '@/hooks/use-leads'
+import { usePipelines } from '@/hooks/use-pipelines'
 import type { LeadWithLastMessage } from '@/types/database'
 
 interface ChatHeaderProps {
@@ -15,7 +16,12 @@ interface ChatHeaderProps {
 const ChatHeader = ({ lead }: ChatHeaderProps) => {
   const navigate = useNavigate()
   const updateLead = useUpdateLead()
+  const { data: pipelines } = usePipelines()
   const avatarSrc = lead.avatar_url || undefined
+
+  const pipelineName = pipelines && pipelines.length > 1
+    ? pipelines.find((p) => p.id === lead.pipeline_id)?.name
+    : null
 
   const handleResolve = () => {
     updateLead.mutate({ leadId: lead.id, data: { conversation_status: 'resolved' } })
@@ -32,7 +38,10 @@ const ChatHeader = ({ lead }: ChatHeaderProps) => {
 
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium truncate">{lead.name || lead.phone}</p>
-        <p className="text-xs text-muted-foreground">{lead.phone}</p>
+        <p className="text-xs text-muted-foreground">
+          {lead.phone}
+          {pipelineName && <span className="ml-1.5 text-muted-foreground/60">· {pipelineName}</span>}
+        </p>
       </div>
 
       <div className="flex items-center gap-1">

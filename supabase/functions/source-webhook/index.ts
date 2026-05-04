@@ -11,7 +11,7 @@ Deno.serve(async (req) => {
   try {
     const reqUrl = new URL(req.url)
     const companySlug = reqUrl.searchParams.get('company')
-    const sourceSlug = url.searchParams.get('source') ?? 'manual'
+    const sourceSlug = reqUrl.searchParams.get('source') ?? 'manual'
 
     if (!companySlug) {
       return new Response(JSON.stringify({ error: 'Missing company param' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
@@ -29,7 +29,13 @@ Deno.serve(async (req) => {
     if (!payload.phone) return new Response(JSON.stringify({ error: 'Phone required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 
     const { data: source } = await supabase.from('lead_sources').select('id').eq('company_id', company.id).eq('slug', sourceSlug).maybeSingle()
-    const { data: stage } = await supabase.from('pipeline_stages').select('id').eq('company_id', company.id).order('position').limit(1).single()
+
+    let { data: defaultPipeline } = await supabase.from('pipelines').select('id').eq('company_id', company.id).eq('is_default', true).maybeSingle()
+    if (!defaultPipeline) {
+      const { data: fallback } = await supabase.from('pipelines').select('id').eq('company_id', company.id).eq('is_active', true).order('position').limit(1).single()
+      defaultPipeline = fallback
+    }
+    const { data: stage } = await supabase.from('pipeline_stages').select('id').eq('pipeline_id', defaultPipeline?.id).order('position').limit(1).single()
 
     const phone = payload.phone.replace(/\D/g, '')
 
@@ -55,6 +61,7 @@ Deno.serve(async (req) => {
       phone,
       name: payload.name ?? null,
       email: payload.email ?? null,
+      pipeline_id: defaultPipeline?.id,
       stage_id: stage?.id,
       source_id: source?.id ?? null,
       assigned_to: assignedTo,

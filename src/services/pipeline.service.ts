@@ -1,7 +1,18 @@
 import { veltzy } from '@/lib/supabase'
 import type { PipelineStage } from '@/types/database'
 
-export const getPipelineStages = async (companyId: string): Promise<PipelineStage[]> => {
+export const getPipelineStages = async (companyId: string, pipelineId: string): Promise<PipelineStage[]> => {
+  const { data, error } = await veltzy()
+    .from('pipeline_stages')
+    .select('*')
+    .eq('company_id', companyId)
+    .eq('pipeline_id', pipelineId)
+    .order('position')
+  if (error) throw error
+  return data
+}
+
+export const getAllPipelineStages = async (companyId: string): Promise<PipelineStage[]> => {
   const { data, error } = await veltzy()
     .from('pipeline_stages')
     .select('*')
@@ -13,11 +24,12 @@ export const getPipelineStages = async (companyId: string): Promise<PipelineStag
 
 export const createStage = async (
   companyId: string,
+  pipelineId: string,
   input: { name: string; slug: string; color: string; position: number }
 ): Promise<PipelineStage> => {
   const { data, error } = await veltzy()
     .from('pipeline_stages')
-    .insert({ ...input, company_id: companyId })
+    .insert({ ...input, company_id: companyId, pipeline_id: pipelineId })
     .select()
     .single()
   if (error) throw error

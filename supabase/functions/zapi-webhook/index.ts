@@ -1,7 +1,8 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { getZApiConfigByInstanceId, updateZApiMetadata, buildZApiUrl } from '../_shared/zapi-config.ts'
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') ?? 'https://app.veltzy.com',
+  'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
@@ -55,14 +56,10 @@ Deno.serve(async (req) => {
     const url = Deno.env.get('SUPABASE_URL')!
     const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(url, key, { db: { schema: 'veltzy' } })
-    const supabasePublic = createClient(url, key, { db: { schema: 'public' } })
+    const supabasePublic = createClient(url, key)
 
     const zapiToken = req.headers.get('z-api-token')
-    const { data: config } = await supabase
-      .from('whatsapp_configs')
-      .select('company_id, instance_id, instance_token, client_token')
-      .eq('instance_id', payload.instanceId)
-      .single()
+    const config = await getZApiConfigByInstanceId(supabasePublic, payload.instanceId)
 
     if (!config || !zapiToken || zapiToken !== config.instance_token) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
@@ -109,10 +106,30 @@ Deno.serve(async (req) => {
       .maybeSingle()
 
     if (!lead) {
+      // Buscar pipeline padrao
+      let { data: defaultPipeline } = await supabase
+        .from('pipelines')
+        .select('id')
+        .eq('company_id', companyId)
+        .eq('is_default', true)
+        .maybeSingle()
+
+      if (!defaultPipeline) {
+        const { data: fallback } = await supabase
+          .from('pipelines')
+          .select('id')
+          .eq('company_id', companyId)
+          .eq('is_active', true)
+          .order('position')
+          .limit(1)
+          .single()
+        defaultPipeline = fallback
+      }
+
       const { data: defaultStage } = await supabase
         .from('pipeline_stages')
         .select('id')
-        .eq('company_id', companyId)
+        .eq('pipeline_id', defaultPipeline?.id)
         .order('position')
         .limit(1)
         .single()
@@ -151,6 +168,7 @@ Deno.serve(async (req) => {
           company_id: companyId,
           phone,
           name: payload.senderName ?? payload.chatName ?? null,
+          pipeline_id: defaultPipeline?.id,
           stage_id: defaultStage?.id,
           source_id: whatsappSource?.id,
           assigned_to: assignedTo,
@@ -173,7 +191,7 @@ Deno.serve(async (req) => {
         // Z-API espera numero com codigo do pais (55)
         const intlPhone = phone.length === 11 ? `55${phone}` : phone
         const photoRes = await fetch(
-          `https://api.z-api.io/instances/${config.instance_id}/token/${config.instance_token}/profile-picture?phone=${intlPhone}`,
+          `${buildZApiUrl(config)}/profile-picture?phone=${intlPhone}`,
           { headers: { 'Client-Token': config.client_token } }
         )
         const photoData = await photoRes.json()
@@ -209,12 +227,8 @@ Deno.serve(async (req) => {
     }
 
     // Se mensagem chegou, WhatsApp esta funcionando - garante status connected
-    if (config.instance_id) {
-      await supabase
-        .from('whatsapp_configs')
-        .update({ status: 'connected', updated_at: new Date().toISOString() })
-        .eq('instance_id', config.instance_id)
-        .neq('status', 'connected')
+    if (config.instance_id && config.status !== 'connected') {
+      await updateZApiMetadata(supabasePublic, config.id, { status: 'connected' })
     }
 
     // Atualiza timestamp da ultima mensagem do cliente para SLA

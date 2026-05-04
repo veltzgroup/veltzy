@@ -1,25 +1,30 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth.store'
+import { usePipelineStore } from '@/stores/pipeline.store'
 import * as pipelineService from '@/services/pipeline.service'
 
-export const usePipelineStages = () => {
+export const usePipelineStages = (pipelineIdOverride?: string | null) => {
   const companyId = useAuthStore((s) => s.company?.id)
+  const activePipelineId = usePipelineStore((s) => s.activePipelineId)
+  const pipelineId = pipelineIdOverride ?? activePipelineId
 
   return useQuery({
-    queryKey: ['pipeline-stages', companyId],
-    queryFn: () => pipelineService.getPipelineStages(companyId!),
-    enabled: !!companyId,
+    queryKey: ['pipeline-stages', companyId, pipelineId],
+    queryFn: () => pipelineService.getPipelineStages(companyId!, pipelineId!),
+    enabled: !!companyId && !!pipelineId,
   })
 }
 
-export const useCreateStage = () => {
+export const useCreateStage = (pipelineIdOverride?: string | null) => {
   const queryClient = useQueryClient()
   const companyId = useAuthStore((s) => s.company?.id)
+  const activePipelineId = usePipelineStore((s) => s.activePipelineId)
+  const pipelineId = pipelineIdOverride ?? activePipelineId
 
   return useMutation({
     mutationFn: (input: { name: string; slug: string; color: string; position: number }) =>
-      pipelineService.createStage(companyId!, input),
+      pipelineService.createStage(companyId!, pipelineId!, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pipeline-stages'] })
       toast.success('Fase criada!')

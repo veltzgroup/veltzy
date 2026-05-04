@@ -1,13 +1,10 @@
 import { useState, useRef, useCallback } from 'react'
-import { SendHorizonal, Paperclip, Loader2, StickyNote } from 'lucide-react'
+import { SendHorizonal, Paperclip, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
-import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { ReplyTemplatesPopover } from '@/components/inbox/reply-templates-popover'
 import { AudioRecorder } from '@/components/inbox/audio-recorder'
 import { useSendMessage, useWhatsAppConnected } from '@/hooks/use-messages'
-import { useBusinessRules } from '@/hooks/use-business-rules'
-import { useRoles } from '@/hooks/use-roles'
 import { useAuthStore } from '@/stores/auth.store'
 import { supabase } from '@/lib/supabase'
 
@@ -18,17 +15,13 @@ interface ChatInputProps {
 
 const ChatInput = ({ leadId, onTyping }: ChatInputProps) => {
   const [content, setContent] = useState('')
-  const [isInternal, setIsInternal] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [isRecording, setIsRecording] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const sendMessage = useSendMessage()
   const { data: whatsAppConnected } = useWhatsAppConnected()
-  const { data: businessRules } = useBusinessRules()
-  const { isManager } = useRoles()
   const companyId = useAuthStore((s) => s.company?.id)
-  const canCreateNotes = isManager && businessRules?.enable_internal_notes !== false
 
   const adjustHeight = useCallback(() => {
     const el = textareaRef.current
@@ -44,7 +37,7 @@ const ChatInput = ({ leadId, onTyping }: ChatInputProps) => {
     setContent('')
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
 
-    await sendMessage.mutateAsync({ leadId, content: text, isInternal })
+    await sendMessage.mutateAsync({ leadId, content: text })
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -127,24 +120,6 @@ const ChatInput = ({ leadId, onTyping }: ChatInputProps) => {
           </>
         )}
 
-        {canCreateNotes && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            title="Nota visivel apenas para a equipe"
-            className={cn(
-              'h-8 w-8 shrink-0',
-              isInternal
-                ? 'bg-amber-500/20 text-amber-600 hover:bg-amber-500/30 hover:text-amber-700'
-                : 'text-muted-foreground hover:text-foreground',
-            )}
-            onClick={() => setIsInternal((v) => !v)}
-          >
-            <StickyNote className="h-4 w-4" />
-          </Button>
-        )}
-
         <AudioRecorder leadId={leadId} onRecordingChange={setIsRecording} />
 
         {!isRecording && (
@@ -158,14 +133,9 @@ const ChatInput = ({ leadId, onTyping }: ChatInputProps) => {
                 onTyping?.()
               }}
               onKeyDown={handleKeyDown}
-              placeholder={isInternal ? 'Escrever nota interna...' : 'Digite uma mensagem...'}
+              placeholder="Digite uma mensagem..."
               rows={1}
-              className={cn(
-                'flex-1 resize-none rounded-lg border px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring input-clean',
-                isInternal
-                  ? 'border-amber-500/30 bg-amber-500/5'
-                  : 'border-input bg-background',
-              )}
+              className="flex-1 resize-none rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring input-clean"
             />
 
             <button

@@ -1,4 +1,5 @@
 import { supabase, veltzy } from '@/lib/supabase'
+import { logAuditEvent } from '@/lib/audit'
 import type { ProfileWithRole, CompanyInvite, AppRole } from '@/types/database'
 
 export const getMembers = async (companyId: string): Promise<ProfileWithRole[]> => {
@@ -23,32 +24,34 @@ export const getMembers = async (companyId: string): Promise<ProfileWithRole[]> 
 }
 
 export const inviteMember = async (companyId: string, email: string, role: AppRole, invitedBy: string): Promise<CompanyInvite> => {
-  const { data, error } = await veltzy()
-    .from('company_invites')
+  const { data, error } = await supabase
+    .from('invitations')
     .insert({ company_id: companyId, email, role, invited_by: invitedBy })
     .select()
     .single()
   if (error) throw error
+  await logAuditEvent('invite_sent', { email, role, invite_id: data.id }, companyId)
   return data
 }
 
 export const getInvites = async (companyId: string): Promise<CompanyInvite[]> => {
-  const { data, error } = await veltzy()
-    .from('company_invites')
+  const { data, error } = await supabase
+    .from('invitations')
     .select('*')
     .eq('company_id', companyId)
-    .is('accepted_at', null)
+    .eq('status', 'pending')
     .order('created_at', { ascending: false })
   if (error) throw error
   return data
 }
 
 export const cancelInvite = async (inviteId: string): Promise<void> => {
-  const { error } = await veltzy()
-    .from('company_invites')
-    .delete()
+  const { error } = await supabase
+    .from('invitations')
+    .update({ status: 'revoked' as const })
     .eq('id', inviteId)
   if (error) throw error
+  await logAuditEvent('invite_revoked', { invite_id: inviteId })
 }
 
 export const updateMemberRole = async (companyId: string, userId: string, role: AppRole): Promise<void> => {
@@ -63,6 +66,7 @@ export const updateMemberRole = async (companyId: string, userId: string, role: 
   await supabase.from('user_roles').delete().eq('user_id', userId).neq('role', 'super_admin')
   const { error } = await supabase.from('user_roles').insert({ user_id: userId, role })
   if (error) throw error
+  await logAuditEvent('role_changed', { target_user_id: userId, new_role: role }, companyId)
 }
 
 export const removeMember = async (companyId: string, targetUserId: string): Promise<void> => {
