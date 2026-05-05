@@ -30,8 +30,10 @@ export const exportToCsv = (leads: LeadWithDetails[], filename = 'leads.csv') =>
 }
 
 export const exportToPdf = async (leads: LeadWithDetails[], filename = 'leads.pdf') => {
-  const { default: jsPDF } = await import('jspdf')
-  await import('jspdf-autotable')
+  const jsPDFModule = await import('jspdf')
+  const autoTableModule = await import('jspdf-autotable')
+  const jsPDF = jsPDFModule.default
+  const autoTable = autoTableModule.default
 
   const doc = new jsPDF()
 
@@ -50,7 +52,7 @@ export const exportToPdf = async (leads: LeadWithDetails[], filename = 'leads.pd
     l.deal_value ? `R$ ${l.deal_value.toLocaleString('pt-BR')}` : '-',
   ])
 
-  ;(doc as unknown as { autoTable: (opts: unknown) => void }).autoTable({
+  autoTable(doc, {
     startY: 34,
     head: [['Nome', 'Telefone', 'Fase', 'Temp.', 'Score', 'Valor']],
     body: tableData,
