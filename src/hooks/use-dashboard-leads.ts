@@ -8,12 +8,12 @@ import * as leadsService from '@/services/leads.service'
  * Quando pipelineId é null/undefined, busca todos os leads (sem filtro de pipeline).
  * Quando pipelineId é uma string, filtra por aquele pipeline.
  */
-export const useDashboardLeads = (pipelineId?: string | null) => {
+export const useDashboardLeads = (pipelineId?: string | null, showArchived = false) => {
   const companyId = useAuthStore((s) => s.company?.id)
   const { data: members } = useTeamMembers()
 
   return useQuery({
-    queryKey: ['dashboard-leads', companyId, pipelineId],
+    queryKey: ['dashboard-leads', companyId, pipelineId, showArchived],
     queryFn: async () => {
       const leads = await leadsService.getLeadsByCompany(companyId!, {
         pipelineId: pipelineId ?? undefined,
