@@ -112,6 +112,64 @@ export const moveLeadToStage = async (companyId: string, leadId: string, stageId
   return data
 }
 
+const BATCH_SIZE = 50
+
+const chunk = <T>(arr: T[], size: number): T[][] => {
+  const chunks: T[][] = []
+  for (let i = 0; i < arr.length; i += size) {
+    chunks.push(arr.slice(i, i + size))
+  }
+  return chunks
+}
+
+export const bulkUpdateAssignedTo = async (companyId: string, leadIds: string[], targetUserId: string): Promise<void> => {
+  const batches = chunk(leadIds, BATCH_SIZE)
+  for (const batch of batches) {
+    const { error } = await veltzy()
+      .from('leads')
+      .update({ assigned_to: targetUserId })
+      .in('id', batch)
+      .eq('company_id', companyId)
+    if (error) throw error
+  }
+}
+
+export const bulkArchive = async (companyId: string, leadIds: string[]): Promise<void> => {
+  const batches = chunk(leadIds, BATCH_SIZE)
+  for (const batch of batches) {
+    const { error } = await veltzy()
+      .from('leads')
+      .update({ status: 'archived' as const })
+      .in('id', batch)
+      .eq('company_id', companyId)
+    if (error) throw error
+  }
+}
+
+export const bulkDelete = async (companyId: string, leadIds: string[], userId: string): Promise<void> => {
+  const batches = chunk(leadIds, BATCH_SIZE)
+  for (const batch of batches) {
+    const { error } = await veltzy()
+      .from('leads')
+      .delete()
+      .in('id', batch)
+      .eq('company_id', companyId)
+    if (error) throw error
+  }
+
+  // Log manual de bulk_delete (trigger nao cobre DELETE)
+  const { error: logError } = await veltzy()
+    .from('activity_logs')
+    .insert({
+      company_id: companyId,
+      user_id: userId,
+      action: 'bulk_delete',
+      resource_type: 'lead',
+      metadata: { lead_ids: leadIds, count: leadIds.length },
+    })
+  if (logError) throw logError
+}
+
 export const moveLeadToPipeline = async (companyId: string, leadId: string, targetPipelineId: string): Promise<Lead> => {
   const { data: firstStage, error: stageError } = await veltzy()
     .from('pipeline_stages')

@@ -283,3 +283,4 @@ Configuracoes chave/valor por empresa:
 | Feature | Spec |
 |---|---|
 | Multiplos Pipelines | [docs/features/multiplos-pipelines/Spec.md](features/multiplos-pipelines/Spec.md) |
+| Acoes em Massa (Bulk Actions) | [docs/features/bulk-actions/Spec.md](features/bulk-actions/Spec.md) |

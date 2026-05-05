@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   AlertCircle, Clock, Calendar, CalendarDays, BarChart3,
@@ -8,15 +8,19 @@ import { cn } from '@/lib/utils'
 import { useDashboardLeads } from '@/hooks/use-dashboard-leads'
 import { usePipelineStages } from '@/hooks/use-pipeline-stages'
 import { usePipelines } from '@/hooks/use-pipelines'
+import { useRoles } from '@/hooks/use-roles'
 import { PipelineFilter } from '@/components/shared/pipeline-filter'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Switch } from '@/components/ui/switch'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { CreateLeadModal } from '@/components/pipeline/create-lead-modal'
 import { EditLeadModal } from '@/components/pipeline/edit-lead-modal'
+import { BulkActionBar } from '@/components/deals/bulk-action-bar'
 import { exportToCsv, exportToPdf } from '@/lib/export-leads'
 import type { LeadWithDetails, LeadTemperature } from '@/types/database'
 
@@ -48,17 +52,29 @@ const thClass = 'pb-3 text-xs font-medium text-muted-foreground uppercase tracki
 
 const DealsPage = () => {
   const navigate = useNavigate()
+  const { roles, isAdmin, isManager } = useRoles()
+  const userRole = roles[0] ?? 'seller'
+
   const [selectedDays, setSelectedDays] = useState<number | undefined>(30)
   const [selectedPipelineId, setSelectedPipelineId] = useState<string | null>(null)
   const [createModalOpen, setCreateModalOpen] = useState(false)
   const [selectedLead, setSelectedLead] = useState<LeadWithDetails | null>(null)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [showArchived, setShowArchived] = useState(false)
+
   const { data: pipelines } = usePipelines()
-  const { data: allLeads, isLoading, isError, refetch } = useDashboardLeads(selectedPipelineId)
+  const { data: allLeads, isLoading, isError, refetch } = useDashboardLeads(selectedPipelineId, showArchived)
   const { data: stages } = usePipelineStages()
   const showPipelineColumn = (pipelines ?? []).filter((p) => p.is_active).length > 1
 
   const pipelineMap = new Map((pipelines ?? []).map((p) => [p.id, p]))
-  const leads = filterByPeriod(allLeads ?? [], selectedDays)
+  const periodLeads = filterByPeriod(allLeads ?? [], selectedDays)
+
+  // Filtrar arquivados na view padrao
+  const leads = useMemo(() => {
+    if (showArchived) return periodLeads
+    return periodLeads.filter((l) => l.status !== 'archived')
+  }, [periodLeads, showArchived])
 
   const openLeads = leads.filter((l) => l.status === 'new' || l.status === 'qualifying' || l.status === 'open')
   const closedLeads = leads.filter((l) => l.status === 'deal')
@@ -73,6 +89,29 @@ const DealsPage = () => {
   const stageMap = new Map(stages?.map((s) => [s.id, s]) ?? [])
 
   const cardBase = 'bg-card border border-border/30 rounded-2xl p-5'
+
+  // Selecao
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === leads.length) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(leads.map((l) => l.id)))
+    }
+  }
+
+  const clearSelection = () => setSelectedIds(new Set())
+
+  const allSelected = leads.length > 0 && selectedIds.size === leads.length
+  const someSelected = selectedIds.size > 0 && selectedIds.size < leads.length
 
   return (
     <div className="min-h-full p-6">
@@ -136,6 +175,16 @@ const DealsPage = () => {
             </Button>
           </div>
         </div>
+
+        {/* BULK ACTION BAR */}
+        {selectedIds.size > 0 && (
+          <BulkActionBar
+            selectedIds={selectedIds}
+            leads={leads}
+            onClear={clearSelection}
+            userRole={userRole}
+          />
+        )}
 
         {/* KPI CARDS */}
         {isLoading ? (
@@ -237,16 +286,30 @@ const DealsPage = () => {
 
         {/* TABELA */}
         <div className="glass-card rounded-xl p-5">
+          {/* Toggle arquivados */}
+          {(isAdmin || isManager) && (
+            <div className="flex items-center gap-2 mb-4">
+              <Switch checked={showArchived} onCheckedChange={setShowArchived} />
+              <span className="text-sm text-muted-foreground">Mostrar arquivados</span>
+            </div>
+          )}
+
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border/30">
-                  <th className={cn(thClass, 'text-left w-[20%]')}>Contato</th>
+                  <th className={cn(thClass, 'text-left w-[3%]')}>
+                    <Checkbox
+                      checked={allSelected ? true : someSelected ? 'indeterminate' : false}
+                      onCheckedChange={toggleSelectAll}
+                    />
+                  </th>
+                  <th className={cn(thClass, 'text-left w-[18%]')}>Contato</th>
                   <th className={cn(thClass, 'text-left w-[5%]')}>Chat</th>
-                  <th className={cn(thClass, 'text-left w-[11%]')}>Valor</th>
+                  <th className={cn(thClass, 'text-left w-[10%]')}>Valor</th>
                   {showPipelineColumn && <th className={cn(thClass, 'text-left w-[10%]')}>Pipeline</th>}
-                  <th className={cn(thClass, 'text-left w-[11%]')}>Etapa</th>
-                  <th className={cn(thClass, 'text-left w-[12%]')}>Temperatura</th>
+                  <th className={cn(thClass, 'text-left w-[10%]')}>Etapa</th>
+                  <th className={cn(thClass, 'text-left w-[11%]')}>Temperatura</th>
                   <th className={cn(thClass, 'text-left w-[10%]')}>Origem</th>
                   <th className={cn(thClass, 'text-left w-[11%]')}>Responsavel</th>
                   <th className={cn(thClass, 'text-left w-[10%]')}>Criado em</th>
@@ -264,9 +327,26 @@ const DealsPage = () => {
                     .toUpperCase() ?? '?'
                   const assignedName = (lead.profiles as { name?: string } | null)?.name
                   const source = lead.lead_sources as { name?: string; color?: string } | null
+                  const isSelected = selectedIds.has(lead.id)
 
                   return (
-                    <tr key={lead.id} onClick={() => setSelectedLead(lead)} className="border-b border-border/10 last:border-0 hover:bg-muted/20 transition-smooth cursor-pointer">
+                    <tr
+                      key={lead.id}
+                      onClick={() => setSelectedLead(lead)}
+                      className={cn(
+                        'border-b border-border/10 last:border-0 hover:bg-muted/20 transition-smooth cursor-pointer',
+                        isSelected && 'bg-primary/5',
+                        lead.status === 'archived' && 'opacity-60'
+                      )}
+                    >
+                      {/* Checkbox */}
+                      <td className="py-3 text-left" onClick={(e) => e.stopPropagation()}>
+                        <Checkbox
+                          checked={isSelected}
+                          onCheckedChange={() => toggleSelect(lead.id)}
+                        />
+                      </td>
+
                       {/* Contato */}
                       <td className="py-3 text-left">
                         <div className="flex items-center gap-2.5">
@@ -372,7 +452,7 @@ const DealsPage = () => {
                 })}
                 {leads.length === 0 && (
                   <tr>
-                    <td colSpan={showPipelineColumn ? 9 : 8} className="py-12 text-center text-sm text-muted-foreground">
+                    <td colSpan={showPipelineColumn ? 10 : 9} className="py-12 text-center text-sm text-muted-foreground">
                       Nenhum negocio encontrado
                     </td>
                   </tr>
