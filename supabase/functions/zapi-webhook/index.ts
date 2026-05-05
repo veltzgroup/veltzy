@@ -29,10 +29,15 @@ interface ZAPIPayload {
   }
 }
 
-const normalizePhone = (phone: string) => {
-  const digits = phone.replace(/\D/g, '')
-  if (digits.startsWith('55') && digits.length === 13) {
-    return digits.slice(2)
+const normalizePhone = (phone: string): string => {
+  let digits = phone.replace(/\D/g, '')
+  // Remove codigo do pais 55 (12 digitos = fixo, 13 digitos = celular)
+  if (digits.startsWith('55') && (digits.length === 12 || digits.length === 13)) {
+    digits = digits.slice(2)
+  }
+  // Remove 0 inicial (ex: 011917162109)
+  if (digits.length === 11 && digits.startsWith('0')) {
+    digits = digits.slice(1)
   }
   return digits
 }
@@ -44,6 +49,8 @@ Deno.serve(async (req) => {
 
   try {
     const payload: ZAPIPayload = await req.json()
+
+    console.log('[DEBUG zapi-webhook] PAYLOAD COMPLETO:', JSON.stringify(payload))
 
     if (payload.fromMe || payload.isGroup) {
       return new Response(JSON.stringify({ ok: true, skipped: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
