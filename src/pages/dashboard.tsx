@@ -13,7 +13,6 @@ import { useDashboardRealtime } from '@/hooks/use-dashboard-realtime'
 import { usePipelines } from '@/hooks/use-pipelines'
 import { PipelineFilter } from '@/components/shared/pipeline-filter'
 import { calculatePeriodChange } from '@/lib/dashboard-utils'
-import { SalesPulseCard } from '@/components/dashboard/sales-pulse-card'
 import { LeadsBySourceChart } from '@/components/dashboard/leads-by-source-chart'
 import { TeamHighlightCard } from '@/components/dashboard/team-highlight-card'
 import { SellerPerformanceTable } from '@/components/dashboard/seller-performance-table'
@@ -341,9 +340,6 @@ const DashboardPage = () => {
 
         {/* COPILOTO DE VENDAS */}
         <CopilotCard />
-
-        {/* PULSO DE VENDAS */}
-        <SalesPulseCard />
 
         {/* LEADS POR ORIGEM + EQUIPE EM DESTAQUE */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
