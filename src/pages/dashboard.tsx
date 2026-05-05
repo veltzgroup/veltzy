@@ -13,11 +13,10 @@ import { useDashboardRealtime } from '@/hooks/use-dashboard-realtime'
 import { usePipelines } from '@/hooks/use-pipelines'
 import { PipelineFilter } from '@/components/shared/pipeline-filter'
 import { calculatePeriodChange } from '@/lib/dashboard-utils'
-import { PipelineOverviewCard } from '@/components/dashboard/pipeline-overview-card'
+import { SalesPulseCard } from '@/components/dashboard/sales-pulse-card'
 import { LeadsBySourceChart } from '@/components/dashboard/leads-by-source-chart'
 import { TeamHighlightCard } from '@/components/dashboard/team-highlight-card'
 import { SellerPerformanceTable } from '@/components/dashboard/seller-performance-table'
-import { FollowUpTips } from '@/components/dashboard/follow-up-tips'
 import { MonthlyComparisonGrid } from '@/components/dashboard/monthly-comparison-grid'
 import { MetricsLineChart } from '@/components/dashboard/metrics-line-chart'
 import { NextActionsCard } from '@/components/dashboard/next-actions-card'
@@ -343,11 +342,8 @@ const DashboardPage = () => {
         {/* COPILOTO DE VENDAS */}
         <CopilotCard />
 
-        {/* VISAO DO PIPELINE + DICAS DE FOLLOW-UP */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <PipelineOverviewCard days={selectedDays} pipelineId={selectedPipelineId} />
-          <FollowUpTips />
-        </div>
+        {/* PULSO DE VENDAS */}
+        <SalesPulseCard />
 
         {/* LEADS POR ORIGEM + EQUIPE EM DESTAQUE */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

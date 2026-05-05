@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   DndContext, DragOverlay, closestCorners, PointerSensor, useSensor, useSensors,
   type DragStartEvent, type DragEndEvent,
@@ -147,8 +148,22 @@ const TarefasPage = () => {
     debounceRef.current = setTimeout(() => setDebouncedSearch(value), 300)
   }, [])
   useEffect(() => () => clearTimeout(debounceRef.current), [])
+  const [searchParams, setSearchParams] = useSearchParams()
+  const tituloParam = searchParams.get('titulo')
   const [createOpen, setCreateOpen] = useState(false)
+  const [createTitle, setCreateTitle] = useState('')
   const [editTask, setEditTask] = useState<TaskWithRelations | null>(null)
+
+  // Abre modal com título pré-preenchido via query param
+  useEffect(() => {
+    if (tituloParam) {
+      setCreateTitle(tituloParam)
+      setCreateOpen(true)
+      const params = new URLSearchParams(searchParams)
+      params.delete('titulo')
+      setSearchParams(params, { replace: true })
+    }
+  }, [tituloParam, searchParams, setSearchParams])
 
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null)
 
@@ -355,7 +370,7 @@ const TarefasPage = () => {
         )}
       </div>
 
-      <CreateTaskModal open={createOpen} onClose={() => setCreateOpen(false)} />
+      <CreateTaskModal open={createOpen} onClose={() => { setCreateOpen(false); setCreateTitle('') }} defaultTitle={createTitle} />
       <EditTaskModal task={editTask} open={!!editTask} onClose={() => setEditTask(null)} />
     </div>
   )
