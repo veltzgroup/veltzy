@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Navigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Navigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -12,11 +12,25 @@ import { useAuthStore } from '@/stores/auth.store'
 import { resetPassword } from '@/services/auth.service'
 import { Loader2 } from 'lucide-react'
 
+const ERROR_MESSAGES: Record<string, string> = {
+  company_inactive: 'Sua conta foi desativada. Entre em contato com o suporte.',
+}
+
 const AuthPage = () => {
   const { user, isLoading } = useAuthStore()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [showForgotPassword, setShowForgotPassword] = useState(false)
   const [resetEmail, setResetEmail] = useState('')
   const [resetLoading, setResetLoading] = useState(false)
+
+  useEffect(() => {
+    const errorCode = searchParams.get('error')
+    if (errorCode && ERROR_MESSAGES[errorCode]) {
+      toast.error(ERROR_MESSAGES[errorCode])
+      searchParams.delete('error')
+      setSearchParams(searchParams, { replace: true })
+    }
+  }, [searchParams, setSearchParams])
 
   if (isLoading) {
     return (

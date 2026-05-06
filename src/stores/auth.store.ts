@@ -118,6 +118,24 @@ export const useAuthStore = create<AuthState>((set, _get) => ({
         company = data
       }
 
+      // Bloqueia acesso se empresa esta desativada (exceto super_admin)
+      if (company && !company.is_active && !roles.includes('super_admin')) {
+        await supabase.auth.signOut()
+        set({
+          user: null,
+          profile: null,
+          company: null,
+          roles: [],
+          permissions: [],
+          companies: [],
+          activeCompanyId: null,
+          isLoading: false,
+        })
+        localStorage.removeItem('activeCompanyId')
+        window.location.href = '/auth?error=company_inactive'
+        return
+      }
+
       set({
         profile,
         roles,
