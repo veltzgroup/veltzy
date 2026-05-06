@@ -24,6 +24,14 @@ export const getMembers = async (companyId: string): Promise<ProfileWithRole[]> 
 }
 
 export const inviteMember = async (companyId: string, email: string, role: AppRole, invitedBy: string): Promise<CompanyInvite> => {
+  // Revogar convites pendentes anteriores para o mesmo email na mesma empresa
+  await supabase
+    .from('invitations')
+    .update({ status: 'revoked' })
+    .eq('company_id', companyId)
+    .eq('email', email)
+    .eq('status', 'pending')
+
   const { data, error } = await supabase
     .from('invitations')
     .insert({ company_id: companyId, email, role, invited_by: invitedBy })
@@ -31,6 +39,30 @@ export const inviteMember = async (companyId: string, email: string, role: AppRo
     .single()
   if (error) throw error
   await logAuditEvent('invite_sent', { email, role, invite_id: data.id }, companyId)
+
+  // Enviar email de convite via Edge Function (fire-and-forget)
+  const { data: company } = await supabase
+    .from('companies')
+    .select('name')
+    .eq('id', companyId)
+    .single()
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('name')
+    .eq('user_id', invitedBy)
+    .single()
+
+  supabase.functions.invoke('send-invite-email', {
+    body: {
+      invite_id: data.id,
+      email,
+      role,
+      company_name: company?.name,
+      token: data.token,
+      invited_by_name: profile?.name,
+    },
+  }).catch((err) => console.error('Erro ao enviar email de convite:', err))
+
   return data
 }
 
@@ -80,12 +112,6 @@ export const removeMember = async (companyId: string, targetUserId: string): Pro
 
   const { error } = await supabase.rpc('remove_user_from_company', { p_target_user_id: targetUserId })
   if (error) throw error
-}
-
-export const acceptInvite = async (inviteCode: string, userId: string): Promise<{ success: boolean; company_id?: string; error?: string }> => {
-  const { data, error } = await supabase.rpc('accept_invite', { p_invite_code: inviteCode, p_user_id: userId })
-  if (error) throw error
-  return data
 }
 
 export const resetMemberPassword = async (email: string): Promise<void> => {

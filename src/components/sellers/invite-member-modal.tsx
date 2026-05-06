@@ -66,13 +66,16 @@ const InviteMemberModal = ({ open, onClose }: InviteMemberModalProps) => {
 
         {inviteLink ? (
           <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">Convite criado! Compartilhe o link:</p>
+            <p className="text-sm text-muted-foreground">
+              Convite enviado por email! Voce tambem pode compartilhar o link abaixo:
+            </p>
             <div className="flex gap-2">
               <Input value={inviteLink} readOnly className="text-xs" />
               <Button size="icon" variant="outline" onClick={copyLink}>
                 <Copy className="h-4 w-4" />
               </Button>
             </div>
+            <p className="text-xs text-muted-foreground">Link valido por 7 dias</p>
             <Button className="w-full" onClick={handleClose}>Fechar</Button>
           </div>
         ) : (
