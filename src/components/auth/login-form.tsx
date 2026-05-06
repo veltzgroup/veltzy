@@ -20,6 +20,16 @@ interface LoginFormProps {
   onForgotPassword: () => void
 }
 
+const authErrorMessages: Record<string, string> = {
+  'Email not confirmed': 'Confirme seu email antes de entrar. Verifique sua caixa de entrada.',
+  'Invalid login credentials': 'Email ou senha incorretos.',
+  'User not found': 'Usuario nao encontrado.',
+  'Too many requests': 'Muitas tentativas. Aguarde alguns minutos e tente novamente.',
+}
+
+const getFriendlyError = (message: string) =>
+  authErrorMessages[message] ?? 'Ocorreu um erro. Tente novamente.'
+
 const LoginForm = ({ onForgotPassword }: LoginFormProps) => {
   const { signIn, signInWithGoogle } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
@@ -35,8 +45,8 @@ const LoginForm = ({ onForgotPassword }: LoginFormProps) => {
       await signIn(values.email, values.password)
       toast.success('Login realizado com sucesso!')
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Erro ao fazer login'
-      toast.error(message)
+      const raw = err instanceof Error ? err.message : 'Erro ao fazer login'
+      toast.error(getFriendlyError(raw))
     } finally {
       setIsLoading(false)
     }
