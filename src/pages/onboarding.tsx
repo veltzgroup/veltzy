@@ -1,7 +1,19 @@
+import { useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useAuthStore } from '@/stores/auth.store'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { CompanyForm } from '@/components/onboarding/company-form'
 
 const OnboardingPage = () => {
+  const navigate = useNavigate()
+  const { companies } = useAuthStore()
+
+  useEffect(() => {
+    if (companies.length > 0) {
+      navigate('/', { replace: true })
+    }
+  }, [companies, navigate])
+
   return (
     <div className="ambient-bg flex min-h-screen items-center justify-center p-4">
       <div className="w-full max-w-md animate-fade-in">
