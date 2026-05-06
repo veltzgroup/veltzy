@@ -64,6 +64,7 @@ interface CreateTaskModalProps {
   open: boolean
   onClose: () => void
   defaultLeadId?: string | null
+  defaultTitle?: string
 }
 
 const typeOptions: Array<{ value: TaskType; label: string; icon: typeof CheckSquare }> = [
@@ -87,7 +88,7 @@ interface AIReminders {
   reminder_15min: string
 }
 
-const CreateTaskModal = ({ open, onClose, defaultLeadId }: CreateTaskModalProps) => {
+const CreateTaskModal = ({ open, onClose, defaultLeadId, defaultTitle }: CreateTaskModalProps) => {
   const profile = useAuthStore((s) => s.profile)
   const createTask = useCreateTask()
   const createReminders = useCreateReminders()
@@ -105,6 +106,7 @@ const CreateTaskModal = ({ open, onClose, defaultLeadId }: CreateTaskModalProps)
   const { register, handleSubmit, control, reset, watch, setValue, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
+      title: defaultTitle ?? '',
       type: 'todo',
       lead_id: defaultLeadId ?? '',
       assigned_to: profile?.id ?? '',
@@ -130,7 +132,7 @@ const CreateTaskModal = ({ open, onClose, defaultLeadId }: CreateTaskModalProps)
       setAiReminders(null)
       setEditableReminders(null)
       reset({
-        title: '',
+        title: defaultTitle ?? '',
         type: 'todo',
         lead_id: defaultLeadId ?? '',
         assigned_to: profile?.id ?? '',
@@ -196,7 +198,7 @@ const CreateTaskModal = ({ open, onClose, defaultLeadId }: CreateTaskModalProps)
     const task = await createTask.mutateAsync({
       title: values.title,
       type: values.type as TaskType,
-      lead_id: values.lead_id || null,
+      lead_id: values.lead_id && values.lead_id !== 'none' ? values.lead_id : null,
       assigned_to: values.assigned_to || profile?.id || null,
       created_by: profile?.id ?? null,
       due_date: isMeeting ? (values.meeting_date || null) : (values.due_date || null),
@@ -315,7 +317,7 @@ const CreateTaskModal = ({ open, onClose, defaultLeadId }: CreateTaskModalProps)
                               />
                             </div>
                           </div>
-                          <SelectItem value="">Nenhum</SelectItem>
+                          <SelectItem value="none">Nenhum</SelectItem>
                           {filteredLeads.map((l) => (
                             <SelectItem key={l.id} value={l.id}>{l.name || l.phone}</SelectItem>
                           ))}

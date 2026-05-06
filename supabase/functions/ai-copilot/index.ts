@@ -1,7 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') ?? 'https://app.veltzy.com',
+  'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
@@ -24,6 +24,175 @@ Deno.serve(async (req) => {
     const supabasePublic = createClient(url, key, { db: { schema: 'public' } })
 
     const body = await req.json()
+
+    // --- SALES PULSE MODE ---
+    if (body.action === 'sales-pulse') {
+      const { company_id, user_profile_id, role, user_name } = body
+      if (!company_id) {
+        return new Response(JSON.stringify({ error: 'company_id required' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+
+      const now = new Date()
+      const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString()
+      const isSeller = role === 'seller'
+
+      // Leads por temperatura
+      let tempQuery = supabase
+        .from('leads')
+        .select('temperature')
+        .eq('company_id', company_id)
+      if (isSeller && user_profile_id) {
+        tempQuery = tempQuery.eq('assigned_to', user_profile_id)
+      }
+      const { data: tempLeads } = await tempQuery
+
+      const tempCounts = { cold: 0, warm: 0, hot: 0, fire: 0 }
+      for (const l of tempLeads ?? []) {
+        const t = l.temperature as keyof typeof tempCounts
+        if (t in tempCounts) tempCounts[t]++
+      }
+
+      // Leads sem interacao ha mais de 24h
+      let staleQuery = supabase
+        .from('leads')
+        .select('id, name, phone')
+        .eq('company_id', company_id)
+        .lt('last_customer_message_at', twentyFourHoursAgo)
+        .not('conversation_status', 'eq', 'closed')
+      if (isSeller && user_profile_id) {
+        staleQuery = staleQuery.eq('assigned_to', user_profile_id)
+      }
+      const { data: staleLeads } = await staleQuery.limit(10)
+
+      // Deals em aberto (valor total + top por valor)
+      let dealsQuery = supabase
+        .from('leads')
+        .select('id, name, phone, deal_value, updated_at')
+        .eq('company_id', company_id)
+        .not('deal_value', 'is', null)
+        .eq('conversation_status', 'open')
+        .order('deal_value', { ascending: false })
+      if (isSeller && user_profile_id) {
+        dealsQuery = dealsQuery.eq('assigned_to', user_profile_id)
+      }
+      const { data: openDeals } = await dealsQuery.limit(5)
+
+      const totalOpenValue = (openDeals ?? []).reduce((sum, d) => sum + (d.deal_value ?? 0), 0)
+
+      // Top deals com dias sem atualizacao
+      const topDealsInfo = (openDeals ?? []).slice(0, 3).map(d => {
+        const daysAgo = Math.floor((now.getTime() - new Date(d.updated_at).getTime()) / (24 * 60 * 60 * 1000))
+        return `- ${d.name || d.phone} (ID: ${d.id}): R$ ${d.deal_value?.toFixed(2)} - ${daysAgo} dias sem atualizacao`
+      }).join('\n')
+
+      // Leads hot/fire sem resposta hoje
+      let hotNoReplyQuery = supabase
+        .from('leads')
+        .select('id, name, phone')
+        .eq('company_id', company_id)
+        .in('temperature', ['hot', 'fire'])
+        .eq('conversation_status', 'waiting')
+      if (isSeller && user_profile_id) {
+        hotNoReplyQuery = hotNoReplyQuery.eq('assigned_to', user_profile_id)
+      }
+      const { data: hotNoReply } = await hotNoReplyQuery.limit(10)
+
+      // Top 3 leads hot/fire com ultima mensagem
+      let topHotQuery = supabase
+        .from('leads')
+        .select('id, name, phone, temperature, last_customer_message_at')
+        .eq('company_id', company_id)
+        .in('temperature', ['hot', 'fire'])
+        .order('last_customer_message_at', { ascending: false })
+      if (isSeller && user_profile_id) {
+        topHotQuery = topHotQuery.eq('assigned_to', user_profile_id)
+      }
+      const { data: topHotLeads } = await topHotQuery.limit(3)
+
+      // Buscar ultima mensagem de cada top hot lead
+      const topHotDetails: string[] = []
+      for (const lead of topHotLeads ?? []) {
+        const { data: lastMsg } = await supabase
+          .from('messages')
+          .select('content, created_at, sender_type')
+          .eq('lead_id', lead.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+
+        const msgPreview = lastMsg?.content?.slice(0, 80) ?? 'sem mensagens'
+        const msgDate = lastMsg?.created_at ? new Date(lastMsg.created_at).toLocaleDateString('pt-BR') : 'N/A'
+        const sender = lastMsg?.sender_type === 'lead' ? 'cliente' : 'vendedor'
+        topHotDetails.push(`- ${lead.name || lead.phone} [${lead.temperature}] (ID: ${lead.id}): ultima msg (${sender}, ${msgDate}): "${msgPreview}"`)
+      }
+
+      // Chamar OpenAI
+      const openaiKey = Deno.env.get('OPENAI_API_KEY')
+      if (!openaiKey) {
+        return new Response(JSON.stringify({ error: 'OPENAI_API_KEY not configured' }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+
+      const dataContext = `
+Usuario logado: ${user_name || 'Vendedor'}
+Leads por temperatura: cold=${tempCounts.cold}, warm=${tempCounts.warm}, hot=${tempCounts.hot}, fire=${tempCounts.fire}
+Leads sem interacao ha mais de 24h: ${staleLeads?.length ?? 0}
+Valor total de deals em aberto: R$ ${totalOpenValue.toFixed(2)}
+Leads hot/fire sem resposta hoje: ${hotNoReply?.length ?? 0}
+
+Top leads quentes (com ultima mensagem):
+${topHotDetails.length > 0 ? topHotDetails.join('\n') : 'Nenhum lead hot/fire no momento'}
+
+Deals com maior valor em aberto:
+${topDealsInfo || 'Nenhum deal em aberto'}
+`.trim()
+
+      const systemPrompt = `Voce e um assistente de vendas analisando dados reais de um CRM brasileiro.
+Responda APENAS em JSON valido com esta estrutura exata:
+{
+  "situacao": "2-3 frases diretas e especificas sobre o momento atual, citando numeros reais",
+  "alertas": [
+    { "tipo": "urgente|oportunidade|atencao", "texto": "alerta especifico com nome do lead ou valor real", "lead_id": "uuid ou null" }
+  ],
+  "acoes": [
+    { "texto": "acao especifica com nome do lead", "lead_id": "uuid ou null", "destino": "inbox|pipeline|deals" }
+  ]
+}
+Seja especifico: cite nomes, valores e prazos reais. Maximo 3 alertas e 3 acoes. Responda em portugues brasileiro com acentuacao correta (ex: situacao -> situação, acao -> ação, atencao -> atenção).`
+
+      const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${openaiKey}` },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: dataContext },
+          ],
+          temperature: 0.7,
+          max_tokens: 500,
+        }),
+      })
+
+      const aiResult = await openaiRes.json()
+      const aiContent = aiResult.choices?.[0]?.message?.content ?? '{}'
+
+      let parsed
+      try {
+        parsed = JSON.parse(aiContent)
+      } catch {
+        parsed = { situacao: aiContent, alertas: [], acoes: [] }
+      }
+
+      return new Response(JSON.stringify(parsed), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json; charset=utf-8' },
+      })
+    }
+    // --- END SALES PULSE ---
+
     const runAll = body.run_all_companies === true
 
     let companyIds: string[] = []
