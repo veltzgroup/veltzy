@@ -134,13 +134,13 @@ const AceitarConvitePage = () => {
         role: invite.role,
       }, invite.company_id)
 
-      // Recarrega dados do usuario
+      // Recarrega dados do usuario e aguarda completar
       await loadUserData(currentUser.id)
+      sessionStorage.setItem('invite_accepted', 'true')
 
       setState('accepted')
       toast.success('Convite aceito com sucesso!')
-
-      setTimeout(() => navigate('/'), 2000)
+      navigate('/')
     } catch (err) {
       console.error('Erro ao aceitar convite:', err)
       toast.error('Erro ao aceitar convite')
@@ -192,10 +192,10 @@ const AceitarConvitePage = () => {
         new_account: true,
       }, invite.company_id)
 
+      sessionStorage.setItem('invite_accepted', 'true')
       setState('accepted')
       toast.success('Conta criada e convite aceito!')
-
-      setTimeout(() => navigate('/'), 2000)
+      navigate('/')
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Erro ao criar conta'
       toast.error(message)

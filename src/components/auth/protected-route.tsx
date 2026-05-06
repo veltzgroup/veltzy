@@ -17,6 +17,7 @@ const ProtectedRoute = ({
   requirePermission,
 }: ProtectedRouteProps) => {
   const { user, company, roles, permissions, isLoading } = useAuthStore()
+  const inviteAccepted = sessionStorage.getItem('invite_accepted')
 
   if (isLoading) {
     return (
@@ -30,8 +31,22 @@ const ProtectedRoute = ({
     return <Navigate to="/auth" replace />
   }
 
+  // Se veio de convite mas company ainda esta carregando, mostra loading
+  if (!skipCompanyCheck && !company && inviteAccepted) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+
   if (!skipCompanyCheck && !company) {
     return <Navigate to="/onboarding" replace />
+  }
+
+  // Limpa flag apos company carregar
+  if (company && inviteAccepted) {
+    sessionStorage.removeItem('invite_accepted')
   }
 
   if (requireRole && !requireRole.some((r) => roles.includes(r))) {
