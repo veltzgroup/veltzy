@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { ArrowRightLeft, Archive, Trash2, Download, X } from 'lucide-react'
+import { ArrowRightLeft, Archive, Trash2, Download, X, FolderInput } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { BulkTransferModal } from './bulk-transfer-modal'
+import { BulkMovePipelineModal } from './bulk-move-pipeline-modal'
 import { BulkArchiveDialog } from './bulk-archive-dialog'
 import { BulkDeleteDialog } from './bulk-delete-dialog'
 import { useBulkExport } from '@/hooks/use-bulk-leads'
@@ -19,6 +20,7 @@ interface BulkActionBarProps {
 
 export const BulkActionBar = ({ selectedIds, leads, onClear, userRole }: BulkActionBarProps) => {
   const [transferOpen, setTransferOpen] = useState(false)
+  const [movePipelineOpen, setMovePipelineOpen] = useState(false)
   const [archiveOpen, setArchiveOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const { exportCsv, exportPdf } = useBulkExport()
@@ -39,10 +41,16 @@ export const BulkActionBar = ({ selectedIds, leads, onClear, userRole }: BulkAct
 
         <div className="flex items-center gap-2 ml-auto">
           {canTransfer && (
-            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setTransferOpen(true)}>
-              <ArrowRightLeft className="h-4 w-4" />
-              Transferir
-            </Button>
+            <>
+              <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setTransferOpen(true)}>
+                <ArrowRightLeft className="h-4 w-4" />
+                Transferir
+              </Button>
+              <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setMovePipelineOpen(true)}>
+                <FolderInput className="h-4 w-4" />
+                Mover Pipeline
+              </Button>
+            </>
           )}
 
           <DropdownMenu>
@@ -83,6 +91,13 @@ export const BulkActionBar = ({ selectedIds, leads, onClear, userRole }: BulkAct
       <BulkTransferModal
         open={transferOpen}
         onClose={() => setTransferOpen(false)}
+        leadIds={selectedArray}
+        onSuccess={onClear}
+      />
+
+      <BulkMovePipelineModal
+        open={movePipelineOpen}
+        onClose={() => setMovePipelineOpen(false)}
         leadIds={selectedArray}
         onSuccess={onClear}
       />
