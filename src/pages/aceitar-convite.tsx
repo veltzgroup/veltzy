@@ -27,6 +27,13 @@ type RegisterValues = z.infer<typeof registerSchema>
 
 type InviteState = 'loading' | 'valid' | 'invalid' | 'expired' | 'accepting' | 'accepted' | 'needs_register'
 
+const roleLabels: Record<string, string> = {
+  seller: 'Vendedor',
+  manager: 'Gestor',
+  admin: 'Administrador',
+  super_admin: 'Super Admin',
+}
+
 const AceitarConvitePage = () => {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
@@ -93,14 +100,28 @@ const AceitarConvitePage = () => {
 
     try {
       const { data: { user: currentUser } } = await supabase.auth.getUser()
-      if (!currentUser) throw new Error('Usuário não autenticado')
+      if (!currentUser) throw new Error('Usuario nao autenticado')
 
-      // Cria user_role
-      await supabase.from('user_roles').insert({
+      // Verificar se convite ainda esta pendente (evita double-click)
+      const { data: freshInvite } = await supabase
+        .from('invitations')
+        .select('status')
+        .eq('id', invite.id)
+        .single()
+      if (freshInvite?.status !== 'pending') {
+        setState('accepted')
+        toast.success('Convite ja foi aceito!')
+        setTimeout(() => navigate('/'), 2000)
+        return
+      }
+
+      // Cria user_role (ignora se ja existir via unique constraint)
+      const { error: roleError } = await supabase.from('user_roles').insert({
         user_id: currentUser.id,
         company_id: invite.company_id,
         role: invite.role,
       })
+      if (roleError && !roleError.message.includes('duplicate')) throw roleError
 
       // Atualiza convite
       await supabase
@@ -151,12 +172,13 @@ const AceitarConvitePage = () => {
         company_id: invite.company_id,
       })
 
-      // Cria user_role
-      await supabase.from('user_roles').insert({
+      // Cria user_role (ignora duplicata)
+      const { error: roleError } = await supabase.from('user_roles').insert({
         user_id: data.user.id,
         company_id: invite.company_id,
         role: invite.role,
       })
+      if (roleError && !roleError.message.includes('duplicate')) throw roleError
 
       // Atualiza convite
       await supabase
@@ -238,7 +260,7 @@ const AceitarConvitePage = () => {
           <CardHeader className="text-center">
             <CardTitle>Aceitar convite</CardTitle>
             <CardDescription>
-              Você foi convidado para {companyName} como <strong>{invite?.role}</strong>
+              Voce foi convidado para {companyName} como <strong>{roleLabels[invite?.role ?? ''] ?? invite?.role}</strong>
             </CardDescription>
           </CardHeader>
           <CardContent className="flex justify-center gap-3">
@@ -262,7 +284,7 @@ const AceitarConvitePage = () => {
         <CardHeader className="text-center">
           <CardTitle>Criar sua conta</CardTitle>
           <CardDescription>
-            Você foi convidado para {companyName} como <strong>{invite?.role}</strong>.
+            Voce foi convidado para {companyName} como <strong>{roleLabels[invite?.role ?? ''] ?? invite?.role}</strong>.
             Crie sua conta para continuar.
           </CardDescription>
         </CardHeader>
