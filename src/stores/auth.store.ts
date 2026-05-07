@@ -82,6 +82,32 @@ export const useAuthStore = create<AuthState>((set, _get) => ({
           role: r.role as AppRole,
         }))
 
+      // Sem empresa: verifica se há convite pendente antes de permitir onboarding
+      // Pula essa verificação se já estamos na página de aceitar convite (evita loop)
+      if (companies.length === 0 && !roles.includes('super_admin') && !window.location.pathname.includes('aceitar-convite')) {
+        const userEmail = profile?.email
+        if (userEmail) {
+          const { data: pendingInvite, error: inviteError } = await supabase
+            .from('invitations')
+            .select('token')
+            .eq('email', userEmail)
+            .eq('status', 'pending')
+            .gt('expires_at', new Date().toISOString())
+            .limit(1)
+            .single()
+
+          if (inviteError) {
+            console.warn('[Auth] Falha ao verificar convites pendentes:', inviteError.message)
+          }
+
+          if (pendingInvite?.token) {
+            set({ isLoading: false, profile, roles, permissions, companies: [], activeCompanyId: null, company: null })
+            window.location.href = `/aceitar-convite?token=${encodeURIComponent(pendingInvite.token)}`
+            return
+          }
+        }
+      }
+
       // Super admin sem empresa vinculada: busca primeira empresa do sistema
       if (companies.length === 0 && roles.includes('super_admin')) {
         const { data: allCompanies } = await supabase
@@ -116,6 +142,24 @@ export const useAuthStore = create<AuthState>((set, _get) => ({
           .eq('id', companyId)
           .single()
         company = data
+      }
+
+      // Bloqueia acesso se empresa esta desativada (exceto super_admin)
+      if (company && !company.is_active && !roles.includes('super_admin')) {
+        await supabase.auth.signOut()
+        set({
+          user: null,
+          profile: null,
+          company: null,
+          roles: [],
+          permissions: [],
+          companies: [],
+          activeCompanyId: null,
+          isLoading: false,
+        })
+        localStorage.removeItem('activeCompanyId')
+        window.location.href = '/auth?error=company_inactive'
+        return
       }
 
       set({

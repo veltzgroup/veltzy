@@ -22,10 +22,16 @@ export const signIn = async (email: string, password: string) => {
 }
 
 export const signInWithGoogle = async () => {
+  // Usa token de convite do localStorage (salvo pela pagina /aceitar-convite apos validacao)
+  const pendingToken = localStorage.getItem('pending_invite_token')
+  const redirectUrl = pendingToken
+    ? `${window.location.origin}/aceitar-convite?token=${encodeURIComponent(pendingToken)}`
+    : `${window.location.origin}/auth`
+
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${window.location.origin}/auth`,
+      redirectTo: redirectUrl,
     },
   })
   if (error) throw error
