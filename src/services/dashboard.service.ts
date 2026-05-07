@@ -15,15 +15,17 @@ const getPeriodDates = (days: number) => {
   }
 }
 
-export const getConversionMetrics = async (companyId: string, days = 30, pipelineId?: string): Promise<ConversionMetrics> => {
+export const getConversionMetrics = async (companyId: string, days = 30, pipelineId?: string, sellerProfileId?: string): Promise<ConversionMetrics> => {
   const { start, prevStart, prevEnd } = getPeriodDates(days)
 
   let currentQuery = veltzy().from('leads').select('status, deal_value').eq('company_id', companyId).gte('created_at', start)
   if (pipelineId) currentQuery = currentQuery.eq('pipeline_id', pipelineId)
+  if (sellerProfileId) currentQuery = currentQuery.eq('assigned_to', sellerProfileId)
   const { data: current, error: currentError } = await currentQuery
   if (currentError) throw currentError
   let prevQuery = veltzy().from('leads').select('status, deal_value').eq('company_id', companyId).gte('created_at', prevStart).lt('created_at', prevEnd)
   if (pipelineId) prevQuery = prevQuery.eq('pipeline_id', pipelineId)
+  if (sellerProfileId) prevQuery = prevQuery.eq('assigned_to', sellerProfileId)
   const { data: prev, error: prevError } = await prevQuery
   if (prevError) throw prevError
 
@@ -61,9 +63,10 @@ export interface DashboardKpis {
   prevDealsClosed: number
 }
 
-export const getDashboardKpis = async (companyId: string, days?: number, pipelineId?: string): Promise<DashboardKpis> => {
+export const getDashboardKpis = async (companyId: string, days?: number, pipelineId?: string, sellerProfileId?: string): Promise<DashboardKpis> => {
   let query = veltzy().from('leads').select('status, deal_value, ai_score').eq('company_id', companyId)
   if (pipelineId) query = query.eq('pipeline_id', pipelineId)
+  if (sellerProfileId) query = query.eq('assigned_to', sellerProfileId)
   if (days) {
     const start = new Date()
     start.setDate(start.getDate() - days)
@@ -103,6 +106,7 @@ export const getDashboardKpis = async (companyId: string, days?: number, pipelin
       .gte('created_at', prevStart.toISOString())
       .lt('created_at', prevEnd.toISOString())
     if (pipelineId) prevQuery = prevQuery.eq('pipeline_id', pipelineId)
+    if (sellerProfileId) prevQuery = prevQuery.eq('assigned_to', sellerProfileId)
     const { data: prevLeads } = await prevQuery
     const pAll = prevLeads ?? []
     const pClosed = pAll.filter((l) => l.status === 'deal')
@@ -130,9 +134,10 @@ export const getDashboardKpis = async (companyId: string, days?: number, pipelin
   }
 }
 
-export const getLeadsBySource = async (companyId: string, days?: number, pipelineId?: string): Promise<SourceMetrics[]> => {
+export const getLeadsBySource = async (companyId: string, days?: number, pipelineId?: string, sellerProfileId?: string): Promise<SourceMetrics[]> => {
   let query = veltzy().from('leads').select('source_id').eq('company_id', companyId)
   if (pipelineId) query = query.eq('pipeline_id', pipelineId)
+  if (sellerProfileId) query = query.eq('assigned_to', sellerProfileId)
   if (days) {
     const start = new Date()
     start.setDate(start.getDate() - days)
@@ -149,13 +154,14 @@ export const getLeadsBySource = async (companyId: string, days?: number, pipelin
   return (sources ?? []).map((s) => ({ source_id: s.id, name: s.name, color: s.color, count: counts[s.id] ?? 0 })).filter((s) => s.count > 0)
 }
 
-export const getPipelineOverview = async (companyId: string, days?: number, pipelineId?: string): Promise<StageMetrics[]> => {
+export const getPipelineOverview = async (companyId: string, days?: number, pipelineId?: string, sellerProfileId?: string): Promise<StageMetrics[]> => {
   let stagesQuery = veltzy().from('pipeline_stages').select('id, name, color, position, is_final').eq('company_id', companyId).order('position')
   if (pipelineId) stagesQuery = stagesQuery.eq('pipeline_id', pipelineId)
   const { data: stages, error: stagesError } = await stagesQuery
   if (stagesError) throw stagesError
   let leadsQuery = veltzy().from('leads').select('stage_id, deal_value').eq('company_id', companyId)
   if (pipelineId) leadsQuery = leadsQuery.eq('pipeline_id', pipelineId)
+  if (sellerProfileId) leadsQuery = leadsQuery.eq('assigned_to', sellerProfileId)
   if (days) {
     const start = new Date()
     start.setDate(start.getDate() - days)
@@ -178,13 +184,14 @@ export const getPipelineOverview = async (companyId: string, days?: number, pipe
   }))
 }
 
-export const getMonthlyComparison = async (companyId: string, days?: number, pipelineId?: string): Promise<MonthlyData[]> => {
+export const getMonthlyComparison = async (companyId: string, days?: number, pipelineId?: string, sellerProfileId?: string): Promise<MonthlyData[]> => {
   const monthsBack = days && days <= 30 ? 3 : 6
   const startDate = new Date()
   startDate.setMonth(startDate.getMonth() - monthsBack)
 
   let query = veltzy().from('leads').select('status, created_at').eq('company_id', companyId).gte('created_at', startDate.toISOString())
   if (pipelineId) query = query.eq('pipeline_id', pipelineId)
+  if (sellerProfileId) query = query.eq('assigned_to', sellerProfileId)
   const { data: leads, error } = await query
   if (error) throw error
 
@@ -211,7 +218,7 @@ export interface MonthlyGridData {
   value: number
 }
 
-export const getMonthlyComparisonGrid = async (companyId: string, months = 6, pipelineId?: string): Promise<MonthlyGridData[]> => {
+export const getMonthlyComparisonGrid = async (companyId: string, months = 6, pipelineId?: string, sellerProfileId?: string): Promise<MonthlyGridData[]> => {
   const startDate = new Date()
   startDate.setMonth(startDate.getMonth() - months)
 
@@ -221,6 +228,7 @@ export const getMonthlyComparisonGrid = async (companyId: string, months = 6, pi
     .eq('company_id', companyId)
     .gte('created_at', startDate.toISOString())
   if (pipelineId) query = query.eq('pipeline_id', pipelineId)
+  if (sellerProfileId) query = query.eq('assigned_to', sellerProfileId)
   const { data: leads, error } = await query
   if (error) throw error
 
@@ -273,7 +281,7 @@ export interface HistoricalConversionRate {
   rate: number
 }
 
-export const getHistoricalConversionRates = async (companyId: string, days = 90, pipelineId?: string): Promise<HistoricalConversionRate[]> => {
+export const getHistoricalConversionRates = async (companyId: string, days = 90, pipelineId?: string, sellerProfileId?: string): Promise<HistoricalConversionRate[]> => {
   const startDate = new Date()
   startDate.setDate(startDate.getDate() - days)
 
@@ -292,6 +300,7 @@ export const getHistoricalConversionRates = async (companyId: string, days = 90,
     .eq('company_id', companyId)
     .gte('created_at', startDate.toISOString())
   if (pipelineId) leadsQuery = leadsQuery.eq('pipeline_id', pipelineId)
+  if (sellerProfileId) leadsQuery = leadsQuery.eq('assigned_to', sellerProfileId)
   const { data: leads, error: leadsError } = await leadsQuery
   if (leadsError) throw leadsError
 
@@ -327,12 +336,16 @@ export const getHistoricalConversionRates = async (companyId: string, days = 90,
   })
 }
 
-export const getSellerPerformance = async (companyId: string, days?: number, pipelineId?: string): Promise<SellerMetrics[]> => {
-  const { data: profiles, error: profilesError } = await supabase.from('profiles').select('id, name, is_available').eq('company_id', companyId)
+export const getSellerPerformance = async (companyId: string, days?: number, pipelineId?: string, sellerProfileId?: string): Promise<SellerMetrics[]> => {
+  // Se vendedor, mostra apenas sua propria performance
+  let profilesQuery = supabase.from('profiles').select('id, name, is_available').eq('company_id', companyId)
+  if (sellerProfileId) profilesQuery = profilesQuery.eq('id', sellerProfileId)
+  const { data: profiles, error: profilesError } = await profilesQuery
   if (profilesError) throw profilesError
 
   let leadsQuery = veltzy().from('leads').select('assigned_to, status, deal_value').eq('company_id', companyId)
   if (pipelineId) leadsQuery = leadsQuery.eq('pipeline_id', pipelineId)
+  if (sellerProfileId) leadsQuery = leadsQuery.eq('assigned_to', sellerProfileId)
   if (days) {
     const start = new Date()
     start.setDate(start.getDate() - days)

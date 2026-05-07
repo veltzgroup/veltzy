@@ -7,8 +7,11 @@ import { getConversationList } from '@/services/messages.service'
 export const useConversationList = () => {
   const companyId = useAuthStore((s) => s.company?.id)
   const profileId = useAuthStore((s) => s.profile?.id)
+  const roles = useAuthStore((s) => s.roles)
   const filters = useInboxStore((s) => s.filters)
   const setUnreadCount = useInboxStore((s) => s.setUnreadCount)
+
+  const isSeller = roles.length > 0 && !roles.some(r => ['admin', 'manager', 'super_admin'].includes(r))
 
   const query = useQuery({
     queryKey: ['conversations', companyId],
@@ -20,6 +23,11 @@ export const useConversationList = () => {
   const filtered = useMemo(() => {
     if (!query.data) return []
     let result = [...query.data]
+
+    // Vendedor so ve suas proprias conversas (filtro obrigatorio)
+    if (isSeller && profileId) {
+      result = result.filter((l) => l.assigned_to === profileId)
+    }
 
     if (filters.search) {
       const q = filters.search.toLowerCase()
@@ -35,9 +43,9 @@ export const useConversationList = () => {
       result = result.filter((l) => l.conversation_status === filters.status)
     }
 
-    if (filters.assignedTo === 'mine') {
+    if (!isSeller && filters.assignedTo === 'mine') {
       result = result.filter((l) => l.assigned_to === profileId)
-    } else if (filters.assignedTo !== 'all') {
+    } else if (!isSeller && filters.assignedTo !== 'all') {
       result = result.filter((l) => l.assigned_to === filters.assignedTo)
     }
 

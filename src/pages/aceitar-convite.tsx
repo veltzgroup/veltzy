@@ -272,15 +272,26 @@ const AceitarConvitePage = () => {
   }
 
   // needs_register
+  const roleBadgeColors: Record<string, string> = {
+    seller: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+    manager: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+    admin: 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200',
+    super_admin: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+  }
+
   return (
     <div className="flex h-screen items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle>Criar sua conta</CardTitle>
-          <CardDescription>
-            Voce foi convidado para {companyName} como <strong>{roleLabels[invite?.role ?? ''] ?? invite?.role}</strong>.
-            Crie sua conta para continuar.
-          </CardDescription>
+          <div className="mt-3 flex flex-col items-center gap-2">
+            <p className="text-sm text-muted-foreground">
+              Voce foi convidado para <strong>{companyName}</strong>
+            </p>
+            <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${roleBadgeColors[invite?.role ?? ''] ?? 'bg-muted text-muted-foreground'}`}>
+              {roleLabels[invite?.role ?? ''] ?? invite?.role}
+            </span>
+          </div>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onRegister)} className="space-y-4">

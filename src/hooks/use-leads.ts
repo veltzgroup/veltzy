@@ -8,18 +8,24 @@ import type { CreateLeadInput, UpdateLeadInput, LeadWithDetails } from '@/types/
 
 export const useLeads = () => {
   const companyId = useAuthStore((s) => s.company?.id)
+  const profileId = useAuthStore((s) => s.profile?.id)
+  const roles = useAuthStore((s) => s.roles)
   const filters = usePipelineStore((s) => s.filters)
   const activePipelineId = usePipelineStore((s) => s.activePipelineId)
   const { data: members } = useTeamMembers()
 
+  // Vendedor so ve seus proprios leads
+  const isSeller = roles.length > 0 && !roles.some(r => ['admin', 'manager', 'super_admin'].includes(r))
+  const assignedToFilter = isSeller ? profileId : filters.assignedTo
+
   return useQuery({
-    queryKey: ['leads', companyId, activePipelineId, filters.sourceId, filters.temperature, filters.assignedTo],
+    queryKey: ['leads', companyId, activePipelineId, filters.sourceId, filters.temperature, assignedToFilter],
     queryFn: async () => {
       const leads = await leadsService.getLeadsByCompany(companyId!, {
         pipelineId: activePipelineId!,
         sourceId: filters.sourceId,
         temperature: filters.temperature,
-        assignedTo: filters.assignedTo,
+        assignedTo: assignedToFilter,
       })
       const profileMap = new Map(
         members?.map((m) => [m.id, { id: m.id, name: m.name, email: m.email }]) ?? []
