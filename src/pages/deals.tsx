@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   AlertCircle, Clock, Calendar, CalendarDays, BarChart3,
-  DollarSign, Users, TrendingUp, Plus, MessageSquare, Download,
+  DollarSign, Users, TrendingUp, Plus, MessageSquare, Download, Upload,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useDashboardLeads } from '@/hooks/use-dashboard-leads'
@@ -20,8 +20,9 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { CreateLeadModal } from '@/components/pipeline/create-lead-modal'
 import { EditLeadModal } from '@/components/pipeline/edit-lead-modal'
+import { ImportLeadsModal } from '@/components/pipeline/import-leads-modal'
 import { BulkActionBar } from '@/components/deals/bulk-action-bar'
-import { exportToCsv, exportToPdf } from '@/lib/export-leads'
+import { exportToCsv, exportToPdf, exportToXlsx } from '@/lib/export-leads'
 import type { LeadWithDetails, LeadTemperature } from '@/types/database'
 
 const periodOptions = [
@@ -58,6 +59,7 @@ const DealsPage = () => {
   const [selectedDays, setSelectedDays] = useState<number | undefined>(30)
   const [selectedPipelineId, setSelectedPipelineId] = useState<string | null>(null)
   const [createModalOpen, setCreateModalOpen] = useState(false)
+  const [importModalOpen, setImportModalOpen] = useState(false)
   const [selectedLead, setSelectedLead] = useState<LeadWithDetails | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [showArchived, setShowArchived] = useState(false)
@@ -151,6 +153,12 @@ const DealsPage = () => {
                 )
               })}
             </div>
+            {(isAdmin || isManager) && (
+              <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setImportModalOpen(true)} title="Importar leads">
+                <Upload className="h-4 w-4" />
+                Importar
+              </Button>
+            )}
             {leads.length > 0 && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -162,6 +170,9 @@ const DealsPage = () => {
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={() => exportToCsv(leads)}>
                     Exportar CSV
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => exportToXlsx(leads)}>
+                    Exportar Excel (.xlsx)
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => exportToPdf(leads)}>
                     Exportar PDF
@@ -466,6 +477,11 @@ const DealsPage = () => {
       <CreateLeadModal
         open={createModalOpen}
         onClose={() => setCreateModalOpen(false)}
+      />
+
+      <ImportLeadsModal
+        open={importModalOpen}
+        onClose={() => setImportModalOpen(false)}
       />
 
       <EditLeadModal

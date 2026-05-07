@@ -2,6 +2,8 @@ import { useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { usePipelineStages } from '@/hooks/use-pipeline-stages'
 import { useLeadSources } from '@/hooks/use-lead-sources'
+import { usePipelines } from '@/hooks/use-pipelines'
+import { useTeamMembers } from '@/hooks/use-team'
 import { LEAD_FIELD_LABELS, type LeadField, type ParsedCsv } from '@/lib/csv-parser'
 import { mapCsvRowToLead } from '@/services/import-leads.service'
 import type { ImportConfig } from '@/hooks/use-import-leads'
@@ -16,6 +18,8 @@ interface PreviewStepProps {
 const PreviewStep = ({ parsedCsv, config, onNext, onBack }: PreviewStepProps) => {
   const { data: stages } = usePipelineStages()
   const { data: sources } = useLeadSources()
+  const { data: pipelines } = usePipelines()
+  const { data: members } = useTeamMembers()
 
   const mappedFields = useMemo(() => {
     return Object.entries(config.columnMapping)
@@ -24,11 +28,13 @@ const PreviewStep = ({ parsedCsv, config, onNext, onBack }: PreviewStepProps) =>
   }, [config.columnMapping])
 
   const previewData = useMemo(() => {
-    if (!stages || !sources) return []
+    if (!stages || !sources || !pipelines) return []
     return parsedCsv.previewRows.map((row) => {
       const lead = mapCsvRowToLead(row, config.columnMapping, config.defaultStageId, config.defaultSourceId, {
         stages,
         sources,
+        pipelines,
+        members: members ?? [],
       })
 
       return mappedFields.map((field) => {
@@ -41,6 +47,14 @@ const PreviewStep = ({ parsedCsv, config, onNext, onBack }: PreviewStepProps) =>
             const source = sources.find((s) => s.id === lead.source_id)
             return source?.name ?? '-'
           }
+          case 'pipeline_id': {
+            const pipeline = pipelines.find((p) => p.id === lead.pipeline_id)
+            return pipeline?.name ?? '-'
+          }
+          case 'assigned_to': {
+            const member = (members ?? []).find((m) => m.user_id === lead.assigned_to)
+            return member?.name ?? '-'
+          }
           case 'deal_value':
             return lead.deal_value != null ? `R$ ${lead.deal_value.toLocaleString('pt-BR')}` : '-'
           case 'tags':
@@ -50,7 +64,7 @@ const PreviewStep = ({ parsedCsv, config, onNext, onBack }: PreviewStepProps) =>
         }
       })
     })
-  }, [parsedCsv.previewRows, config, stages, sources, mappedFields])
+  }, [parsedCsv.previewRows, config, stages, sources, pipelines, members, mappedFields])
 
   return (
     <div className="space-y-4">
