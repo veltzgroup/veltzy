@@ -58,11 +58,13 @@ const normalizePhone = (phone: string): string =>
 export const mapCsvRowToLead = (
   row: string[],
   columnMapping: Record<number, LeadField | null>,
+  defaultPipelineId: string,
   defaultStageId: string,
   defaultSourceId: string | undefined,
   lookups: Lookups,
 ): ImportableRow => {
   const lead: Partial<ImportableRow> = {
+    pipeline_id: defaultPipelineId,
     stage_id: defaultStageId,
     source_id: defaultSourceId,
   }
@@ -103,13 +105,13 @@ export const mapCsvRowToLead = (
           break
         }
         if (UUID_RE.test(value)) {
-          // Já resolvido pelo pre-flight scan
+          // Já resolvido pelo pre-flight scan (profiles.id)
           lead.assigned_to = value
           break
         }
         // Fallback: tentar lookup direto (não deveria chegar aqui com o pre-flight)
         const member = lookups.members.find((m) => m.name?.toLowerCase() === value.toLowerCase())
-        if (member) lead.assigned_to = member.user_id ?? undefined
+        if (member) lead.assigned_to = member.id ?? undefined
         break
       }
       case 'temperature':
@@ -229,7 +231,7 @@ export const importLeads = async (
           tags: row.tags ?? [],
         }
         if (row.assigned_to) record.assigned_to = row.assigned_to
-        if (row.pipeline_id) record.pipeline_id = row.pipeline_id
+        record.pipeline_id = row.pipeline_id
         return record
       })
 

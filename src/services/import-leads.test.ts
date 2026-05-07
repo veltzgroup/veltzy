@@ -11,7 +11,11 @@ const mockSources: LeadSourceRecord[] = [
   { id: 'src-1', company_id: 'c1', name: 'WhatsApp', slug: 'whatsapp', color: '#25D366', icon_name: 'message-circle', is_active: true, is_system: true, created_at: '', updated_at: '' },
 ]
 
-const lookups = { stages: mockStages, sources: mockSources, pipelines: [], members: [] }
+const mockPipelines = [
+  { id: 'pipe-1', company_id: 'c1', name: 'Vendas', slug: 'vendas', color: '#000', position: 0, is_default: true, is_active: true, created_at: '', updated_at: '' },
+]
+
+const lookups = { stages: mockStages, sources: mockSources, pipelines: mockPipelines, members: [] }
 
 describe('import-leads.service', () => {
   describe('mapCsvRowToLead', () => {
@@ -19,7 +23,7 @@ describe('import-leads.service', () => {
       const row = ['João Silva', '11999887766', 'joao@email.com', 'WhatsApp', 'Qualificando', 'Quente', '1.500,00']
       const mapping = { 0: 'name' as const, 1: 'phone' as const, 2: 'email' as const, 3: 'source_id' as const, 4: 'stage_id' as const, 5: 'temperature' as const, 6: 'deal_value' as const }
 
-      const lead = mapCsvRowToLead(row, mapping, 'stage-1', undefined, lookups)
+      const lead = mapCsvRowToLead(row, mapping, 'pipe-1', 'stage-1', undefined, lookups)
 
       expect(lead.name).toBe('João Silva')
       expect(lead.phone).toBe('11999887766')
@@ -34,7 +38,7 @@ describe('import-leads.service', () => {
       const row = ['Maria', '11888776655', '', '', 'Inexistente', '', '']
       const mapping = { 0: 'name' as const, 1: 'phone' as const, 4: 'stage_id' as const }
 
-      const lead = mapCsvRowToLead(row, mapping, 'stage-1', 'src-1', lookups)
+      const lead = mapCsvRowToLead(row, mapping, 'pipe-1', 'stage-1', 'src-1', lookups)
 
       expect(lead.stage_id).toBe('stage-1') // fallback para padrão
       expect(lead.source_id).toBe('src-1')
@@ -44,7 +48,7 @@ describe('import-leads.service', () => {
       const row = ['ID-123', 'João', '11999001122']
       const mapping = { 0: null, 1: 'name' as const, 2: 'phone' as const }
 
-      const lead = mapCsvRowToLead(row, mapping, 'stage-1', undefined, lookups)
+      const lead = mapCsvRowToLead(row, mapping, 'pipe-1', 'stage-1', undefined, lookups)
 
       expect(lead.name).toBe('João')
       expect(lead.phone).toBe('11999001122')
@@ -54,7 +58,7 @@ describe('import-leads.service', () => {
       const row = ['', '(11) 99900-1122']
       const mapping = { 1: 'phone' as const }
 
-      const lead = mapCsvRowToLead(row, mapping, 'stage-1', undefined, lookups)
+      const lead = mapCsvRowToLead(row, mapping, 'pipe-1', 'stage-1', undefined, lookups)
 
       expect(lead.phone).toBe('11999001122')
     })
@@ -63,7 +67,7 @@ describe('import-leads.service', () => {
       const row = ['', '', '', '', '', '', '2.350,99']
       const mapping = { 6: 'deal_value' as const }
 
-      const lead = mapCsvRowToLead(row, mapping, 'stage-1', undefined, lookups)
+      const lead = mapCsvRowToLead(row, mapping, 'pipe-1', 'stage-1', undefined, lookups)
 
       expect(lead.deal_value).toBe(2350.99)
     })
@@ -72,7 +76,7 @@ describe('import-leads.service', () => {
       const row = ['', '', 'vip, premium, b2b']
       const mapping = { 2: 'tags' as const }
 
-      const lead = mapCsvRowToLead(row, mapping, 'stage-1', undefined, lookups)
+      const lead = mapCsvRowToLead(row, mapping, 'pipe-1', 'stage-1', undefined, lookups)
 
       expect(lead.tags).toEqual(['vip', 'premium', 'b2b'])
     })

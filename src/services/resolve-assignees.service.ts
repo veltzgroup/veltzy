@@ -107,7 +107,7 @@ export const resolveAssignees = (
         matchType: 'exact',
         suggestedMember: exactMatch.member,
         similarityScore: 1,
-        resolvedUserId: exactMatch.member.user_id ?? null,
+        resolvedUserId: exactMatch.member.id ?? null,
         affectedRows: count,
         decision: 'accept',
       })
@@ -122,7 +122,7 @@ export const resolveAssignees = (
         matchType: 'exact',
         suggestedMember: emailMatch.member,
         similarityScore: 1,
-        resolvedUserId: emailMatch.member.user_id ?? null,
+        resolvedUserId: emailMatch.member.id ?? null,
         affectedRows: count,
         decision: 'accept',
       })
@@ -145,7 +145,7 @@ export const resolveAssignees = (
         matchType: 'approximate',
         suggestedMember: bestMatch.member,
         similarityScore: bestMatch.score,
-        resolvedUserId: bestMatch.member.user_id ?? null,
+        resolvedUserId: bestMatch.member.id ?? null,
         affectedRows: count,
       })
     } else {

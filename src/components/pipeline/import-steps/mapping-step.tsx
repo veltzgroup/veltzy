@@ -7,6 +7,7 @@ import {
 } from '@/components/ui/select'
 import { useAllPipelineStages } from '@/hooks/use-pipeline-stages'
 import { useLeadSources } from '@/hooks/use-lead-sources'
+import { usePipelines } from '@/hooks/use-pipelines'
 import { autoMapColumns, LEAD_FIELD_LABELS, type LeadField } from '@/lib/csv-parser'
 import type { ImportConfig } from '@/hooks/use-import-leads'
 
@@ -21,7 +22,9 @@ const ALL_FIELDS: LeadField[] = ['name', 'phone', 'email', 'source_id', 'pipelin
 const MappingStep = ({ headers, onNext, onBack }: MappingStepProps) => {
   const { data: stages } = useAllPipelineStages()
   const { data: sources } = useLeadSources()
+  const { data: pipelines } = usePipelines()
   const [mapping, setMapping] = useState<Record<number, LeadField | null>>({})
+  const [defaultPipelineId, setDefaultPipelineId] = useState('')
   const [defaultStageId, setDefaultStageId] = useState('')
   const [defaultSourceId, setDefaultSourceId] = useState<string | undefined>()
 
@@ -30,14 +33,24 @@ const MappingStep = ({ headers, onNext, onBack }: MappingStepProps) => {
   }, [headers])
 
   useEffect(() => {
-    if (stages && stages.length > 0 && !defaultStageId) {
-      setDefaultStageId(stages[0].id)
+    if (pipelines && pipelines.length > 0 && !defaultPipelineId) {
+      const defaultPipeline = pipelines.find((p) => p.is_default) ?? pipelines[0]
+      setDefaultPipelineId(defaultPipeline.id)
     }
-  }, [stages, defaultStageId])
+  }, [pipelines, defaultPipelineId])
+
+  // Filtrar stages pelo pipeline selecionado
+  const filteredStages = stages?.filter((s) => s.pipeline_id === defaultPipelineId) ?? []
+
+  useEffect(() => {
+    if (filteredStages.length > 0 && !filteredStages.find((s) => s.id === defaultStageId)) {
+      setDefaultStageId(filteredStages[0].id)
+    }
+  }, [filteredStages, defaultStageId])
 
   const usedFields = new Set(Object.values(mapping).filter(Boolean))
   const phoneIsMapped = usedFields.has('phone')
-  const isValid = phoneIsMapped && !!defaultStageId
+  const isValid = phoneIsMapped && !!defaultPipelineId && !!defaultStageId
 
   const handleFieldChange = (colIndex: number, value: string) => {
     setMapping((prev) => ({
@@ -50,6 +63,7 @@ const MappingStep = ({ headers, onNext, onBack }: MappingStepProps) => {
     if (!isValid) return
     onNext({
       columnMapping: mapping,
+      defaultPipelineId,
       defaultStageId,
       defaultSourceId,
     })
@@ -95,20 +109,33 @@ const MappingStep = ({ headers, onNext, onBack }: MappingStepProps) => {
         ))}
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 border-t pt-4">
+      <div className="grid gap-4 sm:grid-cols-3 border-t pt-4">
         <div className="space-y-2">
-          <Label>Fase padrao *</Label>
+          <Label>Pipeline padrao *</Label>
+          <Select value={defaultPipelineId} onValueChange={setDefaultPipelineId}>
+            <SelectTrigger className="h-9">
+              <SelectValue placeholder="Selecione" />
+            </SelectTrigger>
+            <SelectContent>
+              {pipelines?.filter((p) => p.is_active).map((p) => (
+                <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label>Etapa padrao *</Label>
           <Select value={defaultStageId} onValueChange={setDefaultStageId}>
             <SelectTrigger className="h-9">
               <SelectValue placeholder="Selecione" />
             </SelectTrigger>
             <SelectContent>
-              {stages?.map((s) => (
+              {filteredStages.map((s) => (
                 <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
               ))}
             </SelectContent>
           </Select>
-          <p className="text-xs text-muted-foreground">Usada quando a coluna Fase nao esta mapeada ou o valor nao existe</p>
+          <p className="text-xs text-muted-foreground">Usada quando a coluna Etapa nao esta mapeada ou o valor nao existe</p>
         </div>
         <div className="space-y-2">
           <Label>Origem padrao</Label>

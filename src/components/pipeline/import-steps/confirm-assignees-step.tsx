@@ -106,7 +106,7 @@ const ConfirmAssigneesStep = ({ resolutions, onConfirm, onBack }: ConfirmAssigne
                     variant={d?.decision === 'accept' ? 'default' : 'outline'}
                     size="sm"
                     className="h-7 text-xs"
-                    onClick={() => setDecision(r.originalValue, 'accept', r.suggestedMember?.user_id ?? null)}
+                    onClick={() => setDecision(r.originalValue, 'accept', r.suggestedMember?.id ?? null)}
                   >
                     Sim, e esse
                   </Button>
@@ -120,7 +120,7 @@ const ConfirmAssigneesStep = ({ resolutions, onConfirm, onBack }: ConfirmAssigne
                   </SelectTrigger>
                   <SelectContent>
                     {members?.map((m) => (
-                      <SelectItem key={m.user_id} value={m.user_id}>
+                      <SelectItem key={m.id} value={m.id}>
                         {m.name}
                       </SelectItem>
                     ))}

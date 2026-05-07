@@ -30,7 +30,7 @@ const PreviewStep = ({ parsedCsv, config, onNext, onBack }: PreviewStepProps) =>
   const previewData = useMemo(() => {
     if (!stages || !sources || !pipelines) return []
     return parsedCsv.previewRows.map((row) => {
-      const lead = mapCsvRowToLead(row, config.columnMapping, config.defaultStageId, config.defaultSourceId, {
+      const lead = mapCsvRowToLead(row, config.columnMapping, config.defaultPipelineId, config.defaultStageId, config.defaultSourceId, {
         stages,
         sources,
         pipelines,

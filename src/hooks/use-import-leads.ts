@@ -17,6 +17,7 @@ import type { LeadTemperature } from '@/types/database'
 
 export interface ImportConfig {
   columnMapping: Record<number, LeadField | null>
+  defaultPipelineId: string
   defaultStageId: string
   defaultSourceId?: string
   defaultTemperature?: LeadTemperature
@@ -47,7 +48,7 @@ export const useImportLeads = () => {
 
     try {
       const rows: ImportableRow[] = parsedCsv.rows.map((row) =>
-        mapCsvRowToLead(row, config.columnMapping, config.defaultStageId, config.defaultSourceId, {
+        mapCsvRowToLead(row, config.columnMapping, config.defaultPipelineId, config.defaultStageId, config.defaultSourceId, {
           stages,
           sources,
           pipelines,
