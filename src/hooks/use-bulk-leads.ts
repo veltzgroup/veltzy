@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/auth.store'
 import { toast } from 'sonner'
 import * as leadsService from '@/services/leads.service'
-import { exportToCsv, exportToPdf } from '@/lib/export-leads'
+import { exportToCsv, exportToPdf, exportToXlsx } from '@/lib/export-leads'
 import type { LeadWithDetails } from '@/types/database'
 
 export const useBulkTransfer = (onSuccess?: () => void) => {
@@ -93,6 +93,10 @@ export const useBulkExport = () => {
     exportCsv: (leads: LeadWithDetails[]) => {
       exportToCsv(leads, `leads-selecionados-${Date.now()}.csv`)
       toast.success(`${leads.length} leads exportados em CSV`)
+    },
+    exportXlsx: (leads: LeadWithDetails[]) => {
+      exportToXlsx(leads, `leads-selecionados-${Date.now()}.xlsx`)
+      toast.success(`${leads.length} leads exportados em Excel`)
     },
     exportPdf: (leads: LeadWithDetails[]) => {
       exportToPdf(leads, `leads-selecionados-${Date.now()}.pdf`)

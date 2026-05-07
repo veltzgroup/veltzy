@@ -1,5 +1,5 @@
 import { veltzy } from '@/lib/supabase'
-import type { LeadTemperature, PipelineStage, LeadSourceRecord } from '@/types/database'
+import type { LeadTemperature, PipelineStage, LeadSourceRecord, Pipeline, Profile } from '@/types/database'
 import type { LeadField } from '@/lib/csv-parser'
 
 export interface ImportableRow {
@@ -7,9 +7,11 @@ export interface ImportableRow {
   phone: string
   email?: string
   source_id?: string
+  pipeline_id?: string
   stage_id: string
   temperature?: LeadTemperature
   deal_value?: number
+  assigned_to?: string
   observations?: string
   tags?: string[]
 }
@@ -27,9 +29,11 @@ export interface ImportBatchResult {
   errors: number
 }
 
-interface Lookups {
+export interface Lookups {
   stages: PipelineStage[]
   sources: LeadSourceRecord[]
+  pipelines: Pipeline[]
+  members: Partial<Profile>[]
 }
 
 const TEMP_MAP: Record<string, LeadTemperature> = {
@@ -84,6 +88,16 @@ export const mapCsvRowToLead = (
       case 'source_id': {
         const source = lookups.sources.find((s) => s.name.toLowerCase() === value.toLowerCase())
         if (source) lead.source_id = source.id
+        break
+      }
+      case 'pipeline_id': {
+        const pipeline = lookups.pipelines.find((p) => p.name.toLowerCase() === value.toLowerCase())
+        if (pipeline) lead.pipeline_id = pipeline.id
+        break
+      }
+      case 'assigned_to': {
+        const member = lookups.members.find((m) => m.name?.toLowerCase() === value.toLowerCase())
+        if (member) lead.assigned_to = member.user_id ?? undefined
         break
       }
       case 'temperature':
@@ -181,9 +195,11 @@ export const importLeads = async (
         phone: row.phone,
         email: row.email ?? null,
         source_id: row.source_id ?? null,
+        pipeline_id: row.pipeline_id ?? null,
         stage_id: row.stage_id,
         temperature: row.temperature ?? 'cold',
         deal_value: row.deal_value ?? null,
+        assigned_to: row.assigned_to ?? null,
         observations: row.observations ?? null,
         tags: row.tags ?? [],
       }))

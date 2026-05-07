@@ -4,6 +4,8 @@ import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth.store'
 import { usePipelineStages } from '@/hooks/use-pipeline-stages'
 import { useLeadSources } from '@/hooks/use-lead-sources'
+import { usePipelines } from '@/hooks/use-pipelines'
+import { useTeamMembers } from '@/hooks/use-team'
 import type { ParsedCsv, LeadField } from '@/lib/csv-parser'
 import {
   mapCsvRowToLead,
@@ -31,12 +33,14 @@ export const useImportLeads = () => {
   const companyId = useAuthStore((s) => s.company?.id)
   const { data: stages } = usePipelineStages()
   const { data: sources } = useLeadSources()
+  const { data: pipelines } = usePipelines()
+  const { data: members } = useTeamMembers()
   const [progress, setProgress] = useState<ImportProgress>({ phase: 'idle', current: 0, total: 0 })
   const [result, setResult] = useState<ImportBatchResult | null>(null)
   const [isPending, setIsPending] = useState(false)
 
   const execute = useCallback(async (parsedCsv: ParsedCsv, config: ImportConfig) => {
-    if (!companyId || !stages || !sources) return
+    if (!companyId || !stages || !sources || !pipelines) return
 
     setIsPending(true)
     setProgress({ phase: 'validating', current: 0, total: parsedCsv.totalRows })
@@ -46,6 +50,8 @@ export const useImportLeads = () => {
         mapCsvRowToLead(row, config.columnMapping, config.defaultStageId, config.defaultSourceId, {
           stages,
           sources,
+          pipelines,
+          members: members ?? [],
         })
       )
 
@@ -72,7 +78,7 @@ export const useImportLeads = () => {
     } finally {
       setIsPending(false)
     }
-  }, [companyId, stages, sources, queryClient])
+  }, [companyId, stages, sources, pipelines, members, queryClient])
 
   const reset = useCallback(() => {
     setProgress({ phase: 'idle', current: 0, total: 0 })

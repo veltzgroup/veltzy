@@ -2,7 +2,7 @@ import { FileDown, FileSpreadsheet, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { useLeads } from '@/hooks/use-leads'
-import { exportToCsv, exportToPdf } from '@/lib/export-leads'
+import { exportToCsv, exportToPdf, exportToXlsx } from '@/lib/export-leads'
 import type { LeadWithDetails } from '@/types/database'
 
 const ReportsTab = () => {
@@ -10,6 +10,10 @@ const ReportsTab = () => {
 
   const handleCsv = () => {
     if (leads) exportToCsv(leads as LeadWithDetails[])
+  }
+
+  const handleXlsx = () => {
+    if (leads) exportToXlsx(leads as LeadWithDetails[])
   }
 
   const handlePdf = () => {
@@ -27,6 +31,10 @@ const ReportsTab = () => {
           <Button variant="outline" onClick={handleCsv} disabled={isLoading || !leads?.length}>
             {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileSpreadsheet className="mr-2 h-4 w-4" />}
             Exportar CSV
+          </Button>
+          <Button variant="outline" onClick={handleXlsx} disabled={isLoading || !leads?.length}>
+            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileSpreadsheet className="mr-2 h-4 w-4" />}
+            Exportar Excel
           </Button>
           <Button variant="outline" onClick={handlePdf} disabled={isLoading || !leads?.length}>
             {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileDown className="mr-2 h-4 w-4" />}

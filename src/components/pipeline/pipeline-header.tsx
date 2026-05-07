@@ -13,7 +13,7 @@ import { useLeadSources } from '@/hooks/use-lead-sources'
 import { useRoles } from '@/hooks/use-roles'
 import type { LeadTemperature, LeadWithDetails } from '@/types/database'
 import { leadTemperatureConfig } from '@/lib/lead-config'
-import { exportToCsv, exportToPdf } from '@/lib/export-leads'
+import { exportToCsv, exportToPdf, exportToXlsx } from '@/lib/export-leads'
 import { ImportLeadsModal } from '@/components/pipeline/import-leads-modal'
 import { cn } from '@/lib/utils'
 
@@ -148,7 +148,7 @@ const PipelineHeader = ({ onAddLead, onManageStages, fireOnly, onToggleFireOnly,
         )}
 
         {(isAdmin || isManager) && (
-          <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => setImportModalOpen(true)} title="Importar CSV">
+          <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => setImportModalOpen(true)} title="Importar leads">
             <Upload className="h-4 w-4" />
           </Button>
         )}
@@ -163,6 +163,9 @@ const PipelineHeader = ({ onAddLead, onManageStages, fireOnly, onToggleFireOnly,
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => exportToCsv(leads)}>
                 Exportar CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => exportToXlsx(leads)}>
+                Exportar Excel (.xlsx)
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => exportToPdf(leads)}>
                 Exportar PDF

@@ -11,7 +11,7 @@ const mockSources: LeadSourceRecord[] = [
   { id: 'src-1', company_id: 'c1', name: 'WhatsApp', slug: 'whatsapp', color: '#25D366', icon_name: 'message-circle', is_active: true, is_system: true, created_at: '', updated_at: '' },
 ]
 
-const lookups = { stages: mockStages, sources: mockSources }
+const lookups = { stages: mockStages, sources: mockSources, pipelines: [], members: [] }
 
 describe('import-leads.service', () => {
   describe('mapCsvRowToLead', () => {

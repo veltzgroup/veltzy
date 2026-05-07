@@ -23,7 +23,7 @@ export const BulkActionBar = ({ selectedIds, leads, onClear, userRole }: BulkAct
   const [movePipelineOpen, setMovePipelineOpen] = useState(false)
   const [archiveOpen, setArchiveOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
-  const { exportCsv, exportPdf } = useBulkExport()
+  const { exportCsv, exportPdf, exportXlsx } = useBulkExport()
 
   const selectedLeads = leads.filter((l) => selectedIds.has(l.id))
   const selectedArray = Array.from(selectedIds)
@@ -63,6 +63,9 @@ export const BulkActionBar = ({ selectedIds, leads, onClear, userRole }: BulkAct
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => exportCsv(selectedLeads)}>
                 Exportar CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => exportXlsx(selectedLeads)}>
+                Exportar Excel (.xlsx)
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => exportPdf(selectedLeads)}>
                 Exportar PDF

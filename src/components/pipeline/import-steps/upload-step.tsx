@@ -1,9 +1,13 @@
 import { useState, useRef, useCallback } from 'react'
-import { Upload, FileSpreadsheet, X } from 'lucide-react'
+import { Upload, FileSpreadsheet, X, Download } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 import { parseCsvFile, type ParsedCsv } from '@/lib/csv-parser'
+import { downloadImportTemplate } from '@/lib/export-leads'
 
 interface UploadStepProps {
   onNext: (csv: ParsedCsv) => void
@@ -17,8 +21,9 @@ const UploadStep = ({ onNext }: UploadStepProps) => {
   const inputRef = useRef<HTMLInputElement>(null)
 
   const handleFile = useCallback(async (f: File) => {
-    if (!f.name.toLowerCase().endsWith('.csv')) {
-      toast.error('Selecione um arquivo .csv')
+    const ext = f.name.toLowerCase()
+    if (!ext.endsWith('.csv') && !ext.endsWith('.xlsx') && !ext.endsWith('.xls')) {
+      toast.error('Selecione um arquivo .csv ou .xlsx')
       return
     }
 
@@ -27,7 +32,7 @@ const UploadStep = ({ onNext }: UploadStepProps) => {
     try {
       const result = await parseCsvFile(f)
       if (result.totalRows === 0) {
-        toast.error('Arquivo CSV sem dados (apenas cabeçalho)')
+        toast.error('Arquivo sem dados (apenas cabeçalho)')
         setFile(null)
         setParsedCsv(null)
         return
@@ -81,7 +86,7 @@ const UploadStep = ({ onNext }: UploadStepProps) => {
         >
           <Upload className="h-10 w-10 text-muted-foreground" />
           <div>
-            <p className="text-sm font-medium">Arraste um arquivo CSV ou clique para selecionar</p>
+            <p className="text-sm font-medium">Arraste um arquivo CSV ou Excel (.xlsx) ou clique para selecionar</p>
             <p className="text-xs text-muted-foreground mt-1">Tamanho maximo: 10MB</p>
           </div>
         </div>
@@ -101,7 +106,29 @@ const UploadStep = ({ onNext }: UploadStepProps) => {
         </div>
       )}
 
-      <input ref={inputRef} type="file" accept=".csv" className="hidden" onChange={handleChange} />
+      <input ref={inputRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={handleChange} />
+
+      <div className="flex items-center gap-2 rounded-lg border bg-muted/20 px-4 py-3">
+        <Download className="h-4 w-4 text-muted-foreground shrink-0" />
+        <p className="text-xs text-muted-foreground flex-1">
+          Nao sabe como formatar? Baixe a planilha modelo com as colunas corretas.
+        </p>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="shrink-0 h-7 text-xs">
+              Baixar modelo
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => downloadImportTemplate('xlsx')}>
+              Modelo Excel (.xlsx)
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => downloadImportTemplate('csv')}>
+              Modelo CSV (.csv)
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
 
       <div className="flex justify-end">
         <Button onClick={() => parsedCsv && onNext(parsedCsv)} disabled={!parsedCsv || parsing}>

@@ -16,7 +16,7 @@ interface MappingStepProps {
   onBack: () => void
 }
 
-const ALL_FIELDS: LeadField[] = ['name', 'phone', 'email', 'source_id', 'stage_id', 'temperature', 'deal_value', 'observations', 'tags']
+const ALL_FIELDS: LeadField[] = ['name', 'phone', 'email', 'source_id', 'pipeline_id', 'stage_id', 'temperature', 'deal_value', 'assigned_to', 'observations', 'tags']
 
 const MappingStep = ({ headers, onNext, onBack }: MappingStepProps) => {
   const { data: stages } = usePipelineStages()
