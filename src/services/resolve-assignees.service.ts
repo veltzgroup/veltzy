@@ -51,7 +51,7 @@ export type MatchType = 'exact' | 'approximate' | 'none'
 export interface AssigneeResolution {
   originalValue: string
   matchType: MatchType
-  suggestedMember?: Partial<Profile>
+  suggestedMember?: Profile
   similarityScore?: number
   resolvedUserId: string | null
   affectedRows: number
@@ -66,7 +66,7 @@ export type AssigneeResolutionMap = Record<string, string | null>
 export const resolveAssignees = (
   rows: string[][],
   columnMapping: Record<number, LeadField | null>,
-  members: Partial<Profile>[],
+  members: Profile[],
 ): AssigneeResolution[] => {
   // Encontrar índice da coluna mapeada como assigned_to
   const assignedColIndex = Object.entries(columnMapping)
@@ -107,7 +107,7 @@ export const resolveAssignees = (
         matchType: 'exact',
         suggestedMember: exactMatch.member,
         similarityScore: 1,
-        resolvedUserId: exactMatch.member.id ?? null,
+        resolvedUserId: exactMatch.member.id,
         affectedRows: count,
         decision: 'accept',
       })
@@ -122,7 +122,7 @@ export const resolveAssignees = (
         matchType: 'exact',
         suggestedMember: emailMatch.member,
         similarityScore: 1,
-        resolvedUserId: emailMatch.member.id ?? null,
+        resolvedUserId: emailMatch.member.id,
         affectedRows: count,
         decision: 'accept',
       })
@@ -130,7 +130,7 @@ export const resolveAssignees = (
     }
 
     // (c) Match fuzzy (similarity > 0.70)
-    let bestMatch: { member: Partial<Profile>; score: number } | null = null
+    let bestMatch: { member: Profile; score: number } | null = null
     for (const nm of normalizedMembers) {
       if (!nm.normalizedName) continue
       const score = similarity(normalized, nm.normalizedName)
@@ -145,7 +145,7 @@ export const resolveAssignees = (
         matchType: 'approximate',
         suggestedMember: bestMatch.member,
         similarityScore: bestMatch.score,
-        resolvedUserId: bestMatch.member.id ?? null,
+        resolvedUserId: bestMatch.member.id,
         affectedRows: count,
       })
     } else {

@@ -35,7 +35,7 @@ export interface Lookups {
   stages: PipelineStage[]
   sources: LeadSourceRecord[]
   pipelines: Pipeline[]
-  members: Partial<Profile>[]
+  members: Profile[]
 }
 
 const TEMP_MAP: Record<string, LeadTemperature> = {
@@ -51,6 +51,9 @@ const parseBrNumber = (value: string): number | undefined => {
   const num = parseFloat(cleaned)
   return isNaN(num) ? undefined : num
 }
+
+const normalizeText = (text: string): string =>
+  text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/\s+/g, ' ')
 
 const normalizePhone = (phone: string): string =>
   phone.replace(/\D/g, '')
@@ -85,17 +88,20 @@ export const mapCsvRowToLead = (
         lead.email = value
         break
       case 'stage_id': {
-        const stage = lookups.stages.find((s) => s.name.toLowerCase() === value.toLowerCase())
+        const normalized = normalizeText(value)
+        const stage = lookups.stages.find((s) => normalizeText(s.name) === normalized)
         if (stage) lead.stage_id = stage.id
         break
       }
       case 'source_id': {
-        const source = lookups.sources.find((s) => s.name.toLowerCase() === value.toLowerCase())
+        const normalized = normalizeText(value)
+        const source = lookups.sources.find((s) => normalizeText(s.name) === normalized)
         if (source) lead.source_id = source.id
         break
       }
       case 'pipeline_id': {
-        const pipeline = lookups.pipelines.find((p) => p.name.toLowerCase() === value.toLowerCase())
+        const normalized = normalizeText(value)
+        const pipeline = lookups.pipelines.find((p) => normalizeText(p.name) === normalized)
         if (pipeline) lead.pipeline_id = pipeline.id
         break
       }
@@ -109,9 +115,15 @@ export const mapCsvRowToLead = (
           lead.assigned_to = value
           break
         }
-        // Fallback: tentar lookup direto (não deveria chegar aqui com o pre-flight)
-        const member = lookups.members.find((m) => m.name?.toLowerCase() === value.toLowerCase())
-        if (member) lead.assigned_to = member.id ?? undefined
+        // Fallback: lookup com normalização de acentos
+        const normalized = normalizeText(value)
+        const memberByName = lookups.members.find((m) => normalizeText(m.name) === normalized)
+        if (memberByName) {
+          lead.assigned_to = memberByName.id
+          break
+        }
+        const memberByEmail = lookups.members.find((m) => normalizeText(m.email) === normalized)
+        if (memberByEmail) lead.assigned_to = memberByEmail.id
         break
       }
       case 'temperature':
