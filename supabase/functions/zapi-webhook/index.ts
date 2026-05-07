@@ -31,13 +31,14 @@ interface ZAPIPayload {
 
 const normalizePhone = (phone: string): string => {
   let digits = phone.replace(/\D/g, '')
-  // Remove codigo do pais 55 (12 digitos = fixo, 13 digitos = celular)
-  if (digits.startsWith('55') && (digits.length === 12 || digits.length === 13)) {
-    digits = digits.slice(2)
-  }
   // Remove 0 inicial (ex: 011917162109)
-  if (digits.length === 11 && digits.startsWith('0')) {
+  if (digits.startsWith('0')) {
     digits = digits.slice(1)
+  }
+  // Padrao Z-API: 5511999999999 (13 digitos para celular, 12 para fixo)
+  // Se nao tem codigo de pais, adiciona 55
+  if (digits.length === 10 || digits.length === 11) {
+    digits = '55' + digits
   }
   return digits
 }
@@ -107,10 +108,19 @@ Deno.serve(async (req) => {
 
     let { data: lead } = await supabase
       .from('leads')
-      .select('id, assigned_to, avatar_url')
+      .select('id, assigned_to, avatar_url, name')
       .eq('company_id', companyId)
       .eq('phone', phone)
       .maybeSingle()
+
+    // Atualiza nome do lead se veio senderName e lead nao tem nome
+    const incomingName = payload.senderName ?? payload.chatName ?? null
+    if (lead && (!lead.name || lead.name.startsWith('Contato ')) && incomingName) {
+      await supabase
+        .from('leads')
+        .update({ name: incomingName })
+        .eq('id', lead.id)
+    }
 
     if (!lead) {
       // Buscar pipeline padrao
@@ -195,8 +205,8 @@ Deno.serve(async (req) => {
     // Busca foto de perfil do WhatsApp se o lead nao tem avatar
     if (!lead.avatar_url) {
       try {
-        // Z-API espera numero com codigo do pais (55)
-        const intlPhone = phone.length === 11 ? `55${phone}` : phone
+        // Phone ja esta no formato 55XXXXXXXXXXX (padrao Z-API)
+        const intlPhone = phone
         const photoRes = await fetch(
           `${buildZApiUrl(config)}/profile-picture?phone=${intlPhone}`,
           { headers: { 'Client-Token': config.client_token } }
