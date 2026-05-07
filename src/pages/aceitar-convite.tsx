@@ -65,19 +65,25 @@ const AceitarConvitePage = () => {
       .single()
 
     if (error || !data) {
+      localStorage.removeItem('pending_invite_token')
       setState('invalid')
       return
     }
 
     if (data.status !== 'pending') {
+      localStorage.removeItem('pending_invite_token')
       setState(data.status === 'expired' ? 'expired' : 'invalid')
       return
     }
 
     if (new Date(data.expires_at) < new Date()) {
+      localStorage.removeItem('pending_invite_token')
       setState('expired')
       return
     }
+
+    // Token validado com sucesso — salva no localStorage para preservar contexto (Google OAuth)
+    localStorage.setItem('pending_invite_token', t)
 
     setInvite(data)
     setCompanyName((data.companies as unknown as { name: string })?.name ?? '')
@@ -137,6 +143,7 @@ const AceitarConvitePage = () => {
       // Recarrega dados do usuario e aguarda completar
       await loadUserData(currentUser.id)
       sessionStorage.setItem('invite_accepted', 'true')
+      localStorage.removeItem('pending_invite_token')
 
       setState('accepted')
       toast.success('Convite aceito com sucesso!')
@@ -193,6 +200,7 @@ const AceitarConvitePage = () => {
       }, invite.company_id)
 
       sessionStorage.setItem('invite_accepted', 'true')
+      localStorage.removeItem('pending_invite_token')
       setState('accepted')
       toast.success('Conta criada e convite aceito!')
       navigate('/')
