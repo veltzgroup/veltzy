@@ -40,7 +40,7 @@ export const inviteMember = async (companyId: string, email: string, role: AppRo
   if (error) throw error
   await logAuditEvent('invite_sent', { email, role, invite_id: data.id }, companyId)
 
-  // Enviar email de convite via Edge Function (fire-and-forget)
+  // Enviar email de convite via Edge Function
   const { data: company } = await supabase
     .from('companies')
     .select('name')
@@ -52,7 +52,7 @@ export const inviteMember = async (companyId: string, email: string, role: AppRo
     .eq('user_id', invitedBy)
     .single()
 
-  supabase.functions.invoke('send-invite-email', {
+  const { error: emailError } = await supabase.functions.invoke('send-invite-email', {
     body: {
       invite_id: data.id,
       email,
@@ -61,7 +61,12 @@ export const inviteMember = async (companyId: string, email: string, role: AppRo
       token: data.token,
       invited_by_name: profile?.name,
     },
-  }).catch((err) => console.error('Erro ao enviar email de convite:', err))
+  })
+
+  if (emailError) {
+    console.error('[Convite] Falha ao enviar email:', emailError)
+    throw new Error('Convite criado, mas falha ao enviar email. Tente reenviar.')
+  }
 
   return data
 }

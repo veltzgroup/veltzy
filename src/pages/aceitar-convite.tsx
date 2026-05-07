@@ -108,32 +108,22 @@ const AceitarConvitePage = () => {
       const { data: { user: currentUser } } = await supabase.auth.getUser()
       if (!currentUser) throw new Error('Usuario nao autenticado')
 
-      // Verificar se convite ainda esta pendente (evita double-click)
-      const { data: freshInvite } = await supabase
-        .from('invitations')
-        .select('status')
-        .eq('id', invite.id)
-        .single()
-      if (freshInvite?.status !== 'pending') {
-        setState('accepted')
-        toast.success('Convite ja foi aceito!')
-        setTimeout(() => navigate('/'), 2000)
-        return
-      }
-
-      // Cria user_role (ignora se ja existir via unique constraint)
-      const { error: roleError } = await supabase.from('user_roles').insert({
-        user_id: currentUser.id,
-        company_id: invite.company_id,
-        role: invite.role,
+      // Usa RPC SECURITY DEFINER para aceitar convite (bypassa RLS)
+      const { data: rpcResult, error: rpcError } = await supabase.rpc('accept_invitation', {
+        p_invitation_id: invite.id,
+        p_user_id: currentUser.id,
       })
-      if (roleError && !roleError.message.includes('duplicate')) throw roleError
 
-      // Atualiza convite
-      await supabase
-        .from('invitations')
-        .update({ status: 'accepted', accepted_at: new Date().toISOString() })
-        .eq('id', invite.id)
+      if (rpcError) throw rpcError
+      if (rpcResult && !rpcResult.success) {
+        if (rpcResult.error?.includes('invalido') || rpcResult.error?.includes('expirado')) {
+          setState('accepted')
+          toast.success('Convite ja foi aceito!')
+          setTimeout(() => navigate('/'), 2000)
+          return
+        }
+        throw new Error(rpcResult.error ?? 'Erro ao aceitar convite')
+      }
 
       await logAuditEvent('invite_accepted', {
         invite_id: invite.id,
@@ -171,27 +161,23 @@ const AceitarConvitePage = () => {
       if (error) throw error
       if (!data.user) throw new Error('Erro ao criar conta')
 
-      // Cria profile
-      await supabase.from('profiles').insert({
-        user_id: data.user.id,
-        name: values.full_name,
-        email: invite.email,
-        company_id: invite.company_id,
+      // Usa RPC SECURITY DEFINER para aceitar convite (bypassa RLS)
+      // A RPC atualiza profile, cria user_role correto e marca convite como aceito
+      const { data: rpcResult, error: rpcError } = await supabase.rpc('accept_invitation', {
+        p_invitation_id: invite.id,
+        p_user_id: data.user.id,
       })
 
-      // Cria user_role (ignora duplicata)
-      const { error: roleError } = await supabase.from('user_roles').insert({
-        user_id: data.user.id,
-        company_id: invite.company_id,
-        role: invite.role,
-      })
-      if (roleError && !roleError.message.includes('duplicate')) throw roleError
+      if (rpcError) throw rpcError
+      if (rpcResult && !rpcResult.success) {
+        throw new Error(rpcResult.error ?? 'Erro ao aceitar convite')
+      }
 
-      // Atualiza convite
+      // Atualiza nome no profile (a RPC nao tem acesso ao nome digitado)
       await supabase
-        .from('invitations')
-        .update({ status: 'accepted', accepted_at: new Date().toISOString() })
-        .eq('id', invite.id)
+        .from('profiles')
+        .update({ name: values.full_name })
+        .eq('user_id', data.user.id)
 
       await logAuditEvent('invite_accepted', {
         invite_id: invite.id,
