@@ -155,7 +155,7 @@ const DealsPage = () => {
             </div>
             {(isAdmin || isManager) && (
               <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setImportModalOpen(true)} title="Importar leads">
-                <Upload className="h-4 w-4" />
+                <Download className="h-4 w-4" />
                 Importar
               </Button>
             )}
@@ -163,7 +163,7 @@ const DealsPage = () => {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="gap-1.5" title="Exportar leads">
-                    <Download className="h-4 w-4" />
+                    <Upload className="h-4 w-4" />
                     Exportar
                   </Button>
                 </DropdownMenuTrigger>

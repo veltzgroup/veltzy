@@ -149,7 +149,7 @@ const PipelineHeader = ({ onAddLead, onManageStages, fireOnly, onToggleFireOnly,
 
         {(isAdmin || isManager) && (
           <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => setImportModalOpen(true)} title="Importar leads">
-            <Upload className="h-4 w-4" />
+            <Download className="h-4 w-4" />
           </Button>
         )}
 
@@ -157,7 +157,7 @@ const PipelineHeader = ({ onAddLead, onManageStages, fireOnly, onToggleFireOnly,
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="icon" className="h-9 w-9" title="Exportar leads">
-                <Download className="h-4 w-4" />
+                <Upload className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
