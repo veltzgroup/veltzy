@@ -16,6 +16,13 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   </head>
   <body>
+    <script>
+      // Aplica tema ANTES do React montar (evita flash de cor errada)
+      (function() {
+        var theme = localStorage.getItem('veltzy-theme') || 'dark';
+        if (theme !== 'light') document.documentElement.classList.add(theme);
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
