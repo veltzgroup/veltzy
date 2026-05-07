@@ -106,7 +106,7 @@ export const updateMemberRole = async (companyId: string, userId: string, role: 
   await logAuditEvent('role_changed', { target_user_id: userId, new_role: role }, companyId)
 }
 
-export const removeMember = async (companyId: string, targetUserId: string): Promise<void> => {
+export const removeMember = async (companyId: string, targetUserId: string, reassignTo?: string): Promise<void> => {
   const { data: profile } = await supabase
     .from('profiles')
     .select('id')
@@ -115,8 +115,22 @@ export const removeMember = async (companyId: string, targetUserId: string): Pro
     .single()
   if (!profile) throw new Error('Membro nao pertence a esta empresa')
 
-  const { error } = await supabase.rpc('remove_user_from_company', { p_target_user_id: targetUserId })
+  const { data: result, error } = await supabase.rpc('remove_user_from_company', {
+    p_target_user_id: targetUserId,
+    p_reassign_to: reassignTo ?? null,
+  })
   if (error) throw error
+  if (result && !result.success) throw new Error(result.error)
+}
+
+export const getMemberLeadsCount = async (companyId: string, profileId: string): Promise<number> => {
+  const { count, error } = await veltzy()
+    .from('leads')
+    .select('id', { count: 'exact', head: true })
+    .eq('company_id', companyId)
+    .eq('assigned_to', profileId)
+  if (error) throw error
+  return count ?? 0
 }
 
 export const resetMemberPassword = async (email: string): Promise<void> => {

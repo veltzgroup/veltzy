@@ -6,8 +6,10 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
 import { MoreVertical } from 'lucide-react'
+import { useState } from 'react'
 import { useRoles } from '@/hooks/use-roles'
-import { useUpdateMemberRole, useRemoveMember } from '@/hooks/use-team'
+import { useUpdateMemberRole } from '@/hooks/use-team'
+import { RemoveMemberModal } from '@/components/admin/remove-member-modal'
 import type { ProfileWithRole, AppRole } from '@/types/database'
 
 const roleLabels: Record<string, string> = {
@@ -31,7 +33,7 @@ interface SellerCardProps {
 const SellerCard = ({ member }: SellerCardProps) => {
   const { isAdmin } = useRoles()
   const updateRole = useUpdateMemberRole()
-  const removeMember = useRemoveMember()
+  const [removeOpen, setRemoveOpen] = useState(false)
 
   const initials = member.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
   const role = member.user_roles?.[0]?.role ?? 'seller'
@@ -73,7 +75,7 @@ const SellerCard = ({ member }: SellerCardProps) => {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="text-destructive"
-                  onClick={() => confirm(`Remover ${member.name}?`) && removeMember.mutate(member.user_id)}
+                  onClick={() => setRemoveOpen(true)}
                 >
                   Remover da empresa
                 </DropdownMenuItem>
@@ -82,6 +84,11 @@ const SellerCard = ({ member }: SellerCardProps) => {
           )}
         </div>
       </CardContent>
+      <RemoveMemberModal
+        open={removeOpen}
+        onOpenChange={setRemoveOpen}
+        member={removeOpen ? { user_id: member.user_id, id: member.id, name: member.name } : null}
+      />
     </Card>
   )
 }

@@ -12,11 +12,12 @@ import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
 import { MoreVertical } from 'lucide-react'
-import { useTeamMembers, useInvites, useCancelInvite, useUpdateMemberRole, useRemoveMember } from '@/hooks/use-team'
+import { useTeamMembers, useInvites, useCancelInvite, useUpdateMemberRole } from '@/hooks/use-team'
 import { useFallbackOwner } from '@/hooks/use-fallback-owner'
 import { useRoles } from '@/hooks/use-roles'
 import { useAuthStore } from '@/stores/auth.store'
 import { InviteMemberModal } from '@/components/sellers/invite-member-modal'
+import { RemoveMemberModal } from '@/components/admin/remove-member-modal'
 import { resetMemberPassword } from '@/services/team.service'
 import { supabasePublic as supabase } from '@/lib/supabase'
 import { useQueryClient } from '@tanstack/react-query'
@@ -31,12 +32,12 @@ const SellersTab = () => {
   const { data: invites } = useInvites()
   const cancelInvite = useCancelInvite()
   const updateRole = useUpdateMemberRole()
-  const removeMember = useRemoveMember()
   const { fallbackOwnerId, setFallback } = useFallbackOwner()
   const { isAdmin } = useRoles()
   const currentUserId = useAuthStore((s) => s.user?.id)
   const queryClient = useQueryClient()
   const [inviteOpen, setInviteOpen] = useState(false)
+  const [removeMemberTarget, setRemoveMemberTarget] = useState<{ user_id: string; id: string; name: string } | null>(null)
 
   const toggleAvailability = async (profileId: string, available: boolean) => {
     await supabase.from('profiles').update({ is_available: available }).eq('id', profileId)
@@ -148,7 +149,7 @@ const SellersTab = () => {
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
                                   className="text-destructive"
-                                  onClick={() => confirm(`Remover ${m.name}? Leads atribuidos ficarao sem responsavel.`) && removeMember.mutate(m.user_id)}
+                                  onClick={() => setRemoveMemberTarget({ user_id: m.user_id, id: m.id, name: m.name })}
                                 >
                                   Remover da Empresa
                                 </DropdownMenuItem>
@@ -217,6 +218,11 @@ const SellersTab = () => {
       )}
 
       <InviteMemberModal open={inviteOpen} onClose={() => setInviteOpen(false)} />
+      <RemoveMemberModal
+        open={!!removeMemberTarget}
+        onOpenChange={(open) => { if (!open) setRemoveMemberTarget(null) }}
+        member={removeMemberTarget}
+      />
     </div>
   )
 }

@@ -67,9 +67,12 @@ export const useRemoveMember = () => {
   const queryClient = useQueryClient()
   const companyId = useAuthStore((s) => s.company?.id)
   return useMutation({
-    mutationFn: (userId: string) => teamService.removeMember(companyId!, userId),
+    mutationFn: ({ userId, reassignTo }: { userId: string; reassignTo?: string }) =>
+      teamService.removeMember(companyId!, userId, reassignTo),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['team-members'] })
+      queryClient.invalidateQueries({ queryKey: ['leads'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard-leads'] })
       toast.success('Membro removido!')
     },
     onError: (err: Error) => toast.error(err.message),
