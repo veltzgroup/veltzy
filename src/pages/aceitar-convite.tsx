@@ -347,25 +347,35 @@ const AceitarConvitePage = () => {
     super_admin: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
   }
 
+  const inviteHeader = (
+    <div className="mb-8 text-center">
+      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold text-xl">
+        V
+      </div>
+      <h1 className="text-2xl font-bold text-gradient-primary">Veltzy</h1>
+      <p className="mt-2 text-sm text-muted-foreground">
+        Voce foi convidado para entrar como
+      </p>
+      <span className={`mt-2 inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${roleBadgeColors[invite?.role ?? ''] ?? 'bg-muted text-muted-foreground'}`}>
+        {roleLabels[invite?.role ?? ''] ?? invite?.role}
+      </span>
+      <p className="mt-1 text-sm font-medium">{companyName}</p>
+    </div>
+  )
+
   // needs_login — usuario ja tem conta, precisa fazer login para aceitar
   if (state === 'needs_login') {
     return (
-      <div className="flex h-screen items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <CardTitle>Entrar para aceitar convite</CardTitle>
-            <div className="mt-3 flex flex-col items-center gap-2">
-              <p className="text-sm text-muted-foreground">
-                Voce foi convidado para <strong>{companyName}</strong>
-              </p>
-              <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${roleBadgeColors[invite?.role ?? ''] ?? 'bg-muted text-muted-foreground'}`}>
-                {roleLabels[invite?.role ?? ''] ?? invite?.role}
-              </span>
-              <p className="text-xs text-muted-foreground">
+      <div className="ambient-bg flex min-h-screen items-center justify-center p-4">
+        <div className="w-full max-w-md animate-fade-in">
+          {inviteHeader}
+          <Card className="glass-card">
+            <CardHeader className="text-center">
+              <CardTitle className="text-lg">Entrar para aceitar convite</CardTitle>
+              <CardDescription>
                 Ja existe uma conta com este email. Faca login para aceitar.
-              </p>
-            </div>
-          </CardHeader>
+              </CardDescription>
+            </CardHeader>
           <CardContent>
             <form onSubmit={onLogin} className="space-y-4">
               <div className="space-y-2">
@@ -394,25 +404,21 @@ const AceitarConvitePage = () => {
             </form>
           </CardContent>
         </Card>
+        </div>
       </div>
     )
   }
 
   // needs_register
   return (
-    <div className="flex h-screen items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle>Criar sua conta</CardTitle>
-          <div className="mt-3 flex flex-col items-center gap-2">
-            <p className="text-sm text-muted-foreground">
-              Voce foi convidado para <strong>{companyName}</strong>
-            </p>
-            <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${roleBadgeColors[invite?.role ?? ''] ?? 'bg-muted text-muted-foreground'}`}>
-              {roleLabels[invite?.role ?? ''] ?? invite?.role}
-            </span>
-          </div>
-        </CardHeader>
+    <div className="ambient-bg flex min-h-screen items-center justify-center p-4">
+      <div className="w-full max-w-md animate-fade-in">
+        {inviteHeader}
+        <Card className="glass-card">
+          <CardHeader className="text-center">
+            <CardTitle className="text-lg">Criar sua conta</CardTitle>
+            <CardDescription>Preencha os dados para continuar</CardDescription>
+          </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onRegister)} className="space-y-4">
             <div className="space-y-2">
@@ -465,6 +471,7 @@ const AceitarConvitePage = () => {
           </form>
         </CardContent>
       </Card>
+      </div>
     </div>
   )
 }
