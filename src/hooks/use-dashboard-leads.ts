@@ -10,13 +10,18 @@ import * as leadsService from '@/services/leads.service'
  */
 export const useDashboardLeads = (pipelineId?: string | null, showArchived = false) => {
   const companyId = useAuthStore((s) => s.company?.id)
+  const profileId = useAuthStore((s) => s.profile?.id)
+  const roles = useAuthStore((s) => s.roles)
   const { data: members } = useTeamMembers()
 
+  const isSeller = roles.length > 0 && !roles.some(r => ['admin', 'manager', 'super_admin'].includes(r))
+
   return useQuery({
-    queryKey: ['dashboard-leads', companyId, pipelineId, showArchived],
+    queryKey: ['dashboard-leads', companyId, pipelineId, showArchived, isSeller ? profileId : null],
     queryFn: async () => {
       const leads = await leadsService.getLeadsByCompany(companyId!, {
         pipelineId: pipelineId ?? undefined,
+        assignedTo: isSeller ? profileId : undefined,
         limit: 500,
       })
       const profileMap = new Map(

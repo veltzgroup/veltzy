@@ -1,13 +1,11 @@
 import { useState, useEffect } from 'react'
-import { Navigate, useSearchParams } from 'react-router-dom'
+import { Navigate, useSearchParams, Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { LoginForm } from '@/components/auth/login-form'
-import { RegisterForm } from '@/components/auth/register-form'
 import { useAuthStore } from '@/stores/auth.store'
 import { resetPassword } from '@/services/auth.service'
 import { Loader2 } from 'lucide-react'
@@ -109,18 +107,15 @@ const AuthPage = () => {
                 </div>
               </div>
             ) : (
-              <Tabs defaultValue="login" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="login">Login</TabsTrigger>
-                  <TabsTrigger value="register">Cadastro</TabsTrigger>
-                </TabsList>
-                <TabsContent value="login" className="mt-4">
-                  <LoginForm onForgotPassword={() => setShowForgotPassword(true)} />
-                </TabsContent>
-                <TabsContent value="register" className="mt-4">
-                  <RegisterForm />
-                </TabsContent>
-              </Tabs>
+              <div className="space-y-4">
+                <LoginForm onForgotPassword={() => setShowForgotPassword(true)} />
+                <p className="text-center text-sm text-muted-foreground">
+                  Nao tem conta?{' '}
+                  <Link to="/auth/cadastro" className="text-primary hover:underline font-medium">
+                    Criar conta
+                  </Link>
+                </p>
+              </div>
             )}
           </CardContent>
         </Card>
