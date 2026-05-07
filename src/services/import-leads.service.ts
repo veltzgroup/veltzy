@@ -98,6 +98,16 @@ export const mapCsvRowToLead = (
         break
       }
       case 'assigned_to': {
+        if (value === '__SKIP_ASSIGNEE__') {
+          // Resolução do pre-flight: sem responsável
+          break
+        }
+        if (UUID_RE.test(value)) {
+          // Já resolvido pelo pre-flight scan
+          lead.assigned_to = value
+          break
+        }
+        // Fallback: tentar lookup direto (não deveria chegar aqui com o pre-flight)
         const member = lookups.members.find((m) => m.name?.toLowerCase() === value.toLowerCase())
         if (member) lead.assigned_to = member.user_id ?? undefined
         break
