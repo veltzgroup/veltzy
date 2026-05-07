@@ -25,7 +25,7 @@ const registerSchema = z.object({
 
 type RegisterValues = z.infer<typeof registerSchema>
 
-type InviteState = 'loading' | 'valid' | 'invalid' | 'expired' | 'accepting' | 'accepted' | 'needs_register'
+type InviteState = 'loading' | 'valid' | 'invalid' | 'expired' | 'accepting' | 'accepted' | 'needs_register' | 'needs_login'
 
 const roleLabels: Record<string, string> = {
   seller: 'Vendedor',
@@ -44,6 +44,8 @@ const AceitarConvitePage = () => {
   const [invite, setInvite] = useState<Invitation | null>(null)
   const [companyName, setCompanyName] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [loginPassword, setLoginPassword] = useState('')
+  const [loginError, setLoginError] = useState('')
 
   const { register, handleSubmit, formState: { errors } } = useForm<RegisterValues>({
     resolver: zodResolver(registerSchema),
@@ -95,7 +97,18 @@ const AceitarConvitePage = () => {
       if (session.session?.user) {
         setState('valid')
       } else {
-        setState('needs_register')
+        // Verifica se o email ja tem conta cadastrada
+        const { data: existingProfile } = await supabase
+          .from('profiles')
+          .select('user_id')
+          .eq('email', data.email)
+          .single()
+
+        if (existingProfile?.user_id) {
+          setState('needs_login')
+        } else {
+          setState('needs_register')
+        }
       }
     }
   }
@@ -142,6 +155,56 @@ const AceitarConvitePage = () => {
       console.error('Erro ao aceitar convite:', err)
       toast.error('Erro ao aceitar convite')
       setState('valid')
+    }
+  }
+
+  const onLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!invite || !loginPassword) return
+    setIsSubmitting(true)
+    setLoginError('')
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: invite.email,
+        password: loginPassword,
+      })
+
+      if (error) {
+        if (error.message.includes('Invalid login credentials')) {
+          setLoginError('Senha incorreta.')
+        } else if (error.message.includes('Email not confirmed')) {
+          setLoginError('Confirme seu email antes de entrar.')
+        } else {
+          setLoginError(error.message)
+        }
+        return
+      }
+
+      if (!data.user) throw new Error('Erro ao fazer login')
+
+      // Aceita convite via RPC
+      const { data: rpcResult, error: rpcError } = await supabase.rpc('accept_invitation', {
+        p_invitation_id: invite.id,
+        p_user_id: data.user.id,
+      })
+
+      if (rpcError) throw rpcError
+      if (rpcResult && !rpcResult.success) {
+        throw new Error(rpcResult.error ?? 'Erro ao aceitar convite')
+      }
+
+      localStorage.removeItem('pending_invite_token')
+      sessionStorage.setItem('invite_accepted', 'true')
+      await loadUserData(data.user.id)
+      setState('accepted')
+      toast.success('Convite aceito com sucesso!')
+      navigate('/')
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erro ao fazer login'
+      toast.error(message)
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -277,7 +340,6 @@ const AceitarConvitePage = () => {
     )
   }
 
-  // needs_register
   const roleBadgeColors: Record<string, string> = {
     seller: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
     manager: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
@@ -285,6 +347,58 @@ const AceitarConvitePage = () => {
     super_admin: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
   }
 
+  // needs_login — usuario ja tem conta, precisa fazer login para aceitar
+  if (state === 'needs_login') {
+    return (
+      <div className="flex h-screen items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle>Entrar para aceitar convite</CardTitle>
+            <div className="mt-3 flex flex-col items-center gap-2">
+              <p className="text-sm text-muted-foreground">
+                Voce foi convidado para <strong>{companyName}</strong>
+              </p>
+              <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${roleBadgeColors[invite?.role ?? ''] ?? 'bg-muted text-muted-foreground'}`}>
+                {roleLabels[invite?.role ?? ''] ?? invite?.role}
+              </span>
+              <p className="text-xs text-muted-foreground">
+                Ja existe uma conta com este email. Faca login para aceitar.
+              </p>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={onLogin} className="space-y-4">
+              <div className="space-y-2">
+                <Label>Email</Label>
+                <Input value={invite?.email ?? ''} disabled />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="login-password">Senha</Label>
+                <Input
+                  id="login-password"
+                  type="password"
+                  placeholder="Sua senha"
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                />
+                {loginError && (
+                  <p className="text-xs text-destructive">{loginError}</p>
+                )}
+              </div>
+
+              <Button type="submit" className="w-full" disabled={isSubmitting || !loginPassword}>
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Entrar e aceitar convite
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // needs_register
   return (
     <div className="flex h-screen items-center justify-center p-4">
       <Card className="w-full max-w-md">
