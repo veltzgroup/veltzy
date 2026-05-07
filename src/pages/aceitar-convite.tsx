@@ -162,10 +162,11 @@ const AceitarConvitePage = () => {
       if (!data.user) throw new Error('Erro ao criar conta')
 
       // Usa RPC SECURITY DEFINER para aceitar convite (bypassa RLS)
-      // A RPC atualiza profile, cria user_role correto e marca convite como aceito
+      // A RPC atualiza profile (incluindo nome), cria user_role e marca convite aceito
       const { data: rpcResult, error: rpcError } = await supabase.rpc('accept_invitation', {
         p_invitation_id: invite.id,
         p_user_id: data.user.id,
+        p_name: values.full_name,
       })
 
       if (rpcError) throw rpcError
@@ -173,23 +174,20 @@ const AceitarConvitePage = () => {
         throw new Error(rpcResult.error ?? 'Erro ao aceitar convite')
       }
 
-      // Atualiza nome no profile (a RPC nao tem acesso ao nome digitado)
-      await supabase
-        .from('profiles')
-        .update({ name: values.full_name })
-        .eq('user_id', data.user.id)
-
-      await logAuditEvent('invite_accepted', {
-        invite_id: invite.id,
-        role: invite.role,
-        new_account: true,
-      }, invite.company_id)
-
-      sessionStorage.setItem('invite_accepted', 'true')
       localStorage.removeItem('pending_invite_token')
-      setState('accepted')
-      toast.success('Conta criada e convite aceito!')
-      navigate('/')
+
+      // Se signUp retornou sessao (autoconfirm), redireciona para dashboard
+      if (data.session) {
+        sessionStorage.setItem('invite_accepted', 'true')
+        await loadUserData(data.user.id)
+        setState('accepted')
+        toast.success('Conta criada e convite aceito!')
+        navigate('/')
+      } else {
+        // Email confirmation necessario — mostra mensagem
+        setState('accepted')
+        toast.success('Conta criada e convite aceito! Confirme seu email para entrar.')
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Erro ao criar conta'
       toast.error(message)
@@ -239,9 +237,17 @@ const AceitarConvitePage = () => {
             <CheckCircle2 className="mx-auto h-12 w-12 text-green-500" />
             <CardTitle className="mt-4">Convite aceito!</CardTitle>
             <CardDescription>
-              Você agora faz parte de {companyName}. Redirecionando...
+              Voce agora faz parte de {companyName}.
+              {user ? ' Redirecionando...' : ' Verifique seu email para confirmar sua conta e fazer login.'}
             </CardDescription>
           </CardHeader>
+          {!user && (
+            <CardContent className="text-center">
+              <Button onClick={() => navigate('/auth')} variant="outline">
+                Ir para o login
+              </Button>
+            </CardContent>
+          )}
         </Card>
       </div>
     )
