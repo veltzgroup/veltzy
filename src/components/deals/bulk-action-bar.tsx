@@ -34,7 +34,7 @@ export const BulkActionBar = ({ selectedIds, leads, onClear, userRole }: BulkAct
 
   return (
     <>
-      <div className="flex items-center gap-3 bg-primary/10 border border-primary/20 rounded-xl p-3">
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-background/95 backdrop-blur-sm border border-primary/20 rounded-xl p-3 shadow-2xl shadow-primary/10">
         <span className="text-sm font-medium text-foreground ml-1">
           {count} selecionado{count > 1 ? 's' : ''}
         </span>

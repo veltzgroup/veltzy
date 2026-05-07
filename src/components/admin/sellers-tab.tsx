@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Loader2 } from 'lucide-react'
+import { Plus, Loader2, Copy } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -207,9 +207,23 @@ const SellersTab = () => {
                       {expired && <span className="ml-2 text-destructive">Expirado</span>}
                     </p>
                   </div>
-                  <Button variant="ghost" size="sm" className="text-xs text-destructive h-6" onClick={() => cancelInvite.mutate(inv.id)}>
-                    Cancelar
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs h-6 gap-1"
+                      onClick={() => {
+                        navigator.clipboard.writeText(`${window.location.origin}/aceitar-convite?token=${inv.token}`)
+                        toast.success('Link copiado!')
+                      }}
+                    >
+                      <Copy className="h-3 w-3" />
+                      Copiar link
+                    </Button>
+                    <Button variant="ghost" size="sm" className="text-xs text-destructive h-6" onClick={() => cancelInvite.mutate(inv.id)}>
+                      Cancelar
+                    </Button>
+                  </div>
                 </div>
               )
             })}
