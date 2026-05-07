@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { Button } from '@/components/ui/button'
-import { usePipelineStages } from '@/hooks/use-pipeline-stages'
+import { useAllPipelineStages } from '@/hooks/use-pipeline-stages'
 import { useLeadSources } from '@/hooks/use-lead-sources'
 import { usePipelines } from '@/hooks/use-pipelines'
 import { useTeamMembers } from '@/hooks/use-team'
@@ -16,7 +16,7 @@ interface PreviewStepProps {
 }
 
 const PreviewStep = ({ parsedCsv, config, onNext, onBack }: PreviewStepProps) => {
-  const { data: stages } = usePipelineStages()
+  const { data: stages } = useAllPipelineStages()
   const { data: sources } = useLeadSources()
   const { data: pipelines } = usePipelines()
   const { data: members } = useTeamMembers()

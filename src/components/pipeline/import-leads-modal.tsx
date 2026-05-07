@@ -13,7 +13,7 @@ import type { ParsedCsv } from '@/lib/csv-parser'
 type Step = 'upload' | 'mapping' | 'preview' | 'progress' | 'result'
 
 const STEP_TITLES: Record<Step, string> = {
-  upload: 'Importar leads via CSV',
+  upload: 'Importar leads',
   mapping: 'Mapear colunas',
   preview: 'Confirmar importação',
   progress: 'Importando...',
@@ -59,11 +59,11 @@ const ImportLeadsModal = ({ open, onClose }: ImportLeadsModalProps) => {
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl" onInteractOutside={(e) => isPending && e.preventDefault()}>
+      <DialogContent className="max-h-[90vh] flex flex-col sm:max-w-2xl" onInteractOutside={(e) => isPending && e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>{STEP_TITLES[step]}</DialogTitle>
           <DialogDescription>
-            {step === 'upload' && 'Selecione um arquivo CSV exportado de outro CRM ou planilha'}
+            {step === 'upload' && 'Selecione um arquivo CSV ou Excel (.xlsx) exportado de outro CRM ou planilha'}
             {step === 'mapping' && 'Associe as colunas do arquivo aos campos do lead'}
             {step === 'preview' && 'Verifique os dados antes de importar'}
             {step === 'progress' && 'Aguarde enquanto os leads sao importados'}

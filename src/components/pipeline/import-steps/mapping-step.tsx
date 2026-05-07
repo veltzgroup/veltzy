@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
-import { usePipelineStages } from '@/hooks/use-pipeline-stages'
+import { useAllPipelineStages } from '@/hooks/use-pipeline-stages'
 import { useLeadSources } from '@/hooks/use-lead-sources'
 import { autoMapColumns, LEAD_FIELD_LABELS, type LeadField } from '@/lib/csv-parser'
 import type { ImportConfig } from '@/hooks/use-import-leads'
@@ -19,7 +19,7 @@ interface MappingStepProps {
 const ALL_FIELDS: LeadField[] = ['name', 'phone', 'email', 'source_id', 'pipeline_id', 'stage_id', 'temperature', 'deal_value', 'assigned_to', 'observations', 'tags']
 
 const MappingStep = ({ headers, onNext, onBack }: MappingStepProps) => {
-  const { data: stages } = usePipelineStages()
+  const { data: stages } = useAllPipelineStages()
   const { data: sources } = useLeadSources()
   const [mapping, setMapping] = useState<Record<number, LeadField | null>>({})
   const [defaultStageId, setDefaultStageId] = useState('')
@@ -56,15 +56,15 @@ const MappingStep = ({ headers, onNext, onBack }: MappingStepProps) => {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 overflow-y-auto min-h-0">
       <div className="space-y-2">
-        <p className="text-sm font-medium">Mapear colunas do CSV</p>
+        <p className="text-sm font-medium">Mapear colunas do arquivo</p>
         <p className="text-xs text-muted-foreground">
           Associe cada coluna do arquivo a um campo do lead. Colunas marcadas como "Ignorar" nao serao importadas.
         </p>
       </div>
 
-      <div className="max-h-[240px] overflow-y-auto space-y-2 pr-1 scrollbar-minimal">
+      <div className="max-h-[200px] overflow-y-auto space-y-2 pr-1 scrollbar-minimal">
         {headers.map((header, index) => (
           <div key={index} className="flex items-center gap-2">
             <span className="w-36 truncate text-sm text-muted-foreground" title={header}>

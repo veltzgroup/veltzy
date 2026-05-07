@@ -4,6 +4,16 @@ import { useAuthStore } from '@/stores/auth.store'
 import { usePipelineStore } from '@/stores/pipeline.store'
 import * as pipelineService from '@/services/pipeline.service'
 
+export const useAllPipelineStages = () => {
+  const companyId = useAuthStore((s) => s.company?.id)
+
+  return useQuery({
+    queryKey: ['pipeline-stages', companyId, 'all'],
+    queryFn: () => pipelineService.getAllPipelineStages(companyId!),
+    enabled: !!companyId,
+  })
+}
+
 export const usePipelineStages = (pipelineIdOverride?: string | null) => {
   const companyId = useAuthStore((s) => s.company?.id)
   const activePipelineId = usePipelineStore((s) => s.activePipelineId)

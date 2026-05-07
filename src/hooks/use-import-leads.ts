@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth.store'
-import { usePipelineStages } from '@/hooks/use-pipeline-stages'
+import { useAllPipelineStages } from '@/hooks/use-pipeline-stages'
 import { useLeadSources } from '@/hooks/use-lead-sources'
 import { usePipelines } from '@/hooks/use-pipelines'
 import { useTeamMembers } from '@/hooks/use-team'
@@ -31,7 +31,7 @@ export interface ImportProgress {
 export const useImportLeads = () => {
   const queryClient = useQueryClient()
   const companyId = useAuthStore((s) => s.company?.id)
-  const { data: stages } = usePipelineStages()
+  const { data: stages } = useAllPipelineStages()
   const { data: sources } = useLeadSources()
   const { data: pipelines } = usePipelines()
   const { data: members } = useTeamMembers()
