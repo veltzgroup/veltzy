@@ -2,6 +2,8 @@ import { veltzy } from '@/lib/supabase'
 import type { LeadTemperature, PipelineStage, LeadSourceRecord, Pipeline, Profile } from '@/types/database'
 import type { LeadField } from '@/lib/csv-parser'
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 export interface ImportableRow {
   name?: string
   phone: string
@@ -125,7 +127,21 @@ export const validateRow = (row: ImportableRow, index: number): RowResult | null
   if (row.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row.email)) {
     return { rowIndex: index, status: 'error', reason: `Email inválido: ${row.email}` }
   }
+  if (row.assigned_to && !UUID_RE.test(row.assigned_to)) {
+    return { rowIndex: index, status: 'error', reason: `Responsável inválido ou não encontrado na empresa` }
+  }
+  if (row.pipeline_id && !UUID_RE.test(row.pipeline_id)) {
+    return { rowIndex: index, status: 'error', reason: `Pipeline inválido ou não encontrado na empresa` }
+  }
   return null
+}
+
+const translateDbError = (message: string): string => {
+  if (message.includes('assigned_to')) return 'Responsável inválido ou não pertence à empresa'
+  if (message.includes('pipeline_id')) return 'Pipeline inválido ou não encontrado'
+  if (message.includes('stage_id')) return 'Etapa inválida ou não encontrada'
+  if (message.includes('source_id')) return 'Origem inválida ou não encontrada'
+  return `Erro no banco: ${message}`
 }
 
 const BATCH_SIZE = 50
@@ -189,30 +205,44 @@ export const importLeads = async (
     })
 
     if (toInsert.length > 0) {
-      const insertData = toInsert.map((row) => ({
-        company_id: companyId,
-        name: row.name ?? null,
-        phone: row.phone,
-        email: row.email ?? null,
-        source_id: row.source_id ?? null,
-        pipeline_id: row.pipeline_id ?? null,
-        stage_id: row.stage_id,
-        temperature: row.temperature ?? 'cold',
-        deal_value: row.deal_value ?? null,
-        assigned_to: row.assigned_to ?? null,
-        observations: row.observations ?? null,
-        tags: row.tags ?? [],
-      }))
+      const insertData = toInsert.map((row) => {
+        const record: Record<string, unknown> = {
+          company_id: companyId,
+          name: row.name ?? null,
+          phone: row.phone,
+          email: row.email ?? null,
+          source_id: row.source_id ?? null,
+          stage_id: row.stage_id,
+          temperature: row.temperature ?? 'cold',
+          deal_value: row.deal_value ?? null,
+          observations: row.observations ?? null,
+          tags: row.tags ?? [],
+        }
+        if (row.assigned_to) record.assigned_to = row.assigned_to
+        if (row.pipeline_id) record.pipeline_id = row.pipeline_id
+        return record
+      })
 
       const { error } = await veltzy()
         .from('leads')
         .insert(insertData)
 
       if (error) {
-        toInsertIndices.forEach((idx) => {
-          allResults.push({ rowIndex: idx, status: 'error', reason: `Erro no banco: ${error.message}` })
-        })
-        errors += toInsertIndices.length
+        // Batch falhou — tentar row-a-row para identificar quais linhas tem problema
+        for (let r = 0; r < insertData.length; r++) {
+          const { error: rowError } = await veltzy()
+            .from('leads')
+            .insert(insertData[r])
+
+          if (rowError) {
+            const reason = translateDbError(rowError.message)
+            allResults.push({ rowIndex: toInsertIndices[r], status: 'error', reason })
+            errors++
+          } else {
+            allResults.push({ rowIndex: toInsertIndices[r], status: 'success' })
+            inserted++
+          }
+        }
       } else {
         toInsertIndices.forEach((idx) => {
           allResults.push({ rowIndex: idx, status: 'success' })
