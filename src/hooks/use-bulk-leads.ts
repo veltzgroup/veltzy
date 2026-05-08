@@ -16,6 +16,7 @@ export const useBulkTransfer = (onSuccess?: () => void) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['dashboard-leads'] })
+      queryClient.invalidateQueries({ queryKey: ['leads'] })
       toast.success('Leads transferidos com sucesso')
       onSuccess?.()
     },
@@ -36,6 +37,7 @@ export const useBulkArchive = (onSuccess?: () => void) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['dashboard-leads'] })
+      queryClient.invalidateQueries({ queryKey: ['leads'] })
       toast.success('Leads arquivados com sucesso')
       onSuccess?.()
     },
@@ -58,6 +60,7 @@ export const useBulkDelete = (onSuccess?: () => void) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['dashboard-leads'] })
+      queryClient.invalidateQueries({ queryKey: ['leads'] })
       toast.success('Leads excluidos permanentemente')
       onSuccess?.()
     },

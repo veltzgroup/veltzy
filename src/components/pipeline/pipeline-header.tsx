@@ -11,9 +11,9 @@ import {
 import { usePipelineStore } from '@/stores/pipeline.store'
 import { useLeadSources } from '@/hooks/use-lead-sources'
 import { useRoles } from '@/hooks/use-roles'
+import { useExportLeads } from '@/hooks/use-export-leads'
 import type { LeadTemperature, LeadWithDetails } from '@/types/database'
 import { leadTemperatureConfig } from '@/lib/lead-config'
-import { exportToCsv, exportToPdf, exportToXlsx } from '@/lib/export-leads'
 import { ImportLeadsModal } from '@/components/pipeline/import-leads-modal'
 import { cn } from '@/lib/utils'
 
@@ -72,8 +72,10 @@ interface PipelineHeaderProps {
 
 const PipelineHeader = ({ onAddLead, onManageStages, fireOnly, onToggleFireOnly, leads, pipelineName }: PipelineHeaderProps) => {
   const { filters, setFilters } = usePipelineStore()
+  const activePipelineId = usePipelineStore((s) => s.activePipelineId)
   const { data: sources } = useLeadSources()
   const { isAdmin, isManager } = useRoles()
+  const { doExport, isExporting } = useExportLeads()
   const [importModalOpen, setImportModalOpen] = useState(false)
 
   return (
@@ -156,18 +158,18 @@ const PipelineHeader = ({ onAddLead, onManageStages, fireOnly, onToggleFireOnly,
         {leads && leads.length > 0 && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon" className="h-9 w-9" title="Exportar leads">
+              <Button variant="outline" size="icon" className="h-9 w-9" title="Exportar leads" disabled={isExporting}>
                 <Upload className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => exportToCsv(leads)}>
+              <DropdownMenuItem onClick={() => doExport('csv', activePipelineId)}>
                 Exportar CSV
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => exportToXlsx(leads)}>
+              <DropdownMenuItem onClick={() => doExport('xlsx', activePipelineId)}>
                 Exportar Excel (.xlsx)
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => exportToPdf(leads)}>
+              <DropdownMenuItem onClick={() => doExport('pdf', activePipelineId)}>
                 Exportar PDF
               </DropdownMenuItem>
             </DropdownMenuContent>

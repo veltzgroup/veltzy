@@ -1,49 +1,35 @@
 import { FileDown, FileSpreadsheet, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { useLeads } from '@/hooks/use-leads'
-import { exportToCsv, exportToPdf, exportToXlsx } from '@/lib/export-leads'
-import type { LeadWithDetails } from '@/types/database'
+import { useExportLeads } from '@/hooks/use-export-leads'
 
 const ReportsTab = () => {
-  const { data: leads, isLoading } = useLeads()
-
-  const handleCsv = () => {
-    if (leads) exportToCsv(leads as LeadWithDetails[])
-  }
-
-  const handleXlsx = () => {
-    if (leads) exportToXlsx(leads as LeadWithDetails[])
-  }
-
-  const handlePdf = () => {
-    if (leads) exportToPdf(leads as LeadWithDetails[])
-  }
+  const { doExport, isExporting } = useExportLeads()
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Relatorios</CardTitle>
-        <CardDescription>Exporte dados dos seus leads</CardDescription>
+        <CardDescription>Exporte todos os leads da empresa</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex gap-3">
-          <Button variant="outline" onClick={handleCsv} disabled={isLoading || !leads?.length}>
-            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileSpreadsheet className="mr-2 h-4 w-4" />}
+          <Button variant="outline" onClick={() => doExport('csv', null, 'relatorio-leads')} disabled={isExporting}>
+            {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileSpreadsheet className="mr-2 h-4 w-4" />}
             Exportar CSV
           </Button>
-          <Button variant="outline" onClick={handleXlsx} disabled={isLoading || !leads?.length}>
-            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileSpreadsheet className="mr-2 h-4 w-4" />}
+          <Button variant="outline" onClick={() => doExport('xlsx', null, 'relatorio-leads')} disabled={isExporting}>
+            {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileSpreadsheet className="mr-2 h-4 w-4" />}
             Exportar Excel
           </Button>
-          <Button variant="outline" onClick={handlePdf} disabled={isLoading || !leads?.length}>
-            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileDown className="mr-2 h-4 w-4" />}
+          <Button variant="outline" onClick={() => doExport('pdf', null, 'relatorio-leads')} disabled={isExporting}>
+            {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileDown className="mr-2 h-4 w-4" />}
             Exportar PDF
           </Button>
         </div>
 
         <p className="text-xs text-muted-foreground">
-          {leads?.length ?? 0} leads serao exportados
+          Todos os leads da empresa serao exportados (sem filtro de pipeline)
         </p>
       </CardContent>
     </Card>

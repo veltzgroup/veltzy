@@ -60,7 +60,7 @@ export const useImportLeads = () => {
 
       const batchResult = await importLeads(companyId, rows, (done, total) => {
         setProgress({ phase: 'importing', current: done, total })
-      })
+      }, stages)
 
       setResult(batchResult)
       setProgress({ phase: 'done', current: rows.length, total: rows.length })

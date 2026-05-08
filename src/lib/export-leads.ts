@@ -9,16 +9,21 @@ const getLeadRows = (leads: LeadWithDetails[]) =>
     l.deal_value != null ? l.deal_value.toString() : '',
     l.pipelines?.name ?? '',
     l.pipeline_stages?.name ?? '',
+    l.status ?? '',
     l.temperature,
     l.profiles?.name ?? '',
     (l.tags ?? []).join(', '),
     l.observations ?? '',
     l.lead_sources?.name ?? '',
+    l.instagram_id ?? '',
+    l.linkedin_id ?? '',
+    l.ai_score?.toString() ?? '',
+    l.conversation_status ?? '',
     new Date(l.created_at).toLocaleDateString('pt-BR'),
     new Date(l.updated_at).toLocaleDateString('pt-BR'),
   ])
 
-const EXPORT_HEADERS = ['Nome', 'Telefone', 'Email', 'Valor do Negocio', 'Pipeline', 'Etapa', 'Temperatura', 'Responsavel', 'Tags', 'Observações', 'Origem', 'Criado em', 'Atualizado em']
+const EXPORT_HEADERS = ['Nome', 'Telefone', 'Email', 'Valor do Negocio', 'Pipeline', 'Etapa', 'Status', 'Temperatura', 'Responsavel', 'Tags', 'Observações', 'Origem', 'Instagram', 'LinkedIn', 'AI Score', 'Status Conversa', 'Criado em', 'Atualizado em']
 
 const TEMPLATE_HEADERS = ['Nome', 'Telefone', 'Email', 'Valor do Negocio', 'Pipeline', 'Etapa', 'Temperatura', 'Responsavel', 'Tags', 'Observações', 'Origem']
 
@@ -103,6 +108,7 @@ export const exportToPdf = async (leads: LeadWithDetails[], filename = 'leads.pd
     l.deal_value ? `R$ ${l.deal_value.toLocaleString('pt-BR')}` : '-',
     l.pipelines?.name ?? '-',
     l.pipeline_stages?.name ?? '-',
+    l.status ?? '-',
     l.temperature,
     l.profiles?.name ?? '-',
     (l.tags ?? []).join(', ') || '-',
@@ -112,7 +118,7 @@ export const exportToPdf = async (leads: LeadWithDetails[], filename = 'leads.pd
 
   autoTable(doc, {
     startY: 34,
-    head: [['Nome', 'Telefone', 'Email', 'Valor', 'Pipeline', 'Etapa', 'Temp.', 'Responsavel', 'Tags', 'Origem', 'Criado em']],
+    head: [['Nome', 'Telefone', 'Email', 'Valor', 'Pipeline', 'Etapa', 'Status', 'Temp.', 'Responsavel', 'Tags', 'Origem', 'Criado em']],
     body: tableData,
     styles: { fontSize: 7 },
     headStyles: { fillColor: [34, 197, 94] },

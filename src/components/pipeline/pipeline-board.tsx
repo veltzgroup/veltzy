@@ -12,7 +12,7 @@ import {
 } from '@dnd-kit/core'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { AlertCircle, Loader2, Inbox } from 'lucide-react'
+import { AlertCircle, AlertTriangle, Loader2, Inbox } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { StageColumn } from '@/components/pipeline/stage-column'
 import { LeadCard } from '@/components/pipeline/lead-card'
@@ -99,6 +99,12 @@ const PipelineBoard = () => {
     leads?.forEach((l) => { map[l.stage_id] = (map[l.stage_id] ?? 0) + 1 })
     return map
   }, [leads])
+
+  const orphanedCount = useMemo(() => {
+    if (!leads || !stages) return 0
+    const stageIds = new Set(stages.map((s) => s.id))
+    return leads.filter((l) => !l.stage_id || !stageIds.has(l.stage_id)).length
+  }, [leads, stages])
 
   const activeLead = useMemo(
     () => leads?.find((l) => l.id === activeLeadId) ?? null,
@@ -188,6 +194,13 @@ const PipelineBoard = () => {
           pipelineName={pipelines && pipelines.length > 1 ? pipelines.find((p) => p.id === activePipelineId)?.name : undefined}
         />
       </div>
+
+      {orphanedCount > 0 && (
+        <div className="mx-6 mb-2 flex items-center gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-400">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <span>{orphanedCount} lead{orphanedCount > 1 ? 's' : ''} sem etapa definida (invisíve{orphanedCount > 1 ? 'is' : 'l'} no board). Mova-os para uma etapa pelo painel admin.</span>
+        </div>
+      )}
 
       <DndContext
         sensors={sensors}

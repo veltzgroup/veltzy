@@ -89,7 +89,10 @@ export const mapCsvRowToLead = (
         break
       case 'stage_id': {
         const normalized = normalizeText(value)
-        const stage = lookups.stages.find((s) => normalizeText(s.name) === normalized)
+        const pipelineId = lead.pipeline_id ?? defaultPipelineId
+        const stage = lookups.stages.find(
+          (s) => normalizeText(s.name) === normalized && s.pipeline_id === pipelineId
+        ) ?? lookups.stages.find((s) => normalizeText(s.name) === normalized)
         if (stage) lead.stage_id = stage.id
         break
       }
@@ -161,6 +164,7 @@ export const validateRow = (row: ImportableRow, index: number): RowResult | null
 }
 
 const translateDbError = (message: string): string => {
+  if (message.includes('duplicate') || message.includes('unique')) return 'Telefone já cadastrado (duplicata)'
   if (message.includes('assigned_to')) return 'Responsável inválido ou não pertence à empresa'
   if (message.includes('pipeline_id')) return 'Pipeline inválido ou não encontrado'
   if (message.includes('stage_id')) return 'Etapa inválida ou não encontrada'
@@ -179,10 +183,19 @@ export const checkDuplicates = async (companyId: string, phones: string[]): Prom
   return new Set((data ?? []).map((d: { phone: string }) => d.phone))
 }
 
+const resolveStatusFromStage = (stageId: string, stages: PipelineStage[]): string => {
+  const stage = stages.find((s) => s.id === stageId)
+  if (!stage) return 'new'
+  if (stage.is_final && stage.is_positive) return 'deal'
+  if (stage.is_final && stage.is_positive === false) return 'lost'
+  return 'new'
+}
+
 export const importLeads = async (
   companyId: string,
   rows: ImportableRow[],
   onProgress: (done: number, total: number) => void,
+  stages?: PipelineStage[],
 ): Promise<ImportBatchResult> => {
   const allResults: RowResult[] = []
   let inserted = 0
@@ -230,6 +243,7 @@ export const importLeads = async (
 
     if (toInsert.length > 0) {
       const insertData = toInsert.map((row) => {
+        const status = stages ? resolveStatusFromStage(row.stage_id, stages) : 'new'
         const record: Record<string, unknown> = {
           company_id: companyId,
           name: row.name ?? null,
@@ -237,6 +251,7 @@ export const importLeads = async (
           email: row.email ?? null,
           source_id: row.source_id ?? null,
           stage_id: row.stage_id,
+          status,
           temperature: row.temperature ?? 'cold',
           deal_value: row.deal_value ?? null,
           observations: row.observations ?? null,

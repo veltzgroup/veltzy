@@ -31,7 +31,10 @@ export const getLeadsByCompany = async (companyId: string, filters?: LeadFilters
     .select(LEAD_WITH_DETAILS_SELECT)
     .eq('company_id', companyId)
     .order('created_at', { ascending: false })
-    .range(offset, offset + limit - 1)
+
+  if (limit > 0) {
+    query = query.range(offset, offset + limit - 1)
+  }
 
   if (filters?.pipelineId) {
     query = query.eq('pipeline_id', filters.pipelineId)
@@ -75,7 +78,12 @@ export const createLead = async (companyId: string, input: CreateLeadInput): Pro
     .insert({ ...input, company_id: companyId })
     .select()
     .single()
-  if (error) throw error
+  if (error) {
+    if (error.message.includes('duplicate') || error.message.includes('unique') || error.code === '23505') {
+      throw new Error('Já existe um lead com este telefone')
+    }
+    throw error
+  }
   return data
 }
 
