@@ -18,8 +18,10 @@ export const useLeads = () => {
   const isSeller = roles.length > 0 && !roles.some(r => ['admin', 'manager', 'super_admin'].includes(r))
   const assignedToFilter = isSeller ? profileId : filters.assignedTo
 
+  const membersReady = !!members && members.length > 0
+
   return useQuery({
-    queryKey: ['leads', companyId, activePipelineId, filters.sourceId, filters.temperature, assignedToFilter],
+    queryKey: ['leads', companyId, activePipelineId, filters.sourceId, filters.temperature, assignedToFilter, membersReady],
     queryFn: async () => {
       const leads = await leadsService.getLeadsByCompany(companyId!, {
         pipelineId: activePipelineId!,

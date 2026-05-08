@@ -15,9 +15,10 @@ export const useDashboardLeads = (pipelineId?: string | null, showArchived = fal
   const { data: members } = useTeamMembers()
 
   const isSeller = roles.length > 0 && !roles.some(r => ['admin', 'manager', 'super_admin'].includes(r))
+  const membersReady = !!members && members.length > 0
 
   return useQuery({
-    queryKey: ['dashboard-leads', companyId, pipelineId, showArchived, isSeller ? profileId : null],
+    queryKey: ['dashboard-leads', companyId, pipelineId, showArchived, isSeller ? profileId : null, membersReady],
     queryFn: async () => {
       const leads = await leadsService.getLeadsByCompany(companyId!, {
         pipelineId: pipelineId ?? undefined,
