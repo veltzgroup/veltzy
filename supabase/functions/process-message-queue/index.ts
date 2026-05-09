@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { getZApiConfigByCompany, buildZApiUrl, buildZApiHeaders } from '../_shared/zapi-config.ts'
+import { getWhatsAppConfig } from '../_shared/whatsapp-config.ts'
+import { createProvider } from '../_shared/whatsapp-factory.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -41,8 +42,7 @@ Deno.serve(async (req) => {
 
     for (const item of items) {
       try {
-        // Busca config WhatsApp da empresa
-        const config = await getZApiConfigByCompany(supabasePublic, item.company_id, { status: 'connected' })
+        const config = await getWhatsAppConfig(supabasePublic, item.company_id, { status: 'connected' })
 
         if (!config) {
           await supabase
@@ -53,7 +53,6 @@ Deno.serve(async (req) => {
           continue
         }
 
-        // Busca phone do lead
         const { data: lead } = await supabase
           .from('leads')
           .select('phone')
@@ -69,39 +68,15 @@ Deno.serve(async (req) => {
           continue
         }
 
-        // Envia via Z-API
-        const baseUrl = buildZApiUrl(config)
-        const msgType = item.message_type ?? 'text'
+        const provider = createProvider(config.provider)
+        const msgType = (item.message_type ?? 'text') as 'text' | 'image' | 'audio' | 'video' | 'document'
 
-        const endpoints: Record<string, string> = {
-          text: '/send-text',
-          image: '/send-image',
-          audio: '/send-audio',
-          video: '/send-video',
-          document: '/send-document',
-        }
-
-        const body: Record<string, unknown> = { phone: lead.phone }
-        if (msgType === 'text') {
-          body.message = item.content
-        } else {
-          body.caption = item.content
-          if (msgType === 'image') body.image = item.file_url
-          if (msgType === 'audio') body.audio = item.file_url
-          if (msgType === 'video') body.video = item.file_url
-          if (msgType === 'document') body.document = item.file_url
-        }
-
-        const res = await fetch(`${baseUrl}${endpoints[msgType] ?? '/send-text'}`, {
-          method: 'POST',
-          headers: buildZApiHeaders(config),
-          body: JSON.stringify(body),
+        await provider.sendMessage(config, {
+          phone: lead.phone,
+          content: item.content,
+          type: msgType,
+          mediaUrl: item.file_url ?? undefined,
         })
-
-        if (!res.ok) {
-          const errBody = await res.text()
-          throw new Error(`Z-API ${res.status}: ${errBody}`)
-        }
 
         // Salva a mensagem no historico
         await supabase.from('messages').insert({

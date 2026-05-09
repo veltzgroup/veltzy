@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { getAllConnectedZApiConfigs, updateZApiMetadata, buildZApiUrl } from '../_shared/zapi-config.ts'
+import { getAllConnectedConfigs, updateWhatsAppMetadata } from '../_shared/whatsapp-config.ts'
+import { createProvider } from '../_shared/whatsapp-factory.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -17,7 +18,7 @@ Deno.serve(async (req) => {
     const supabase = createClient(url, key, { db: { schema: 'veltzy' } })
     const supabasePublic = createClient(url, key)
 
-    const configs = await getAllConnectedZApiConfigs(supabasePublic)
+    const configs = await getAllConnectedConfigs(supabasePublic)
 
     if (configs.length === 0) {
       return new Response(
@@ -32,14 +33,10 @@ Deno.serve(async (req) => {
       let newStatus: string = 'connected'
 
       try {
-        const res = await fetch(
-          `${buildZApiUrl(config)}/status`,
-          { headers: { 'Client-Token': config.client_token } },
-        )
-        const data = await res.json()
-        console.log(`[health] company=${config.company_id} z-api response:`, JSON.stringify(data))
+        const provider = createProvider(config.provider)
+        const statusResult = await provider.getStatus(config)
 
-        if (data.connected !== true) {
+        if (!statusResult.connected) {
           newStatus = 'disconnected'
         }
       } catch (err) {
@@ -48,7 +45,7 @@ Deno.serve(async (req) => {
       }
 
       if (newStatus !== 'connected') {
-        await updateZApiMetadata(supabasePublic, config.id, { status: newStatus })
+        await updateWhatsAppMetadata(supabasePublic, config.id, { status: newStatus })
 
         // Notificar admins da empresa
         const { data: admins } = await supabasePublic
