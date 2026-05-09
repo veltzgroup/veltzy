@@ -13,6 +13,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import { useInviteMember } from '@/hooks/use-team'
+import { useCompanyLimits } from '@/hooks/use-company-limits'
 import type { AppRole } from '@/types/database'
 import { useState } from 'react'
 
@@ -30,7 +31,9 @@ interface InviteMemberModalProps {
 
 const InviteMemberModal = ({ open, onClose }: InviteMemberModalProps) => {
   const inviteMember = useInviteMember()
+  const { data: userLimits } = useCompanyLimits('users')
   const [inviteLink, setInviteLink] = useState<string | null>(null)
+  const limitReached = userLimits && !userLimits.allowed
 
   const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -80,15 +83,21 @@ const InviteMemberModal = ({ open, onClose }: InviteMemberModalProps) => {
           </div>
         ) : (
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            {limitReached && (
+              <div className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-400">
+                Limite de {userLimits.limit} usuarios atingido ({userLimits.current}/{userLimits.limit}). Entre em contato para fazer upgrade.
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label>Email</Label>
-              <Input type="email" placeholder="email@exemplo.com" {...register('email')} />
+              <Input type="email" placeholder="email@exemplo.com" {...register('email')} disabled={!!limitReached} />
               {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
             </div>
 
             <div className="space-y-2">
               <Label>Cargo</Label>
-              <Select value={watch('role')} onValueChange={(v) => setValue('role', v as FormValues['role'])}>
+              <Select value={watch('role')} onValueChange={(v) => setValue('role', v as FormValues['role'])} disabled={!!limitReached}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="seller">Vendedor</SelectItem>
@@ -100,7 +109,7 @@ const InviteMemberModal = ({ open, onClose }: InviteMemberModalProps) => {
 
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={handleClose}>Cancelar</Button>
-              <Button type="submit" disabled={inviteMember.isPending}>
+              <Button type="submit" disabled={inviteMember.isPending || !!limitReached}>
                 {inviteMember.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Convidar
               </Button>
