@@ -71,13 +71,30 @@ export const useAuthStore = create<AuthState>((set, _get) => ({
 
       const roles = [...new Set(userRoles.map(r => r.role))] as AppRole[]
 
-      // Busca permissions das roles
+      // Busca permissions defaults das roles
       const { data: rolePerms } = await supabase
         .from('role_permissions')
         .select('permission_key')
         .in('role', roles)
 
-      const permissions = [...new Set(rolePerms?.map(p => p.permission_key) ?? [])]
+      const permSet = new Set(rolePerms?.map(p => p.permission_key) ?? [])
+
+      // Busca overrides por empresa (tenant_role_permissions)
+      const companyIdsForPerms = [...new Set(userRoles.map(r => r.company_id).filter(Boolean))]
+      if (companyIdsForPerms.length > 0) {
+        const { data: overrides } = await supabase
+          .from('tenant_role_permissions')
+          .select('permission_key, enabled')
+          .in('company_id', companyIdsForPerms as string[])
+          .in('role', roles)
+
+        for (const override of overrides ?? []) {
+          if (override.enabled) permSet.add(override.permission_key)
+          else permSet.delete(override.permission_key)
+        }
+      }
+
+      const permissions = Array.from(permSet)
 
       // Monta lista de empresas
       const companies: CompanyWithRole[] = userRoles
