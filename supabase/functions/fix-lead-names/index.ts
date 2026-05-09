@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { getZApiConfigByCompany, buildZApiUrl } from '../_shared/zapi-config.ts'
+import { getWhatsAppConfig } from '../_shared/whatsapp-config.ts'
+import { createProvider } from '../_shared/whatsapp-factory.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -17,29 +18,17 @@ Deno.serve(async (req) => {
 
     const companyId = 'd20f7d62-974b-40c4-8f0b-bb8207513554'
 
-    // Busca config Z-API
-    const config = await getZApiConfigByCompany(supabasePublic, companyId, { status: 'connected' })
+    const config = await getWhatsAppConfig(supabasePublic, companyId, { status: 'connected' })
     if (!config) {
       return new Response(
-        JSON.stringify({ error: 'Z-API nao configurada ou desconectada' }),
+        JSON.stringify({ error: 'WhatsApp nao configurado ou desconectado' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // Busca todos os chats do WhatsApp via Z-API (retorna nome dos contatos)
-    const chatsRes = await fetch(
-      `${buildZApiUrl(config)}/chats`,
-      { headers: { 'Client-Token': config.client_token } }
-    )
+    const provider = createProvider(config.provider)
+    const chats = await provider.getChats(config)
 
-    if (!chatsRes.ok) {
-      return new Response(
-        JSON.stringify({ error: `Z-API chats error: ${chatsRes.status}` }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    const chats = await chatsRes.json() as { phone: string; name?: string; isGroup: boolean }[]
     const chatMap = new Map<string, string>()
     for (const chat of chats) {
       if (!chat.isGroup && chat.name && chat.phone) {
@@ -71,7 +60,6 @@ Deno.serve(async (req) => {
         continue
       }
 
-      // Busca nome no mapa de chats
       const name = chatMap.get(lead.phone) ?? null
 
       if (name) {

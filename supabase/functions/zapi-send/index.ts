@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { getZApiConfigByCompany, buildZApiUrl, buildZApiHeaders } from '../_shared/zapi-config.ts'
+import { getWhatsAppConfig } from '../_shared/whatsapp-config.ts'
+import { createProvider } from '../_shared/whatsapp-factory.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -64,45 +65,19 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Lead not found' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    const config = await getZApiConfigByCompany(supabasePublic, profile.company_id)
+    const config = await getWhatsAppConfig(supabasePublic, profile.company_id)
 
     if (config?.status === 'connected') {
-      const baseUrl = buildZApiUrl(config)
-      const msgType = payload.messageType ?? 'text'
+      const provider = createProvider(config.provider)
+      const msgType = (payload.messageType ?? 'text') as 'text' | 'image' | 'audio' | 'video' | 'document'
 
-      const endpoints: Record<string, string> = {
-        text: '/send-text',
-        image: '/send-image',
-        audio: '/send-audio',
-        video: '/send-video',
-        document: '/send-document',
-      }
-
-      const body: Record<string, unknown> = { phone: lead.phone }
-      if (msgType === 'text') {
-        body.message = payload.content
-      } else {
-        body.caption = payload.content
-        if (msgType === 'image') body.image = payload.fileUrl
-        if (msgType === 'audio') body.audio = payload.fileUrl
-        if (msgType === 'video') body.video = payload.fileUrl
-        if (msgType === 'document') {
-          body.document = payload.fileUrl
-          body.fileName = payload.fileName
-        }
-      }
-
-      const zapiResponse = await fetch(`${baseUrl}${endpoints[msgType] ?? '/send-text'}`, {
-        method: 'POST',
-        headers: buildZApiHeaders(config),
-        body: JSON.stringify(body),
+      await provider.sendMessage(config, {
+        phone: lead.phone,
+        content: payload.content,
+        type: msgType,
+        mediaUrl: payload.fileUrl,
+        fileName: payload.fileName,
       })
-
-      // I1: Valida resposta da Z-API antes de salvar mensagem
-      const zapiData = await zapiResponse.json()
-      if (!zapiResponse.ok || zapiData.error) {
-        throw new Error(`Z-API error: ${zapiData.error ?? zapiResponse.status}`)
-      }
     }
 
     const { data: message } = await supabase

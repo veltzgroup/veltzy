@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { getZApiConfigByCompany, updateZApiMetadata, buildZApiUrl } from '../_shared/zapi-config.ts'
+import { getWhatsAppConfig, updateWhatsAppMetadata } from '../_shared/whatsapp-config.ts'
+import { createProvider } from '../_shared/whatsapp-factory.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -25,45 +26,42 @@ Deno.serve(async (req) => {
 
     const { companyId, action } = await req.json()
 
-    const config = await getZApiConfigByCompany(supabasePublic, companyId)
+    const config = await getWhatsAppConfig(supabasePublic, companyId)
 
     if (!config) {
       return new Response(JSON.stringify({ error: 'No config found' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    const baseUrl = buildZApiUrl(config)
-    const headers = { 'Client-Token': config.client_token }
+    const provider = createProvider(config.provider)
 
     if (action === 'status') {
-      const res = await fetch(`${baseUrl}/status`, { headers })
-      const data = await res.json()
+      const result = await provider.getStatus(config)
 
-      const status = data.connected ? 'connected' : 'disconnected'
-      await updateZApiMetadata(supabasePublic, config.id, {
+      const status = result.connected ? 'connected' : 'disconnected'
+      await updateWhatsAppMetadata(supabasePublic, config.id, {
         status,
-        phone_number: data.phoneNumber ?? config.phone_number,
-        connected_at: data.connected ? new Date().toISOString() : config.connected_at,
+        phone_number: result.phoneNumber ?? config.phone_number,
+        connected_at: result.connected ? new Date().toISOString() : config.connected_at,
       })
 
-      return new Response(JSON.stringify({ status, phone_number: data.phoneNumber }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      return new Response(JSON.stringify({ status, phone_number: result.phoneNumber }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
     if (action === 'qrcode') {
-      const res = await fetch(`${baseUrl}/qr-code`, { headers })
-      const data = await res.json()
+      const result = await provider.getQrCode(config)
 
-      await updateZApiMetadata(supabasePublic, config.id, {
+      await updateWhatsAppMetadata(supabasePublic, config.id, {
         status: 'connecting',
-        qr_code: data.value,
+        qr_code: result.qrCode,
       })
 
-      return new Response(JSON.stringify({ qr_code: data.value }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      return new Response(JSON.stringify({ qr_code: result.qrCode }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
     if (action === 'disconnect') {
-      await fetch(`${baseUrl}/disconnect`, { method: 'POST', headers })
+      await provider.disconnect(config)
 
-      await updateZApiMetadata(supabasePublic, config.id, {
+      await updateWhatsAppMetadata(supabasePublic, config.id, {
         status: 'disconnected',
         qr_code: null,
       })
@@ -72,7 +70,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'restart') {
-      await fetch(`${baseUrl}/restart`, { method: 'POST', headers })
+      await provider.restart(config)
 
       return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }

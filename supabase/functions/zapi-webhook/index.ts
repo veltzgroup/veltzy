@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { getZApiConfigByInstanceId, updateZApiMetadata, buildZApiUrl } from '../_shared/zapi-config.ts'
+import { getWhatsAppConfigByInstanceId, updateWhatsAppMetadata } from '../_shared/whatsapp-config.ts'
+import { createProvider } from '../_shared/whatsapp-factory.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -31,12 +32,9 @@ interface ZAPIPayload {
 
 const normalizePhone = (phone: string): string => {
   let digits = phone.replace(/\D/g, '')
-  // Remove 0 inicial (ex: 011917162109)
   if (digits.startsWith('0')) {
     digits = digits.slice(1)
   }
-  // Padrao Z-API: 5511999999999 (13 digitos para celular, 12 para fixo)
-  // Se nao tem codigo de pais, adiciona 55
   if (digits.length === 10 || digits.length === 11) {
     digits = '55' + digits
   }
@@ -67,9 +65,9 @@ Deno.serve(async (req) => {
     const supabasePublic = createClient(url, key)
 
     const zapiToken = req.headers.get('z-api-token')
-    const config = await getZApiConfigByInstanceId(supabasePublic, payload.instanceId)
+    const config = await getWhatsAppConfigByInstanceId(supabasePublic, payload.instanceId)
 
-    if (!config || !zapiToken || zapiToken !== config.instance_token) {
+    if (!config || !zapiToken || zapiToken !== (config.metadata.token as string)) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
@@ -205,21 +203,14 @@ Deno.serve(async (req) => {
     // Busca foto de perfil do WhatsApp se o lead nao tem avatar
     if (!lead.avatar_url) {
       try {
-        // Phone ja esta no formato 55XXXXXXXXXXX (padrao Z-API)
-        const intlPhone = phone
-        const photoRes = await fetch(
-          `${buildZApiUrl(config)}/profile-picture?phone=${intlPhone}`,
-          { headers: { 'Client-Token': config.client_token } }
-        )
-        const photoData = await photoRes.json()
-        const photoUrl = photoData?.link ?? photoData?.value
+        const provider = createProvider(config.provider)
+        const photoUrl = await provider.getProfilePicture(config, phone)
 
         if (photoUrl) {
           const imgRes = await fetch(photoUrl)
           const imgBuffer = await imgRes.arrayBuffer()
           const path = `avatars/${lead.id}.jpg`
 
-          // Usa client sem schema customizado para storage
           const storageClient = createClient(url, key)
           const { error: uploadError } = await storageClient.storage
             .from('chat-attachments')
@@ -244,8 +235,8 @@ Deno.serve(async (req) => {
     }
 
     // Se mensagem chegou, WhatsApp esta funcionando - garante status connected
-    if (config.instance_id && config.status !== 'connected') {
-      await updateZApiMetadata(supabasePublic, config.id, { status: 'connected' })
+    if (config.status !== 'connected') {
+      await updateWhatsAppMetadata(supabasePublic, config.id, { status: 'connected' })
     }
 
     // Atualiza timestamp da ultima mensagem do cliente para SLA
@@ -301,7 +292,6 @@ Deno.serve(async (req) => {
             console.error('Transcription failed:', err)
           }
         }
-        // Nao bloqueia — fire and forget
         transcribeAudio(fileUrl, savedMessage.id)
       }
     }
