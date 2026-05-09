@@ -3,6 +3,9 @@ import type { User } from '@supabase/supabase-js'
 import type { AppRole, Company, CompanyWithRole, Profile } from '@/types/database'
 import { supabase } from '@/lib/supabase'
 
+type SubscriptionStatus = 'active' | 'trial' | 'cancelled' | 'expired' | 'paused' | null
+type SubscriptionPlan = 'starter' | 'pro' | 'enterprise' | null
+
 interface AuthState {
   user: User | null
   profile: Profile | null
@@ -11,6 +14,8 @@ interface AuthState {
   permissions: string[]
   companies: CompanyWithRole[]
   activeCompanyId: string | null
+  subscriptionStatus: SubscriptionStatus
+  subscriptionPlan: SubscriptionPlan
   isLoading: boolean
 
   setUser: (user: User | null) => void
@@ -34,6 +39,8 @@ export const useAuthStore = create<AuthState>((set, _get) => ({
   permissions: [],
   companies: [],
   activeCompanyId: null,
+  subscriptionStatus: null,
+  subscriptionPlan: null,
   isLoading: true,
 
   setUser: (user) => set({ user }),
@@ -155,11 +162,54 @@ export const useAuthStore = create<AuthState>((set, _get) => ({
           permissions: [],
           companies: [],
           activeCompanyId: null,
+          subscriptionStatus: null,
+          subscriptionPlan: null,
           isLoading: false,
         })
         localStorage.removeItem('activeCompanyId')
         window.location.href = '/auth?error=company_inactive'
         return
+      }
+
+      // Verificar subscription ativa do Veltzy (exceto super_admin)
+      let subscriptionStatus: SubscriptionStatus = null
+      let subscriptionPlan: SubscriptionPlan = null
+
+      if (companyId && !roles.includes('super_admin')) {
+        const { data: sub } = await supabase
+          .from('subscriptions')
+          .select('status, plan')
+          .eq('company_id', companyId)
+          .eq('product', 'veltzy')
+          .in('status', ['active', 'trial'])
+          .limit(1)
+          .maybeSingle()
+
+        if (sub) {
+          subscriptionStatus = sub.status as SubscriptionStatus
+          subscriptionPlan = sub.plan as SubscriptionPlan
+        } else {
+          // Sem subscription ativa: bloquear acesso
+          await supabase.auth.signOut()
+          set({
+            user: null,
+            profile: null,
+            company: null,
+            roles: [],
+            permissions: [],
+            companies: [],
+            activeCompanyId: null,
+            subscriptionStatus: null,
+            subscriptionPlan: null,
+            isLoading: false,
+          })
+          localStorage.removeItem('activeCompanyId')
+          window.location.href = '/auth?error=no_subscription'
+          return
+        }
+      } else if (roles.includes('super_admin')) {
+        subscriptionStatus = 'active'
+        subscriptionPlan = 'enterprise'
       }
 
       set({
@@ -169,6 +219,8 @@ export const useAuthStore = create<AuthState>((set, _get) => ({
         companies,
         activeCompanyId,
         company,
+        subscriptionStatus,
+        subscriptionPlan,
         isLoading: false,
       })
     } catch (error) {
@@ -202,6 +254,8 @@ export const useAuthStore = create<AuthState>((set, _get) => ({
       permissions: [],
       companies: [],
       activeCompanyId: null,
+      subscriptionStatus: null,
+      subscriptionPlan: null,
       isLoading: false,
     })
   },

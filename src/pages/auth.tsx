@@ -12,6 +12,7 @@ import { Loader2 } from 'lucide-react'
 
 const ERROR_MESSAGES: Record<string, string> = {
   company_inactive: 'Sua conta foi desativada. Entre em contato com o suporte.',
+  no_subscription: 'Sua empresa nao possui uma assinatura ativa do Veltzy. Entre em contato com o suporte.',
 }
 
 const AuthPage = () => {
