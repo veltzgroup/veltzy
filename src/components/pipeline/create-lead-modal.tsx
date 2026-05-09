@@ -15,6 +15,7 @@ import { LeadTagsInput } from '@/components/pipeline/lead-tags-input'
 import { useCreateLead } from '@/hooks/use-leads'
 import { usePipelineStages } from '@/hooks/use-pipeline-stages'
 import { useLeadSources } from '@/hooks/use-lead-sources'
+import { useCompanyLimits } from '@/hooks/use-company-limits'
 import type { LeadTemperature } from '@/types/database'
 import { leadTemperatureConfig } from '@/lib/lead-config'
 
@@ -43,6 +44,8 @@ const CreateLeadModal = ({ open, onClose, defaultStageId, pipelineId }: CreateLe
   const createLead = useCreateLead()
   const { data: stages } = usePipelineStages()
   const { data: sources } = useLeadSources()
+  const { data: leadLimits } = useCompanyLimits('leads')
+  const limitReached = leadLimits && !leadLimits.allowed
 
   const { register, handleSubmit, control, reset, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -78,6 +81,12 @@ const CreateLeadModal = ({ open, onClose, defaultStageId, pipelineId }: CreateLe
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          {limitReached && (
+            <div className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-400">
+              Limite de {leadLimits.limit} leads atingido ({leadLimits.current}/{leadLimits.limit}). Entre em contato para fazer upgrade.
+            </div>
+          )}
+
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label>Telefone *</Label>
@@ -188,7 +197,7 @@ const CreateLeadModal = ({ open, onClose, defaultStageId, pipelineId }: CreateLe
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
-            <Button type="submit" disabled={createLead.isPending}>
+            <Button type="submit" disabled={createLead.isPending || !!limitReached}>
               {createLead.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Criar Lead
             </Button>

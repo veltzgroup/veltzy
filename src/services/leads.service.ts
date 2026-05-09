@@ -1,4 +1,4 @@
-import { veltzy } from '@/lib/supabase'
+import { supabase, veltzy } from '@/lib/supabase'
 import type { Lead, LeadWithDetails, CreateLeadInput, UpdateLeadInput } from '@/types/database'
 
 const LEAD_WITH_DETAILS_SELECT = `
@@ -73,6 +73,15 @@ export const getLeadById = async (companyId: string, leadId: string): Promise<Le
 }
 
 export const createLead = async (companyId: string, input: CreateLeadInput): Promise<Lead> => {
+  // Verificar limite de leads
+  const { data: limits } = await supabase.rpc('check_company_limits', {
+    p_company_id: companyId,
+    p_type: 'leads',
+  })
+  if (limits && !limits.allowed) {
+    throw new Error(`Limite de ${limits.limit} leads atingido. Entre em contato para fazer upgrade.`)
+  }
+
   const { data, error } = await veltzy()
     .from('leads')
     .insert({ ...input, company_id: companyId })

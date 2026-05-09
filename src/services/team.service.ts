@@ -24,6 +24,15 @@ export const getMembers = async (companyId: string): Promise<ProfileWithRole[]> 
 }
 
 export const inviteMember = async (companyId: string, email: string, role: AppRole, invitedBy: string): Promise<CompanyInvite> => {
+  // Verificar limite de usuarios
+  const { data: limits } = await supabase.rpc('check_company_limits', {
+    p_company_id: companyId,
+    p_type: 'users',
+  })
+  if (limits && !limits.allowed) {
+    throw new Error(`Limite de ${limits.limit} usuarios atingido. Entre em contato para fazer upgrade.`)
+  }
+
   // Revogar convites pendentes anteriores para o mesmo email na mesma empresa
   await supabase
     .from('invitations')
