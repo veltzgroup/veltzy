@@ -37,7 +37,7 @@ const fmt = (value: number) =>
 
 const DecorativeLine = () => (
   <div className="h-[80px] mt-4 opacity-60">
-    <ResponsiveContainer width="100%" height="100%">
+    <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
       <ComposedChart data={curveData} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
         <defs>
           <linearGradient id="kpiGradient" x1="0" y1="0" x2="0" y2="1">

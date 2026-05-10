@@ -82,11 +82,15 @@ export const useAuthStore = create<AuthState>((set, _get) => ({
       // Busca overrides por empresa (tenant_role_permissions)
       const companyIdsForPerms = [...new Set(userRoles.map(r => r.company_id).filter(Boolean))]
       if (companyIdsForPerms.length > 0) {
-        const { data: overrides } = await supabase
+        const { data: overrides, error: overridesError } = await supabase
           .from('tenant_role_permissions')
           .select('permission_key, enabled')
           .in('company_id', companyIdsForPerms as string[])
           .in('role', roles)
+
+        if (overridesError) {
+          console.warn('[Auth] Falha ao buscar overrides de permissões:', overridesError.message)
+        }
 
         for (const override of overrides ?? []) {
           if (override.enabled) permSet.add(override.permission_key)
@@ -118,7 +122,7 @@ export const useAuthStore = create<AuthState>((set, _get) => ({
             .eq('status', 'pending')
             .gt('expires_at', new Date().toISOString())
             .limit(1)
-            .single()
+            .maybeSingle()
 
           if (inviteError) {
             console.warn('[Auth] Falha ao verificar convites pendentes:', inviteError.message)

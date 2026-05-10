@@ -30,6 +30,7 @@ Deno.serve(async (req) => {
         const igAccountId = entry.id
         const senderId = messaging.sender.id
         const content = messaging.message.text
+        const senderName = messaging.sender?.name ?? null
 
         const { data: connection } = await supabase
           .from('instagram_connections')
@@ -39,25 +40,35 @@ Deno.serve(async (req) => {
 
         if (!connection) continue
 
+        // Busca lead por instagram_id
         let { data: lead } = await supabase
           .from('leads')
-          .select('id')
+          .select('id, name')
           .eq('company_id', connection.company_id)
           .eq('instagram_id', senderId)
           .maybeSingle()
 
+        // Atualiza nome se lead existe mas nao tem nome
+        if (lead && (!lead.name || lead.name.startsWith('Contato ')) && senderName) {
+          await supabase
+            .from('leads')
+            .update({ name: senderName })
+            .eq('id', lead.id)
+        }
+
         if (!lead) {
           let { data: defaultPipeline } = await supabase.from('pipelines').select('id').eq('company_id', connection.company_id).eq('is_default', true).maybeSingle()
           if (!defaultPipeline) {
-            const { data: fallback } = await supabase.from('pipelines').select('id').eq('company_id', connection.company_id).eq('is_active', true).order('position').limit(1).single()
+            const { data: fallback } = await supabase.from('pipelines').select('id').eq('company_id', connection.company_id).eq('is_active', true).order('position').limit(1).maybeSingle()
             defaultPipeline = fallback
           }
-          const { data: stage } = await supabase.from('pipeline_stages').select('id').eq('pipeline_id', defaultPipeline?.id).order('position').limit(1).single()
+          const { data: stage } = await supabase.from('pipeline_stages').select('id').eq('pipeline_id', defaultPipeline?.id).order('position').limit(1).maybeSingle()
           const { data: source } = await supabase.from('lead_sources').select('id').eq('company_id', connection.company_id).eq('slug', 'instagram').maybeSingle()
           const { data: newLead } = await supabase.from('leads').insert({
             company_id: connection.company_id,
-            phone: senderId,
+            phone: `ig_${senderId}`,
             instagram_id: senderId,
+            name: senderName,
             pipeline_id: defaultPipeline?.id,
             stage_id: stage?.id,
             source_id: source?.id,
