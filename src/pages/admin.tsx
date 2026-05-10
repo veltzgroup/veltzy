@@ -1,12 +1,6 @@
-import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { useForm } from 'react-hook-form'
-import { toast } from 'sonner'
-import { Loader2 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { IntegrationsTab } from '@/components/admin/integrations-tab'
 import { PipelineTab } from '@/components/admin/pipeline-tab'
@@ -15,7 +9,6 @@ import { ActivityLogsDashboard } from '@/components/admin/activity-logs-dashboar
 import { SdrTab } from '@/components/admin/sdr-tab'
 import { BusinessRulesTab } from '@/components/admin/business-rules-tab'
 import { useAuthStore } from '@/stores/auth.store'
-import { updateCompany } from '@/services/company.service'
 
 const PermissoesPlaceholder = () => (
   <Card>
@@ -31,55 +24,27 @@ const PermissoesPlaceholder = () => (
 
 const EmpresaTab = () => {
   const company = useAuthStore((s) => s.company)
-  const setCompany = useAuthStore((s) => s.setCompany)
-  const [saving, setSaving] = useState(false)
-
-  const { register, handleSubmit, reset } = useForm({
-    defaultValues: { name: company?.name ?? '', slug: company?.slug ?? '' },
-  })
-
-  useEffect(() => {
-    if (company) reset({ name: company.name, slug: company.slug })
-  }, [company, reset])
-
-  const onSubmit = async (values: { name: string; slug: string }) => {
-    if (!company) return
-    setSaving(true)
-    try {
-      const updated = await updateCompany(company.id, values)
-      setCompany(updated)
-      toast.success('Empresa atualizada!')
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erro ao salvar')
-    } finally {
-      setSaving(false)
-    }
-  }
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Dados da Empresa</CardTitle>
-        <CardDescription>Informações básicas da sua empresa</CardDescription>
+        <CardDescription>Informações da sua empresa</CardDescription>
       </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Nome</Label>
-              <Input {...register('name')} />
-            </div>
-            <div className="space-y-2">
-              <Label>Slug (URL)</Label>
-              <Input {...register('slug')} />
-              <p className="text-[10px] text-muted-foreground">Identificador único da empresa</p>
-            </div>
+      <CardContent className="space-y-4">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-1">
+            <Label className="text-muted-foreground">Nome</Label>
+            <p className="text-sm font-medium">{company?.name ?? '-'}</p>
           </div>
-          <Button type="submit" disabled={saving}>
-            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Salvar
-          </Button>
-        </form>
+          <div className="space-y-1">
+            <Label className="text-muted-foreground">Slug (URL)</Label>
+            <p className="text-sm font-medium">{company?.slug ?? '-'}</p>
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Para alterar os dados da empresa, entre em contato com o suporte.
+        </p>
       </CardContent>
     </Card>
   )

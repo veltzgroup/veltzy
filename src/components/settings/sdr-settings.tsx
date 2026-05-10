@@ -45,7 +45,7 @@ const SdrSettings = () => {
 
           <div className="rounded-lg bg-muted/50 p-3">
             <p className="text-xs text-muted-foreground">
-              Modelo e provider gerenciados pelo Hub. Para alterar, entre em contato com o suporte.
+              Modelo e provider configurados pelo suporte. Entre em contato para alterar.
             </p>
           </div>
 

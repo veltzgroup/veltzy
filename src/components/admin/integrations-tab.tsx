@@ -28,13 +28,13 @@ const HubManagedCard = ({
           </div>
         </div>
         <span className="rounded-full bg-muted px-2.5 py-1 text-[10px] font-medium text-muted-foreground">
-          Gerenciado pelo Hub
+          Configurado pelo suporte
         </span>
       </div>
     </CardHeader>
     <CardContent>
       <p className="text-sm text-muted-foreground">
-        Integracao gerenciada pelo Hub. Entre em contato com o suporte para configurar.
+        Integração configurada pelo suporte. Entre em contato para alterar.
       </p>
     </CardContent>
   </Card>
