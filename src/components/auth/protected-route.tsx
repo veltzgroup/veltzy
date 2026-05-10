@@ -32,7 +32,8 @@ const ProtectedRoute = ({
   }
 
   // Se veio de convite mas company ainda esta carregando, mostra loading
-  if (!skipCompanyCheck && !company && inviteAccepted) {
+  const acceptingInvite = sessionStorage.getItem('accepting_invite')
+  if (!skipCompanyCheck && !company && (inviteAccepted || acceptingInvite)) {
     return (
       <div className="flex h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

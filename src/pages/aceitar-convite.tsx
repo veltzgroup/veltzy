@@ -84,6 +84,9 @@ const AceitarConvitePage = () => {
 
   const handleSupabaseInviteRedirect = async (accessToken: string, refreshToken: string) => {
     try {
+      // Flag para evitar race condition com useAuthInit redirecionando para onboarding
+      sessionStorage.setItem('accepting_invite', 'true')
+
       // Seta sessao com tokens do hash
       const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
         access_token: accessToken,
@@ -92,6 +95,7 @@ const AceitarConvitePage = () => {
 
       if (sessionError || !sessionData.user) {
         console.error('[Convite] Erro ao setar sessao:', sessionError)
+        sessionStorage.removeItem('accepting_invite')
         setState('invalid')
         return
       }
@@ -114,13 +118,18 @@ const AceitarConvitePage = () => {
         .gt('expires_at', new Date().toISOString())
         .order('created_at', { ascending: false })
         .limit(1)
-        .single()
+        .maybeSingle()
 
       if (inviteError || !pendingInvite) {
         console.error('[Convite] Nenhum convite pendente encontrado para:', userEmail)
+        sessionStorage.removeItem('accepting_invite')
         setState('invalid')
         return
       }
+
+      // Seta nome da empresa para exibir na tela de sucesso
+      const inviteCompanyName = (pendingInvite.companies as unknown as { name: string })?.name ?? ''
+      setCompanyName(inviteCompanyName)
 
       // Aceita convite automaticamente via RPC
       const { data: rpcResult, error: rpcError } = await supabase.rpc('accept_invitation', {
@@ -130,12 +139,14 @@ const AceitarConvitePage = () => {
 
       if (rpcError) {
         console.error('[Convite] Erro na RPC accept_invitation:', rpcError)
+        sessionStorage.removeItem('accepting_invite')
         setState('invalid')
         return
       }
 
       if (rpcResult && !rpcResult.success) {
         console.error('[Convite] RPC retornou erro:', rpcResult.error)
+        sessionStorage.removeItem('accepting_invite')
         setState('invalid')
         return
       }
@@ -146,6 +157,7 @@ const AceitarConvitePage = () => {
       }, pendingInvite.company_id)
 
       localStorage.removeItem('pending_invite_token')
+      sessionStorage.removeItem('accepting_invite')
       sessionStorage.setItem('invite_accepted', 'true')
       await loadUserData(sessionData.user.id)
 
@@ -154,6 +166,7 @@ const AceitarConvitePage = () => {
       navigate('/')
     } catch (err) {
       console.error('[Convite] Erro no fluxo de redirect:', err)
+      sessionStorage.removeItem('accepting_invite')
       setState('invalid')
     }
   }
@@ -399,7 +412,7 @@ const AceitarConvitePage = () => {
             <CheckCircle2 className="mx-auto h-12 w-12 text-green-500" />
             <CardTitle className="mt-4">Convite aceito!</CardTitle>
             <CardDescription>
-              Voce agora faz parte de {companyName}.
+              Você agora faz parte de {companyName}.
               {user ? ' Redirecionando...' : ' Verifique seu email para confirmar sua conta e fazer login.'}
             </CardDescription>
           </CardHeader>
@@ -422,7 +435,7 @@ const AceitarConvitePage = () => {
           <CardHeader className="text-center">
             <CardTitle>Aceitar convite</CardTitle>
             <CardDescription>
-              Voce foi convidado para {companyName} como <strong>{roleLabels[invite?.role ?? ''] ?? invite?.role}</strong>
+              Você foi convidado para {companyName} como <strong>{roleLabels[invite?.role ?? ''] ?? invite?.role}</strong>
             </CardDescription>
           </CardHeader>
           <CardContent className="flex justify-center gap-3">
@@ -453,7 +466,7 @@ const AceitarConvitePage = () => {
       </div>
       <h1 className="text-2xl font-bold text-gradient-primary">Veltzy</h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        Voce foi convidado para entrar como
+        Você foi convidado para entrar como
       </p>
       <span className={`mt-2 inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${roleBadgeColors[invite?.role ?? ''] ?? 'bg-muted text-muted-foreground'}`}>
         {roleLabels[invite?.role ?? ''] ?? invite?.role}
@@ -472,7 +485,7 @@ const AceitarConvitePage = () => {
             <CardHeader className="text-center">
               <CardTitle className="text-lg">Entrar para aceitar convite</CardTitle>
               <CardDescription>
-                Ja existe uma conta com este email. Faca login para aceitar.
+                Já existe uma conta com este email. Faça login para aceitar.
               </CardDescription>
             </CardHeader>
           <CardContent>
