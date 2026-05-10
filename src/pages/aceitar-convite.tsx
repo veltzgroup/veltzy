@@ -52,12 +52,111 @@ const AceitarConvitePage = () => {
   })
 
   useEffect(() => {
-    if (!token) {
-      setState('invalid')
+    // Caso 1: Token do convite via query string (?token=...)
+    if (token) {
+      validateToken(token)
       return
     }
-    validateToken(token)
-  }, [token])
+
+    // Caso 2: Redirecionamento do Supabase Auth via hash (#access_token=...&type=invite)
+    const hash = window.location.hash.substring(1)
+    if (hash) {
+      const hashParams = new URLSearchParams(hash)
+      const accessToken = hashParams.get('access_token')
+      const refreshToken = hashParams.get('refresh_token')
+      const type = hashParams.get('type')
+
+      if (type === 'invite' && accessToken && refreshToken) {
+        handleSupabaseInviteRedirect(accessToken, refreshToken)
+        return
+      }
+    }
+
+    // Caso 3: Verifica localStorage (contexto preservado de OAuth)
+    const savedToken = localStorage.getItem('pending_invite_token')
+    if (savedToken) {
+      validateToken(savedToken)
+      return
+    }
+
+    setState('invalid')
+  }, [token]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleSupabaseInviteRedirect = async (accessToken: string, refreshToken: string) => {
+    try {
+      // Seta sessao com tokens do hash
+      const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      })
+
+      if (sessionError || !sessionData.user) {
+        console.error('[Convite] Erro ao setar sessao:', sessionError)
+        setState('invalid')
+        return
+      }
+
+      // Limpa hash da URL para nao reprocessar
+      window.history.replaceState(null, '', window.location.pathname)
+
+      const userEmail = sessionData.user.email
+      if (!userEmail) {
+        setState('invalid')
+        return
+      }
+
+      // Busca convite pendente pelo email
+      const { data: pendingInvite, error: inviteError } = await supabase
+        .from('invitations')
+        .select('*, companies(name)')
+        .eq('email', userEmail)
+        .eq('status', 'pending')
+        .gt('expires_at', new Date().toISOString())
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single()
+
+      if (inviteError || !pendingInvite) {
+        console.error('[Convite] Nenhum convite pendente encontrado para:', userEmail)
+        setState('invalid')
+        return
+      }
+
+      // Aceita convite automaticamente via RPC
+      const { data: rpcResult, error: rpcError } = await supabase.rpc('accept_invitation', {
+        p_invitation_id: pendingInvite.id,
+        p_user_id: sessionData.user.id,
+      })
+
+      if (rpcError) {
+        console.error('[Convite] Erro na RPC accept_invitation:', rpcError)
+        setState('invalid')
+        return
+      }
+
+      if (rpcResult && !rpcResult.success) {
+        console.error('[Convite] RPC retornou erro:', rpcResult.error)
+        setState('invalid')
+        return
+      }
+
+      await logAuditEvent('invite_accepted', {
+        invite_id: pendingInvite.id,
+        role: pendingInvite.role,
+      }, pendingInvite.company_id)
+
+      localStorage.removeItem('pending_invite_token')
+      sessionStorage.setItem('invite_accepted', 'true')
+      await loadUserData(sessionData.user.id)
+
+      setState('accepted')
+      toast.success('Convite aceito com sucesso!')
+      navigate('/')
+    } catch (err) {
+      console.error('[Convite] Erro no fluxo de redirect:', err)
+      setState('invalid')
+    }
+  }
 
   const validateToken = async (t: string) => {
     const { data, error } = await supabase
