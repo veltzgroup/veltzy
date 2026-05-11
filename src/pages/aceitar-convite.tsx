@@ -101,7 +101,7 @@ const AceitarConvitePage = () => {
     tryDetectSession()
   }, [token]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleAuthenticatedInvite = async (userId: string, userEmail: string) => {
+  const handleAuthenticatedInvite = async (_userId: string, userEmail: string) => {
     try {
       console.log('[Convite] Buscando convite pendente para:', userEmail)
 
@@ -118,66 +118,21 @@ const AceitarConvitePage = () => {
       console.log('[Convite] Resultado busca:', { pendingInvite, inviteError })
 
       if (inviteError || !pendingInvite) {
-        // Pode já ter sido aceito pelo auth.store — redireciona para home
-        console.warn('[Convite] Nenhum convite pendente. Redirecionando para /')
+        console.warn('[Convite] Nenhum convite pendente para:', userEmail)
         sessionStorage.removeItem('accepting_invite')
-        sessionStorage.setItem('invite_accepted', 'true')
-        await loadUserData(userId)
-        navigate('/')
+        setState('invalid')
         return
       }
 
+      // Encontrou convite — mostra formulário para criar senha
       const inviteCompanyName = (pendingInvite.companies as unknown as { name: string })?.name ?? ''
+      setInvite(pendingInvite)
       setCompanyName(inviteCompanyName)
-
-      const { data: rpcResult, error: rpcError } = await supabase.rpc('accept_invitation', {
-        p_invitation_id: pendingInvite.id,
-        p_user_id: userId,
-      })
-
-      if (rpcError) {
-        console.error('[Convite] Erro na RPC:', rpcError)
-        // Mesmo com erro, tenta redirecionar (pode já ter sido aceito)
-        sessionStorage.removeItem('accepting_invite')
-        sessionStorage.setItem('invite_accepted', 'true')
-        await loadUserData(userId)
-        navigate('/')
-        return
-      }
-
-      if (rpcResult && !rpcResult.success) {
-        console.warn('[Convite] RPC retornou:', rpcResult.error)
-        // Convite já aceito ou expirado — redireciona normalmente
-        sessionStorage.removeItem('accepting_invite')
-        sessionStorage.setItem('invite_accepted', 'true')
-        await loadUserData(userId)
-        navigate('/')
-        return
-      }
-
-      await logAuditEvent('invite_accepted', {
-        invite_id: pendingInvite.id,
-        role: pendingInvite.role,
-      }, pendingInvite.company_id)
-
-      localStorage.removeItem('pending_invite_token')
-      sessionStorage.removeItem('accepting_invite')
-      sessionStorage.setItem('invite_accepted', 'true')
-      await loadUserData(userId)
-
-      setState('accepted')
-      toast.success('Convite aceito com sucesso!')
-      navigate('/')
+      setState('needs_register')
     } catch (err) {
       console.error('[Convite] Erro:', err)
       sessionStorage.removeItem('accepting_invite')
-      // Em caso de erro, se tem sessão, manda para home em vez de mostrar inválido
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session?.user) {
-        navigate('/')
-      } else {
-        setState('invalid')
-      }
+      setState('invalid')
     }
   }
 
@@ -345,20 +300,53 @@ const AceitarConvitePage = () => {
     setIsSubmitting(true)
 
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email: invite.email,
-        password: values.password,
-        options: {
+      // Verifica se já tem sessão ativa (veio via invite link do Supabase)
+      const { data: { session: currentSession } } = await supabase.auth.getSession()
+
+      let userId: string
+
+      if (currentSession?.user) {
+        // Usuário já autenticado via invite link — setar senha e nome
+        const { error: updateError } = await supabase.auth.updateUser({
+          password: values.password,
           data: { name: values.full_name },
-        },
-      })
+        })
+        if (updateError) throw updateError
+        userId = currentSession.user.id
+      } else {
+        // Usuário não autenticado — criar conta via signUp
+        const { data, error } = await supabase.auth.signUp({
+          email: invite.email,
+          password: values.password,
+          options: {
+            data: { name: values.full_name },
+          },
+        })
+        if (error) throw error
+        if (!data.user) throw new Error('Erro ao criar conta')
 
-      if (error) throw error
-      if (!data.user) throw new Error('Erro ao criar conta')
+        userId = data.user.id
 
+        // Se não retornou sessão, precisa confirmar email
+        if (!data.session) {
+          // Aceita convite mesmo sem sessão
+          await supabase.rpc('accept_invitation', {
+            p_invitation_id: invite.id,
+            p_user_id: userId,
+            p_name: values.full_name,
+          })
+          localStorage.removeItem('pending_invite_token')
+          sessionStorage.removeItem('accepting_invite')
+          setState('accepted')
+          toast.success('Conta criada e convite aceito! Confirme seu email para entrar.')
+          return
+        }
+      }
+
+      // Aceitar convite via RPC
       const { data: rpcResult, error: rpcError } = await supabase.rpc('accept_invitation', {
         p_invitation_id: invite.id,
-        p_user_id: data.user.id,
+        p_user_id: userId,
         p_name: values.full_name,
       })
 
@@ -369,17 +357,11 @@ const AceitarConvitePage = () => {
 
       localStorage.removeItem('pending_invite_token')
       sessionStorage.removeItem('accepting_invite')
-
-      if (data.session) {
-        sessionStorage.setItem('invite_accepted', 'true')
-        await loadUserData(data.user.id)
-        setState('accepted')
-        toast.success('Conta criada e convite aceito!')
-        navigate('/')
-      } else {
-        setState('accepted')
-        toast.success('Conta criada e convite aceito! Confirme seu email para entrar.')
-      }
+      sessionStorage.setItem('invite_accepted', 'true')
+      await loadUserData(userId)
+      setState('accepted')
+      toast.success('Conta criada e convite aceito!')
+      navigate('/')
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Erro ao criar conta'
       toast.error(message)
