@@ -55,6 +55,25 @@ const AceitarConvitePage = () => {
   useEffect(() => {
     sessionStorage.setItem('accepting_invite', 'true')
 
+    // Caso 0: Supabase retornou erro no hash (#error=access_denied&error_code=otp_expired)
+    const hash = window.location.hash.substring(1)
+    if (hash) {
+      const hashParams = new URLSearchParams(hash)
+      const error = hashParams.get('error')
+      const errorCode = hashParams.get('error_code')
+      if (error || errorCode) {
+        console.error('[Convite] Erro do Supabase Auth:', error, errorCode, hashParams.get('error_description'))
+        window.history.replaceState(null, '', window.location.pathname)
+        sessionStorage.removeItem('accepting_invite')
+        if (errorCode === 'otp_expired') {
+          setState('expired')
+        } else {
+          setState('invalid')
+        }
+        return
+      }
+    }
+
     // Caso 1: Token do convite via query string (?token=...)
     if (token) {
       validateToken(token)
@@ -62,11 +81,7 @@ const AceitarConvitePage = () => {
     }
 
     // Caso 2: Chegou via redirect do Supabase (hash já consumido pelo client)
-    // O Supabase JS v2 consome o hash automaticamente antes do React montar.
-    // Precisamos detectar a sessão que ele criou.
-
     const tryDetectSession = async () => {
-      // Espera um tick para dar tempo ao client processar
       await new Promise(r => setTimeout(r, 500))
 
       const { data: { session } } = await supabase.auth.getSession()
@@ -76,7 +91,6 @@ const AceitarConvitePage = () => {
         return
       }
 
-      // Se não tem sessão, escuta mudanças
       const { data: { subscription } } = supabase.auth.onAuthStateChange(
         (event, sess) => {
           if (handledRef.current) return
@@ -88,7 +102,6 @@ const AceitarConvitePage = () => {
         }
       )
 
-      // Timeout final
       setTimeout(() => {
         if (!handledRef.current) {
           subscription.unsubscribe()
@@ -389,7 +402,7 @@ const AceitarConvitePage = () => {
             </CardTitle>
             <CardDescription>
               {state === 'expired'
-                ? 'Este convite expirou. Solicite um novo convite ao seu gestor.'
+                ? 'Este link de convite expirou. Solicite um novo convite ao administrador.'
                 : 'Este link de convite não é válido. Verifique o link ou solicite um novo convite.'}
             </CardDescription>
           </CardHeader>
