@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -29,8 +29,9 @@ type InviteState = 'loading' | 'valid' | 'invalid' | 'expired' | 'accepting' | '
 
 const roleLabels: Record<string, string> = {
   seller: 'Vendedor',
-  manager: 'Gestor',
+  manager: 'Gestor comercial',
   admin: 'Administrador',
+  representative: 'Representante',
   super_admin: 'Super Admin',
 }
 
@@ -39,6 +40,7 @@ const AceitarConvitePage = () => {
   const navigate = useNavigate()
   const { user, loadUserData } = useAuthStore()
   const token = searchParams.get('token')
+  const handledRef = useRef(false)
 
   const [state, setState] = useState<InviteState>('loading')
   const [invite, setInvite] = useState<Invitation | null>(null)
@@ -52,39 +54,140 @@ const AceitarConvitePage = () => {
   })
 
   useEffect(() => {
-    if (!token) {
-      setState('invalid')
+    sessionStorage.setItem('accepting_invite', 'true')
+
+    // Caso 0: Supabase retornou erro no hash (#error=access_denied&error_code=otp_expired)
+    const hash = window.location.hash.substring(1)
+    if (hash) {
+      const hashParams = new URLSearchParams(hash)
+      const error = hashParams.get('error')
+      const errorCode = hashParams.get('error_code')
+      if (error || errorCode) {
+        console.error('[Convite] Erro do Supabase Auth:', error, errorCode, hashParams.get('error_description'))
+        window.history.replaceState(null, '', window.location.pathname)
+        sessionStorage.removeItem('accepting_invite')
+        if (errorCode === 'otp_expired') {
+          setState('expired')
+        } else {
+          setState('invalid')
+        }
+        return
+      }
+    }
+
+    // Caso 1: Token do convite via query string (?token=...)
+    if (token) {
+      validateToken(token)
       return
     }
-    validateToken(token)
-  }, [token])
+
+    // Caso 2: Chegou via redirect do Supabase (hash já consumido pelo client)
+    const tryDetectSession = async () => {
+      await new Promise(r => setTimeout(r, 500))
+
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user && !handledRef.current) {
+        handledRef.current = true
+        await handleAuthenticatedInvite(session.user.id, session.user.email!)
+        return
+      }
+
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        (event, sess) => {
+          if (handledRef.current) return
+          if (event === 'SIGNED_IN' && sess?.user) {
+            handledRef.current = true
+            handleAuthenticatedInvite(sess.user.id, sess.user.email!)
+            subscription.unsubscribe()
+          }
+        }
+      )
+
+      setTimeout(() => {
+        if (!handledRef.current) {
+          subscription.unsubscribe()
+          sessionStorage.removeItem('accepting_invite')
+          setState('invalid')
+        }
+      }, 8000)
+    }
+
+    tryDetectSession()
+  }, [token]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleAuthenticatedInvite = async (_userId: string, userEmail: string) => {
+    try {
+      console.log('[Convite] Buscando convite pendente para:', userEmail)
+
+      const { data: pendingInvite, error: inviteError } = await supabase
+        .from('invitations')
+        .select('*, companies(name)')
+        .eq('email', userEmail)
+        .eq('status', 'pending')
+        .gt('expires_at', new Date().toISOString())
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      console.log('[Convite] Resultado busca:', { pendingInvite, inviteError })
+
+      if (inviteError || !pendingInvite) {
+        console.warn('[Convite] Nenhum convite pendente para:', userEmail)
+        sessionStorage.removeItem('accepting_invite')
+        setState('invalid')
+        return
+      }
+
+      // Encontrou convite — mostra formulário para criar senha
+      const inviteCompanyName = (pendingInvite.companies as unknown as { name: string })?.name ?? ''
+      setInvite(pendingInvite)
+      setCompanyName(inviteCompanyName)
+      setState('needs_register')
+    } catch (err) {
+      console.error('[Convite] Erro:', err)
+      sessionStorage.removeItem('accepting_invite')
+      setState('invalid')
+    }
+  }
 
   const validateToken = async (t: string) => {
+    console.log('[Convite] Validando token:', t)
+
     const { data, error } = await supabase
       .from('invitations')
       .select('*, companies(name)')
       .eq('token', t)
       .single()
 
+    console.log('[Convite] Resultado validateToken:', { data, error })
+
     if (error || !data) {
       localStorage.removeItem('pending_invite_token')
+      sessionStorage.removeItem('accepting_invite')
       setState('invalid')
       return
     }
 
     if (data.status !== 'pending') {
       localStorage.removeItem('pending_invite_token')
+      sessionStorage.removeItem('accepting_invite')
+      // Se já foi aceito, redireciona para login
+      if (data.status === 'accepted') {
+        toast.info('Este convite já foi aceito. Faça login para acessar.')
+        navigate('/auth')
+        return
+      }
       setState(data.status === 'expired' ? 'expired' : 'invalid')
       return
     }
 
     if (new Date(data.expires_at) < new Date()) {
       localStorage.removeItem('pending_invite_token')
+      sessionStorage.removeItem('accepting_invite')
       setState('expired')
       return
     }
 
-    // Token validado com sucesso — salva no localStorage para preservar contexto (Google OAuth)
     localStorage.setItem('pending_invite_token', t)
 
     setInvite(data)
@@ -97,7 +200,6 @@ const AceitarConvitePage = () => {
       if (session.session?.user) {
         setState('valid')
       } else {
-        // Verifica se o email ja tem conta cadastrada
         const { data: existingProfile } = await supabase
           .from('profiles')
           .select('user_id')
@@ -119,9 +221,8 @@ const AceitarConvitePage = () => {
 
     try {
       const { data: { user: currentUser } } = await supabase.auth.getUser()
-      if (!currentUser) throw new Error('Usuario nao autenticado')
+      if (!currentUser) throw new Error('Usuário não autenticado')
 
-      // Usa RPC SECURITY DEFINER para aceitar convite (bypassa RLS)
       const { data: rpcResult, error: rpcError } = await supabase.rpc('accept_invitation', {
         p_invitation_id: invite.id,
         p_user_id: currentUser.id,
@@ -131,7 +232,7 @@ const AceitarConvitePage = () => {
       if (rpcResult && !rpcResult.success) {
         if (rpcResult.error?.includes('invalido') || rpcResult.error?.includes('expirado')) {
           setState('accepted')
-          toast.success('Convite ja foi aceito!')
+          toast.success('Convite já foi aceito!')
           setTimeout(() => navigate('/'), 2000)
           return
         }
@@ -143,9 +244,9 @@ const AceitarConvitePage = () => {
         role: invite.role,
       }, invite.company_id)
 
-      // Recarrega dados do usuario e aguarda completar
       await loadUserData(currentUser.id)
       sessionStorage.setItem('invite_accepted', 'true')
+      sessionStorage.removeItem('accepting_invite')
       localStorage.removeItem('pending_invite_token')
 
       setState('accepted')
@@ -183,7 +284,6 @@ const AceitarConvitePage = () => {
 
       if (!data.user) throw new Error('Erro ao fazer login')
 
-      // Aceita convite via RPC
       const { data: rpcResult, error: rpcError } = await supabase.rpc('accept_invitation', {
         p_invitation_id: invite.id,
         p_user_id: data.user.id,
@@ -196,6 +296,7 @@ const AceitarConvitePage = () => {
 
       localStorage.removeItem('pending_invite_token')
       sessionStorage.setItem('invite_accepted', 'true')
+      sessionStorage.removeItem('accepting_invite')
       await loadUserData(data.user.id)
       setState('accepted')
       toast.success('Convite aceito com sucesso!')
@@ -213,22 +314,53 @@ const AceitarConvitePage = () => {
     setIsSubmitting(true)
 
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email: invite.email,
-        password: values.password,
-        options: {
+      // Verifica se já tem sessão ativa (veio via invite link do Supabase)
+      const { data: { session: currentSession } } = await supabase.auth.getSession()
+
+      let userId: string
+
+      if (currentSession?.user) {
+        // Usuário já autenticado via invite link — setar senha e nome
+        const { error: updateError } = await supabase.auth.updateUser({
+          password: values.password,
           data: { name: values.full_name },
-        },
-      })
+        })
+        if (updateError) throw updateError
+        userId = currentSession.user.id
+      } else {
+        // Usuário não autenticado — criar conta via signUp
+        const { data, error } = await supabase.auth.signUp({
+          email: invite.email,
+          password: values.password,
+          options: {
+            data: { name: values.full_name },
+          },
+        })
+        if (error) throw error
+        if (!data.user) throw new Error('Erro ao criar conta')
 
-      if (error) throw error
-      if (!data.user) throw new Error('Erro ao criar conta')
+        userId = data.user.id
 
-      // Usa RPC SECURITY DEFINER para aceitar convite (bypassa RLS)
-      // A RPC atualiza profile (incluindo nome), cria user_role e marca convite aceito
+        // Se não retornou sessão, precisa confirmar email
+        if (!data.session) {
+          // Aceita convite mesmo sem sessão
+          await supabase.rpc('accept_invitation', {
+            p_invitation_id: invite.id,
+            p_user_id: userId,
+            p_name: values.full_name,
+          })
+          localStorage.removeItem('pending_invite_token')
+          sessionStorage.removeItem('accepting_invite')
+          setState('accepted')
+          toast.success('Conta criada e convite aceito! Confirme seu email para entrar.')
+          return
+        }
+      }
+
+      // Aceitar convite via RPC
       const { data: rpcResult, error: rpcError } = await supabase.rpc('accept_invitation', {
         p_invitation_id: invite.id,
-        p_user_id: data.user.id,
+        p_user_id: userId,
         p_name: values.full_name,
       })
 
@@ -238,19 +370,12 @@ const AceitarConvitePage = () => {
       }
 
       localStorage.removeItem('pending_invite_token')
-
-      // Se signUp retornou sessao (autoconfirm), redireciona para dashboard
-      if (data.session) {
-        sessionStorage.setItem('invite_accepted', 'true')
-        await loadUserData(data.user.id)
-        setState('accepted')
-        toast.success('Conta criada e convite aceito!')
-        navigate('/')
-      } else {
-        // Email confirmation necessario — mostra mensagem
-        setState('accepted')
-        toast.success('Conta criada e convite aceito! Confirme seu email para entrar.')
-      }
+      sessionStorage.removeItem('accepting_invite')
+      sessionStorage.setItem('invite_accepted', 'true')
+      await loadUserData(userId)
+      setState('accepted')
+      toast.success('Conta criada e convite aceito!')
+      navigate('/')
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Erro ao criar conta'
       toast.error(message)
@@ -278,7 +403,7 @@ const AceitarConvitePage = () => {
             </CardTitle>
             <CardDescription>
               {state === 'expired'
-                ? 'Este convite expirou. Solicite um novo convite ao seu gestor.'
+                ? 'Este link de convite expirou. Solicite um novo convite ao administrador.'
                 : 'Este link de convite não é válido. Verifique o link ou solicite um novo convite.'}
             </CardDescription>
           </CardHeader>
@@ -300,7 +425,7 @@ const AceitarConvitePage = () => {
             <CheckCircle2 className="mx-auto h-12 w-12 text-green-500" />
             <CardTitle className="mt-4">Convite aceito!</CardTitle>
             <CardDescription>
-              Voce agora faz parte de {companyName}.
+              Você agora faz parte de {companyName}.
               {user ? ' Redirecionando...' : ' Verifique seu email para confirmar sua conta e fazer login.'}
             </CardDescription>
           </CardHeader>
@@ -323,7 +448,7 @@ const AceitarConvitePage = () => {
           <CardHeader className="text-center">
             <CardTitle>Aceitar convite</CardTitle>
             <CardDescription>
-              Voce foi convidado para {companyName} como <strong>{roleLabels[invite?.role ?? ''] ?? invite?.role}</strong>
+              Você foi convidado para {companyName} como <strong>{roleLabels[invite?.role ?? ''] ?? invite?.role}</strong>
             </CardDescription>
           </CardHeader>
           <CardContent className="flex justify-center gap-3">
@@ -342,6 +467,7 @@ const AceitarConvitePage = () => {
 
   const roleBadgeColors: Record<string, string> = {
     seller: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+    representative: 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200',
     manager: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
     admin: 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200',
     super_admin: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
@@ -354,7 +480,7 @@ const AceitarConvitePage = () => {
       </div>
       <h1 className="text-2xl font-bold text-gradient-primary">Veltzy</h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        Voce foi convidado para entrar como
+        Você foi convidado para entrar como
       </p>
       <span className={`mt-2 inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${roleBadgeColors[invite?.role ?? ''] ?? 'bg-muted text-muted-foreground'}`}>
         {roleLabels[invite?.role ?? ''] ?? invite?.role}
@@ -363,7 +489,6 @@ const AceitarConvitePage = () => {
     </div>
   )
 
-  // needs_login — usuario ja tem conta, precisa fazer login para aceitar
   if (state === 'needs_login') {
     return (
       <div className="ambient-bg flex min-h-screen items-center justify-center p-4">
@@ -373,7 +498,7 @@ const AceitarConvitePage = () => {
             <CardHeader className="text-center">
               <CardTitle className="text-lg">Entrar para aceitar convite</CardTitle>
               <CardDescription>
-                Ja existe uma conta com este email. Faca login para aceitar.
+                Já existe uma conta com este email. Faça login para aceitar.
               </CardDescription>
             </CardHeader>
           <CardContent>

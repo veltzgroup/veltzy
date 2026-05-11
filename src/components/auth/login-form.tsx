@@ -135,6 +135,7 @@ const LoginForm = ({ onForgotPassword }: LoginFormProps) => {
             id="login-password"
             type="password"
             placeholder="******"
+            autoComplete="current-password"
             {...register('password')}
           />
           {errors.password && (

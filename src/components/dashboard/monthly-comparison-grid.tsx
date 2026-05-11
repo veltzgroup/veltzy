@@ -76,7 +76,7 @@ const MiniChart = ({ title, icon: Icon, dataKey, data, formatter }: MiniChartPro
         <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{title}</span>
       </div>
       <div className="h-[120px]">
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
           <BarChart data={data} margin={{ top: 16, right: 2, bottom: 0, left: -24 }}>
             <XAxis
               dataKey="month"

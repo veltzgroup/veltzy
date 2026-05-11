@@ -25,7 +25,7 @@ const LeadsBySourceChart = ({ days, pipelineId }: { days?: number; pipelineId?: 
       <h3 className="text-sm font-semibold mb-4">Leads por Origem</h3>
       <div className="flex items-center gap-6">
         <div className="h-[170px] w-[170px] shrink-0">
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
             <PieChart>
               <Pie
                 data={data ?? []}

@@ -32,7 +32,7 @@ const MonthlyComparisonChart = ({ days }: MonthlyComparisonChartProps) => {
         <Skeleton className="h-[260px] w-full" />
       ) : (
         <div className="h-[260px]">
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
             <BarChart data={data ?? []} barGap={4}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.3} vertical={false} />
               <XAxis

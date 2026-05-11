@@ -51,7 +51,7 @@ const MetricsLineChart = ({ months, pipelineId }: { months: number; pipelineId?:
         <h3 className="text-base font-semibold text-foreground">Evolução das Métricas</h3>
       </div>
       <div className="h-[200px]">
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
           <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
             <XAxis
               dataKey="month"

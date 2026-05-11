@@ -79,6 +79,7 @@ const RegisterForm = () => {
           id="register-password"
           type="password"
           placeholder="******"
+          autoComplete="new-password"
           {...register('password')}
         />
         {errors.password && (
@@ -92,6 +93,7 @@ const RegisterForm = () => {
           id="register-confirm"
           type="password"
           placeholder="******"
+          autoComplete="new-password"
           {...register('confirmPassword')}
         />
         {errors.confirmPassword && (

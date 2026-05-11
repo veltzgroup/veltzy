@@ -361,7 +361,9 @@ export const getSellerPerformance = async (companyId: string, days?: number, pip
     _company_id: companyId,
     ...(startDate ? { _start_date: startDate.toISOString() } : {}),
   })
-  if (rpcError) throw rpcError
+  if (rpcError) {
+    console.warn('[Dashboard] Falha ao buscar tempos de resposta:', rpcError.message)
+  }
 
   const responseMap: Record<string, number> = {}
   ;(responseTimes ?? []).forEach((r: { profile_id: string; avg_response_minutes: number }) => {
