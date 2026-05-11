@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -39,6 +39,7 @@ const AceitarConvitePage = () => {
   const navigate = useNavigate()
   const { user, loadUserData } = useAuthStore()
   const token = searchParams.get('token')
+  const handledRef = useRef(false)
 
   const [state, setState] = useState<InviteState>('loading')
   const [invite, setInvite] = useState<Invitation | null>(null)
@@ -58,57 +59,52 @@ const AceitarConvitePage = () => {
       return
     }
 
-    // Caso 2: Redirecionamento do Supabase Auth via hash (#access_token=...&type=invite)
-    const hash = window.location.hash.substring(1)
-    if (hash) {
-      const hashParams = new URLSearchParams(hash)
-      const accessToken = hashParams.get('access_token')
-      const refreshToken = hashParams.get('refresh_token')
-      const type = hashParams.get('type')
+    // Caso 2: Redirecionamento do Supabase Auth (hash já consumido pelo client)
+    // Espera o Supabase processar a sessão via onAuthStateChange
+    sessionStorage.setItem('accepting_invite', 'true')
 
-      if (type === 'invite' && accessToken && refreshToken) {
-        handleSupabaseInviteRedirect(accessToken, refreshToken)
-        return
+    // Verifica se já existe sessão ativa (hash já processado antes do mount)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user && !handledRef.current) {
+        handledRef.current = true
+        handleAuthenticatedInvite(session.user.id, session.user.email!)
       }
-    }
+    })
 
-    // Caso 3: Verifica localStorage (contexto preservado de OAuth)
-    const savedToken = localStorage.getItem('pending_invite_token')
-    if (savedToken) {
-      validateToken(savedToken)
-      return
-    }
+    // Escuta mudanças de auth caso a sessão ainda esteja sendo processada
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (handledRef.current) return
+        if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
+          handledRef.current = true
+          handleAuthenticatedInvite(session.user.id, session.user.email!)
+        }
+      }
+    )
 
-    setState('invalid')
+    // Timeout: se após 5 segundos nenhuma sessão chegar, mostrar inválido
+    const timeout = setTimeout(() => {
+      if (!handledRef.current) {
+        // Última tentativa: verificar localStorage
+        const savedToken = localStorage.getItem('pending_invite_token')
+        if (savedToken) {
+          handledRef.current = true
+          validateToken(savedToken)
+        } else {
+          sessionStorage.removeItem('accepting_invite')
+          setState('invalid')
+        }
+      }
+    }, 5000)
+
+    return () => {
+      subscription.unsubscribe()
+      clearTimeout(timeout)
+    }
   }, [token]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleSupabaseInviteRedirect = async (accessToken: string, refreshToken: string) => {
+  const handleAuthenticatedInvite = async (userId: string, userEmail: string) => {
     try {
-      // Flag para evitar race condition com useAuthInit redirecionando para onboarding
-      sessionStorage.setItem('accepting_invite', 'true')
-
-      // Seta sessao com tokens do hash
-      const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken,
-      })
-
-      if (sessionError || !sessionData.user) {
-        console.error('[Convite] Erro ao setar sessao:', sessionError)
-        sessionStorage.removeItem('accepting_invite')
-        setState('invalid')
-        return
-      }
-
-      // Limpa hash da URL para nao reprocessar
-      window.history.replaceState(null, '', window.location.pathname)
-
-      const userEmail = sessionData.user.email
-      if (!userEmail) {
-        setState('invalid')
-        return
-      }
-
       // Busca convite pendente pelo email
       const { data: pendingInvite, error: inviteError } = await supabase
         .from('invitations')
@@ -134,7 +130,7 @@ const AceitarConvitePage = () => {
       // Aceita convite automaticamente via RPC
       const { data: rpcResult, error: rpcError } = await supabase.rpc('accept_invitation', {
         p_invitation_id: pendingInvite.id,
-        p_user_id: sessionData.user.id,
+        p_user_id: userId,
       })
 
       if (rpcError) {
@@ -159,13 +155,13 @@ const AceitarConvitePage = () => {
       localStorage.removeItem('pending_invite_token')
       sessionStorage.removeItem('accepting_invite')
       sessionStorage.setItem('invite_accepted', 'true')
-      await loadUserData(sessionData.user.id)
+      await loadUserData(userId)
 
       setState('accepted')
       toast.success('Convite aceito com sucesso!')
       navigate('/')
     } catch (err) {
-      console.error('[Convite] Erro no fluxo de redirect:', err)
+      console.error('[Convite] Erro no fluxo de aceite:', err)
       sessionStorage.removeItem('accepting_invite')
       setState('invalid')
     }
@@ -209,7 +205,7 @@ const AceitarConvitePage = () => {
       if (session.session?.user) {
         setState('valid')
       } else {
-        // Verifica se o email ja tem conta cadastrada
+        // Verifica se o email já tem conta cadastrada
         const { data: existingProfile } = await supabase
           .from('profiles')
           .select('user_id')
@@ -231,9 +227,8 @@ const AceitarConvitePage = () => {
 
     try {
       const { data: { user: currentUser } } = await supabase.auth.getUser()
-      if (!currentUser) throw new Error('Usuario nao autenticado')
+      if (!currentUser) throw new Error('Usuário não autenticado')
 
-      // Usa RPC SECURITY DEFINER para aceitar convite (bypassa RLS)
       const { data: rpcResult, error: rpcError } = await supabase.rpc('accept_invitation', {
         p_invitation_id: invite.id,
         p_user_id: currentUser.id,
@@ -243,7 +238,7 @@ const AceitarConvitePage = () => {
       if (rpcResult && !rpcResult.success) {
         if (rpcResult.error?.includes('invalido') || rpcResult.error?.includes('expirado')) {
           setState('accepted')
-          toast.success('Convite ja foi aceito!')
+          toast.success('Convite já foi aceito!')
           setTimeout(() => navigate('/'), 2000)
           return
         }
@@ -255,7 +250,6 @@ const AceitarConvitePage = () => {
         role: invite.role,
       }, invite.company_id)
 
-      // Recarrega dados do usuario e aguarda completar
       await loadUserData(currentUser.id)
       sessionStorage.setItem('invite_accepted', 'true')
       localStorage.removeItem('pending_invite_token')
@@ -295,7 +289,6 @@ const AceitarConvitePage = () => {
 
       if (!data.user) throw new Error('Erro ao fazer login')
 
-      // Aceita convite via RPC
       const { data: rpcResult, error: rpcError } = await supabase.rpc('accept_invitation', {
         p_invitation_id: invite.id,
         p_user_id: data.user.id,
@@ -336,8 +329,6 @@ const AceitarConvitePage = () => {
       if (error) throw error
       if (!data.user) throw new Error('Erro ao criar conta')
 
-      // Usa RPC SECURITY DEFINER para aceitar convite (bypassa RLS)
-      // A RPC atualiza profile (incluindo nome), cria user_role e marca convite aceito
       const { data: rpcResult, error: rpcError } = await supabase.rpc('accept_invitation', {
         p_invitation_id: invite.id,
         p_user_id: data.user.id,
@@ -351,7 +342,6 @@ const AceitarConvitePage = () => {
 
       localStorage.removeItem('pending_invite_token')
 
-      // Se signUp retornou sessao (autoconfirm), redireciona para dashboard
       if (data.session) {
         sessionStorage.setItem('invite_accepted', 'true')
         await loadUserData(data.user.id)
@@ -359,7 +349,6 @@ const AceitarConvitePage = () => {
         toast.success('Conta criada e convite aceito!')
         navigate('/')
       } else {
-        // Email confirmation necessario — mostra mensagem
         setState('accepted')
         toast.success('Conta criada e convite aceito! Confirme seu email para entrar.')
       }
@@ -475,7 +464,6 @@ const AceitarConvitePage = () => {
     </div>
   )
 
-  // needs_login — usuario ja tem conta, precisa fazer login para aceitar
   if (state === 'needs_login') {
     return (
       <div className="ambient-bg flex min-h-screen items-center justify-center p-4">
