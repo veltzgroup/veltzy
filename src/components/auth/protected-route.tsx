@@ -42,6 +42,15 @@ const ProtectedRoute = ({
   }
 
   if (!skipCompanyCheck && !company) {
+    // Verifica se estamos no meio de um fluxo de convite via URL
+    const isInviteFlow = window.location.pathname.includes('aceitar-convite')
+    if (isInviteFlow) {
+      return (
+        <div className="flex h-screen items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      )
+    }
     return <Navigate to="/onboarding" replace />
   }
 

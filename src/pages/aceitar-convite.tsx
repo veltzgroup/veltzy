@@ -53,59 +53,58 @@ const AceitarConvitePage = () => {
   })
 
   useEffect(() => {
+    sessionStorage.setItem('accepting_invite', 'true')
+
     // Caso 1: Token do convite via query string (?token=...)
     if (token) {
       validateToken(token)
       return
     }
 
-    // Caso 2: Redirecionamento do Supabase Auth (hash já consumido pelo client)
-    // Espera o Supabase processar a sessão via onAuthStateChange
-    sessionStorage.setItem('accepting_invite', 'true')
+    // Caso 2: Chegou via redirect do Supabase (hash já consumido pelo client)
+    // O Supabase JS v2 consome o hash automaticamente antes do React montar.
+    // Precisamos detectar a sessão que ele criou.
 
-    // Verifica se já existe sessão ativa (hash já processado antes do mount)
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const tryDetectSession = async () => {
+      // Espera um tick para dar tempo ao client processar
+      await new Promise(r => setTimeout(r, 500))
+
+      const { data: { session } } = await supabase.auth.getSession()
       if (session?.user && !handledRef.current) {
         handledRef.current = true
-        handleAuthenticatedInvite(session.user.id, session.user.email!)
+        await handleAuthenticatedInvite(session.user.id, session.user.email!)
+        return
       }
-    })
 
-    // Escuta mudanças de auth caso a sessão ainda esteja sendo processada
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (handledRef.current) return
-        if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
-          handledRef.current = true
-          handleAuthenticatedInvite(session.user.id, session.user.email!)
+      // Se não tem sessão, escuta mudanças
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        (event, sess) => {
+          if (handledRef.current) return
+          if (event === 'SIGNED_IN' && sess?.user) {
+            handledRef.current = true
+            handleAuthenticatedInvite(sess.user.id, sess.user.email!)
+            subscription.unsubscribe()
+          }
         }
-      }
-    )
+      )
 
-    // Timeout: se após 5 segundos nenhuma sessão chegar, mostrar inválido
-    const timeout = setTimeout(() => {
-      if (!handledRef.current) {
-        // Última tentativa: verificar localStorage
-        const savedToken = localStorage.getItem('pending_invite_token')
-        if (savedToken) {
-          handledRef.current = true
-          validateToken(savedToken)
-        } else {
+      // Timeout final
+      setTimeout(() => {
+        if (!handledRef.current) {
+          subscription.unsubscribe()
           sessionStorage.removeItem('accepting_invite')
           setState('invalid')
         }
-      }
-    }, 5000)
-
-    return () => {
-      subscription.unsubscribe()
-      clearTimeout(timeout)
+      }, 8000)
     }
+
+    tryDetectSession()
   }, [token]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleAuthenticatedInvite = async (userId: string, userEmail: string) => {
     try {
-      // Busca convite pendente pelo email
+      console.log('[Convite] Buscando convite pendente para:', userEmail)
+
       const { data: pendingInvite, error: inviteError } = await supabase
         .from('invitations')
         .select('*, companies(name)')
@@ -116,34 +115,43 @@ const AceitarConvitePage = () => {
         .limit(1)
         .maybeSingle()
 
+      console.log('[Convite] Resultado busca:', { pendingInvite, inviteError })
+
       if (inviteError || !pendingInvite) {
-        console.error('[Convite] Nenhum convite pendente encontrado para:', userEmail)
+        // Pode já ter sido aceito pelo auth.store — redireciona para home
+        console.warn('[Convite] Nenhum convite pendente. Redirecionando para /')
         sessionStorage.removeItem('accepting_invite')
-        setState('invalid')
+        sessionStorage.setItem('invite_accepted', 'true')
+        await loadUserData(userId)
+        navigate('/')
         return
       }
 
-      // Seta nome da empresa para exibir na tela de sucesso
       const inviteCompanyName = (pendingInvite.companies as unknown as { name: string })?.name ?? ''
       setCompanyName(inviteCompanyName)
 
-      // Aceita convite automaticamente via RPC
       const { data: rpcResult, error: rpcError } = await supabase.rpc('accept_invitation', {
         p_invitation_id: pendingInvite.id,
         p_user_id: userId,
       })
 
       if (rpcError) {
-        console.error('[Convite] Erro na RPC accept_invitation:', rpcError)
+        console.error('[Convite] Erro na RPC:', rpcError)
+        // Mesmo com erro, tenta redirecionar (pode já ter sido aceito)
         sessionStorage.removeItem('accepting_invite')
-        setState('invalid')
+        sessionStorage.setItem('invite_accepted', 'true')
+        await loadUserData(userId)
+        navigate('/')
         return
       }
 
       if (rpcResult && !rpcResult.success) {
-        console.error('[Convite] RPC retornou erro:', rpcResult.error)
+        console.warn('[Convite] RPC retornou:', rpcResult.error)
+        // Convite já aceito ou expirado — redireciona normalmente
         sessionStorage.removeItem('accepting_invite')
-        setState('invalid')
+        sessionStorage.setItem('invite_accepted', 'true')
+        await loadUserData(userId)
+        navigate('/')
         return
       }
 
@@ -161,38 +169,56 @@ const AceitarConvitePage = () => {
       toast.success('Convite aceito com sucesso!')
       navigate('/')
     } catch (err) {
-      console.error('[Convite] Erro no fluxo de aceite:', err)
+      console.error('[Convite] Erro:', err)
       sessionStorage.removeItem('accepting_invite')
-      setState('invalid')
+      // Em caso de erro, se tem sessão, manda para home em vez de mostrar inválido
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) {
+        navigate('/')
+      } else {
+        setState('invalid')
+      }
     }
   }
 
   const validateToken = async (t: string) => {
+    console.log('[Convite] Validando token:', t)
+
     const { data, error } = await supabase
       .from('invitations')
       .select('*, companies(name)')
       .eq('token', t)
       .single()
 
+    console.log('[Convite] Resultado validateToken:', { data, error })
+
     if (error || !data) {
       localStorage.removeItem('pending_invite_token')
+      sessionStorage.removeItem('accepting_invite')
       setState('invalid')
       return
     }
 
     if (data.status !== 'pending') {
       localStorage.removeItem('pending_invite_token')
+      sessionStorage.removeItem('accepting_invite')
+      // Se já foi aceito, redireciona para login
+      if (data.status === 'accepted') {
+        toast.info('Este convite já foi aceito. Faça login para acessar.')
+        navigate('/auth')
+        return
+      }
       setState(data.status === 'expired' ? 'expired' : 'invalid')
       return
     }
 
     if (new Date(data.expires_at) < new Date()) {
       localStorage.removeItem('pending_invite_token')
+      sessionStorage.removeItem('accepting_invite')
       setState('expired')
       return
     }
 
-    // Token validado com sucesso — salva no localStorage para preservar contexto (Google OAuth)
     localStorage.setItem('pending_invite_token', t)
 
     setInvite(data)
@@ -205,7 +231,6 @@ const AceitarConvitePage = () => {
       if (session.session?.user) {
         setState('valid')
       } else {
-        // Verifica se o email já tem conta cadastrada
         const { data: existingProfile } = await supabase
           .from('profiles')
           .select('user_id')
@@ -252,6 +277,7 @@ const AceitarConvitePage = () => {
 
       await loadUserData(currentUser.id)
       sessionStorage.setItem('invite_accepted', 'true')
+      sessionStorage.removeItem('accepting_invite')
       localStorage.removeItem('pending_invite_token')
 
       setState('accepted')
@@ -301,6 +327,7 @@ const AceitarConvitePage = () => {
 
       localStorage.removeItem('pending_invite_token')
       sessionStorage.setItem('invite_accepted', 'true')
+      sessionStorage.removeItem('accepting_invite')
       await loadUserData(data.user.id)
       setState('accepted')
       toast.success('Convite aceito com sucesso!')
@@ -341,6 +368,7 @@ const AceitarConvitePage = () => {
       }
 
       localStorage.removeItem('pending_invite_token')
+      sessionStorage.removeItem('accepting_invite')
 
       if (data.session) {
         sessionStorage.setItem('invite_accepted', 'true')
