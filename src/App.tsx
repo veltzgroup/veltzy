@@ -12,7 +12,6 @@ import { ErrorBoundary } from '@/components/shared/error-boundary'
 
 const AuthPage = lazy(() => import('@/pages/auth'))
 const AuthCadastroPage = lazy(() => import('@/pages/auth-cadastro'))
-const OnboardingPage = lazy(() => import('@/pages/onboarding'))
 const DashboardPage = lazy(() => import('@/pages/dashboard'))
 const UpdatePasswordPage = lazy(() => import('@/pages/update-password'))
 const PipelinePage = lazy(() => import('@/pages/pipeline'))
@@ -59,14 +58,6 @@ const App = () => {
               <Route path="/aceitar-convite" element={<AceitarConvitePage />} />
               <Route path="/acesso-negado" element={<AcessoNegadoPage />} />
 
-              <Route
-                path="/onboarding"
-                element={
-                  <ProtectedRoute skipCompanyCheck>
-                    <OnboardingPage />
-                  </ProtectedRoute>
-                }
-              />
 
               <Route
                 path="/update-password"

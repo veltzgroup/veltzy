@@ -110,8 +110,8 @@ export const useAuthStore = create<AuthState>((set, _get) => ({
           role: r.role as AppRole,
         }))
 
-      // Sem empresa: verifica se há convite pendente antes de permitir onboarding
-      // Pula essa verificação se já estamos na página de aceitar convite (evita loop)
+      // Sem empresa: verifica se há convite pendente e redireciona
+      // Pula se já estamos na página de aceitar convite (evita loop)
       if (companies.length === 0 && !roles.includes('super_admin') && !window.location.pathname.includes('aceitar-convite')) {
         const userEmail = profile?.email
         if (userEmail) {

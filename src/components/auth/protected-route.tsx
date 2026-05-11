@@ -17,7 +17,6 @@ const ProtectedRoute = ({
   requirePermission,
 }: ProtectedRouteProps) => {
   const { user, company, roles, permissions, isLoading } = useAuthStore()
-  const inviteAccepted = sessionStorage.getItem('invite_accepted')
 
   if (isLoading) {
     return (
@@ -31,32 +30,25 @@ const ProtectedRoute = ({
     return <Navigate to="/auth" replace />
   }
 
-  // Se veio de convite mas company ainda esta carregando, mostra loading
-  const acceptingInvite = sessionStorage.getItem('accepting_invite')
-  if (!skipCompanyCheck && !company && (inviteAccepted || acceptingInvite)) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    )
-  }
-
   if (!skipCompanyCheck && !company) {
-    // Verifica se estamos no meio de um fluxo de convite via URL
-    const isInviteFlow = window.location.pathname.includes('aceitar-convite')
-    if (isInviteFlow) {
+    // Se está aceitando convite, aguarda sem redirecionar
+    const acceptingInvite = sessionStorage.getItem('accepting_invite')
+    const inviteAccepted = sessionStorage.getItem('invite_accepted')
+    if (acceptingInvite || inviteAccepted) {
       return (
         <div className="flex h-screen items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       )
     }
-    return <Navigate to="/onboarding" replace />
+    // Sem empresa e sem convite — volta para login
+    return <Navigate to="/auth" replace />
   }
 
   // Limpa flag apos company carregar
-  if (company && inviteAccepted) {
+  if (company) {
     sessionStorage.removeItem('invite_accepted')
+    sessionStorage.removeItem('accepting_invite')
   }
 
   if (requireRole && !requireRole.some((r) => roles.includes(r))) {
