@@ -29,8 +29,9 @@ type InviteState = 'loading' | 'valid' | 'invalid' | 'expired' | 'accepting' | '
 
 const roleLabels: Record<string, string> = {
   seller: 'Vendedor',
-  manager: 'Gestor',
+  manager: 'Gestor comercial',
   admin: 'Administrador',
+  representative: 'Representante',
   super_admin: 'Super Admin',
 }
 
@@ -466,6 +467,7 @@ const AceitarConvitePage = () => {
 
   const roleBadgeColors: Record<string, string> = {
     seller: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+    representative: 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200',
     manager: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
     admin: 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200',
     super_admin: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
