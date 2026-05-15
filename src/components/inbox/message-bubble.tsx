@@ -1,7 +1,10 @@
 import { cn } from '@/lib/utils'
 import { timeAgo } from '@/lib/time'
-import { Download, FileText } from 'lucide-react'
+import { Download, FileText, AlertTriangle } from 'lucide-react'
 import { AudioBubble } from '@/components/inbox/audio-bubble'
+import {
+  Tooltip, TooltipContent, TooltipTrigger,
+} from '@/components/ui/tooltip'
 import type { Message } from '@/types/database'
 
 interface MessageBubbleProps {
@@ -82,8 +85,16 @@ const MessageBubble = ({ message, senderName }: MessageBubbleProps) => {
           )}>{message.content}</p>
         )}
 
-        <p className={cn('text-[10px] text-right', isLead ? 'opacity-40' : 'opacity-60')}>
+        <p className={cn('text-[10px] text-right flex items-center justify-end gap-1', isLead ? 'opacity-40' : 'opacity-60')}>
           {timeAgo(message.created_at)}
+          {message.delivery_status === 'failed' && (
+            <Tooltip>
+              <TooltipTrigger>
+                <AlertTriangle className="h-3 w-3 text-destructive inline" />
+              </TooltipTrigger>
+              <TooltipContent>Mensagem nao entregue - instancia offline</TooltipContent>
+            </Tooltip>
+          )}
         </p>
       </div>
     </div>

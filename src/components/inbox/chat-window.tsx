@@ -18,7 +18,7 @@ const ChatWindow = ({ lead }: ChatWindowProps) => {
   const markAsRead = useMarkAsRead()
   const { isTyping, sendTyping } = useTypingIndicator(lead.id)
   const { data: waStatus } = useWhatsAppStatus()
-  const waDisconnected = waStatus === 'disconnected' || waStatus === 'error'
+  const waDisconnected = waStatus ? !waStatus.connected : false
 
   useEffect(() => {
     if (lead.conversation_status === 'unread') {
