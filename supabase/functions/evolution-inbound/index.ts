@@ -31,12 +31,12 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // 1. Validar shared secret
-    const hubSecret = req.headers.get('x-hub-secret')
+    // 1. Validar shared secret (aceita x-hub-secret ou apikey)
+    const hubSecret = req.headers.get('x-hub-secret') ?? req.headers.get('apikey')
     const expectedSecret = Deno.env.get('HUB_WEBHOOK_SECRET')
 
     if (!hubSecret || hubSecret !== expectedSecret) {
-      console.error('[evolution-inbound] Invalid x-hub-secret')
+      console.error('[evolution-inbound] Invalid secret header')
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },

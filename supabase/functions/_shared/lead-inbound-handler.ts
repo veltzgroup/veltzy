@@ -143,7 +143,7 @@ export async function handleInboundMessage(params: InboundParams): Promise<Inbou
 
   // 8. Auto-reply fora do horario (apenas para leads novos)
   if (isNewLead) {
-    await handleAutoReply(supabase, params)
+    await handleAutoReply(supabase, params, lead.id)
   }
 
   return { leadId: lead.id, isNewLead }
@@ -299,6 +299,7 @@ async function transcribeAudio(
 async function handleAutoReply(
   supabase: SupabaseClient,
   params: InboundParams,
+  leadId: string,
 ): Promise<void> {
   try {
     const { data: autoReplySetting } = await supabase
@@ -324,26 +325,21 @@ async function handleAutoReply(
     const isOutside = !arConfig.schedule.days.includes(day) || time < startH * 60 + startM || time >= endH * 60 + endM
 
     if (isOutside) {
-      // Buscar lead.id a partir do phone (ja foi criado)
-      const { data: lead } = await supabase
-        .from('leads')
-        .select('id')
-        .eq('company_id', params.companyId)
-        .eq('phone', params.phone)
-        .single()
-
-      if (lead) {
-        await supabase.from('messages').insert({
-          lead_id: lead.id,
-          company_id: params.companyId,
+      // Enviar via whatsapp-send (salva mensagem E envia de fato)
+      await fetch(`${params.supabaseUrl}/functions/v1/whatsapp-send`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${params.supabaseKey}`,
+        },
+        body: JSON.stringify({
+          leadId,
           content: arConfig.message,
-          sender_type: 'ai',
-          message_type: 'text',
-          source: params.source,
-          instance_name: params.instanceName,
-          delivery_status: 'sent',
-        })
-      }
+          messageType: 'text',
+          senderType: 'ai',
+          instanceName: params.instanceName,
+        }),
+      })
     }
   } catch { /* best-effort */ }
 }
