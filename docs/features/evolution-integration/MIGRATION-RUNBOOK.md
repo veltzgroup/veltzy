@@ -148,6 +148,30 @@ Efeito imediato:
 
 ---
 
+## Smoke Tests (2026-05-15)
+
+Ambiente: empresa de teste `Veltzy Test Evolution` (aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee)
+
+| # | Teste | Resultado | Observacoes |
+|---|-------|-----------|-------------|
+| 1 | evolution-inbound cria lead novo | PASSOU | Lead criado com whatsapp_instance_name='test-evolution-instance', pipeline e stage corretos |
+| 2 | evolution-inbound reutiliza lead existente | PASSOU | Mesmo leadId retornado, isNewLead=false |
+| 3 | evolution-inbound rejeita x-hub-secret invalido | PASSOU | 401 Unauthorized |
+| 4 | evolution-inbound ignora empresa com provider='zapi' | PASSOU | skipped: not_evolution |
+| 5 | whatsapp-send rejeita anon key | PASSOU | 401 Invalid token (verify_jwt=true funciona) |
+| 6 | zapi-webhook refatorado rejeita token invalido | PASSOU | 401 Unauthorized (paridade com original) |
+| 7 | Mensagem salva com instance_name e delivery_status | PASSOU | instance_name='test-evolution-instance', delivery_status='sent' |
+
+**Testes que requerem acao manual (celular + Hub):**
+- Envio real via whatsapp-send (precisa de instancia Evolution conectada)
+- Recebimento real via webhook do Hub (precisa de mensagem do celular)
+- Transfer SDR completo (precisa de ai_sdr_enabled + instancia conectada)
+- delivery_status='failed' (precisa de instancia desconectada)
+
+**Bug encontrado e corrigido:** CHECK constraint em `companies.active_whatsapp_provider` nao incluia 'evolution'. Corrigido via migration 046.
+
+---
+
 ## Empresas migradas
 
 | Empresa | Company ID | Data migracao | Status |
