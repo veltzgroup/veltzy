@@ -12,7 +12,7 @@ const mockSources: LeadSourceRecord[] = [
 ]
 
 const mockPipelines = [
-  { id: 'pipe-1', company_id: 'c1', name: 'Vendas', slug: 'vendas', color: '#000', position: 0, is_default: true, is_active: true, created_at: '', updated_at: '' },
+  { id: 'pipe-1', company_id: 'c1', name: 'Vendas', slug: 'vendas', color: '#000', position: 0, is_default: true, is_active: true, sdr_instance_name: null, sdr_transfer_message_template: null, created_at: '', updated_at: '' },
 ]
 
 const lookups = { stages: mockStages, sources: mockSources, pipelines: mockPipelines, members: [] }

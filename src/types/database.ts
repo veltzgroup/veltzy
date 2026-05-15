@@ -4,6 +4,8 @@ export type LeadTemperature = 'cold' | 'warm' | 'hot' | 'fire'
 export type SenderType = 'ai' | 'human' | 'lead' | 'internal'
 export type ConversationStatus = 'unread' | 'read' | 'replied' | 'waiting_client' | 'waiting_internal' | 'resolved'
 export type IntegrationType = 'manual' | 'webhook' | 'whatsapp_api' | 'instagram_api' | 'linkedin_api'
+export type WhatsAppProviderType = 'zapi' | 'evolution'
+export type DeliveryStatus = 'sent' | 'failed' | 'pending'
 
 export interface CompanyFeatures {
   whatsapp_enabled: boolean
@@ -37,6 +39,7 @@ export interface Profile {
   email: string
   name: string
   is_available: boolean
+  default_whatsapp_instance: string | null
   last_seen_at: string | null
   created_at: string
   updated_at: string
@@ -135,6 +138,8 @@ export interface Pipeline {
   position: number
   is_default: boolean
   is_active: boolean
+  sdr_instance_name: string | null
+  sdr_transfer_message_template: string | null
   created_at: string
   updated_at: string
 }
@@ -188,6 +193,8 @@ export interface Lead {
   observations: string | null
   avatar_url: string | null
   ad_context: AdContext | null
+  whatsapp_instance_name: string | null
+  transfer_summary: string | null
   last_customer_message_at: string | null
   sla_breached: boolean
   first_response_at: string | null
@@ -251,6 +258,8 @@ export interface Message {
   source: MessageSource
   external_id: string | null
   replied_message_id: string | null
+  instance_name: string | null
+  delivery_status: DeliveryStatus
   is_scheduled: boolean
   scheduled_at: string | null
   is_read: boolean
@@ -265,6 +274,7 @@ export interface SendMessagePayload {
   fileName?: string
   mimeType?: string
   repliedMessageId?: string
+  instanceName?: string
 }
 
 export interface WhatsAppConfig {
@@ -574,4 +584,33 @@ export interface TaskReminder {
   error_message: string | null
   created_at: string
   updated_at: string
+}
+
+// --- Evolution API Integration ---
+
+export interface EvolutionInboundPayload {
+  company_id: string
+  instance_name: string
+  phone: string
+  sender_name?: string
+  message_id: string
+  content: string
+  message_type: 'text' | 'image' | 'audio' | 'video' | 'document'
+  media_url?: string
+  media_mime_type?: string
+  timestamp: string
+  ad_context?: {
+    ad_id?: string
+    ad_title?: string
+    source_url?: string
+    ctwa_clid?: string
+  }
+}
+
+export interface EvolutionInstance {
+  instance_name: string
+  company_id: string
+  phone_number: string | null
+  status: 'open' | 'close' | 'connecting'
+  created_at: string
 }
