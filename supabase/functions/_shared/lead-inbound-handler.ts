@@ -1,0 +1,349 @@
+import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+// --- Tipos ---
+
+export interface InboundParams {
+  supabaseUrl: string
+  supabaseKey: string
+  companyId: string
+  phone: string
+  senderName: string | null
+  content: string
+  messageType: string
+  externalId: string | null
+  fileUrl: string | null
+  fileName: string | null
+  fileMimeType: string | null
+  source: 'whatsapp' | 'instagram'
+  instanceName: string | null
+  adContext: Record<string, unknown> | null
+  /** Se true, tenta buscar foto de perfil via WhatsApp provider */
+  fetchAvatar?: {
+    provider: import('./whatsapp-provider.ts').WhatsAppProvider
+    config: import('./whatsapp-provider.ts').WhatsAppConfig
+  }
+}
+
+export interface InboundResult {
+  leadId: string
+  isNewLead: boolean
+}
+
+// --- Handler ---
+
+export async function handleInboundMessage(params: InboundParams): Promise<InboundResult> {
+  const supabase = createClient(params.supabaseUrl, params.supabaseKey, { db: { schema: 'veltzy' } })
+  const supabasePublic = createClient(params.supabaseUrl, params.supabaseKey)
+
+  // 1. Buscar lead existente
+  let { data: lead } = await supabase
+    .from('leads')
+    .select('id, assigned_to, avatar_url, name, whatsapp_instance_name')
+    .eq('company_id', params.companyId)
+    .eq('phone', params.phone)
+    .maybeSingle()
+
+  // Atualizar nome se veio senderName e lead nao tem nome
+  if (lead && (!lead.name || lead.name.startsWith('Contato ')) && params.senderName) {
+    await supabase.from('leads').update({ name: params.senderName }).eq('id', lead.id)
+  }
+
+  // Atualizar instance_name se veio de instancia nova
+  if (lead && params.instanceName && lead.whatsapp_instance_name !== params.instanceName) {
+    await supabase.from('leads')
+      .update({ whatsapp_instance_name: params.instanceName })
+      .eq('id', lead.id)
+  }
+
+  const isNewLead = !lead
+
+  // 2. Criar lead se nao existe
+  if (!lead) {
+    lead = await createLead(supabase, supabasePublic, params)
+  }
+
+  if (!lead) {
+    throw new Error('Failed to create lead')
+  }
+
+  // 3. Buscar avatar do WhatsApp (se solicitado e lead sem avatar)
+  if (!lead.avatar_url && params.fetchAvatar) {
+    await fetchAndUploadAvatar(
+      params.supabaseUrl,
+      params.supabaseKey,
+      supabase,
+      lead.id,
+      params.phone,
+      params.fetchAvatar.provider,
+      params.fetchAvatar.config,
+    )
+  }
+
+  // 4. Atualizar timestamp SLA
+  await supabase
+    .from('leads')
+    .update({ last_customer_message_at: new Date().toISOString() })
+    .eq('id', lead.id)
+
+  // 5. Salvar mensagem
+  const { data: savedMessage } = await supabase.from('messages').insert({
+    lead_id: lead.id,
+    company_id: params.companyId,
+    content: params.content,
+    sender_type: 'lead',
+    message_type: params.messageType,
+    file_url: params.fileUrl,
+    file_name: params.fileName,
+    file_mime_type: params.fileMimeType,
+    source: params.source,
+    external_id: params.externalId,
+    instance_name: params.instanceName,
+    delivery_status: 'sent',
+  }).select('id').single()
+
+  // 6. Transcricao de audio (async, nao bloqueia)
+  if ((params.messageType === 'audio') && params.fileUrl && savedMessage?.id) {
+    const openaiKey = Deno.env.get('OPENAI_API_KEY')
+    if (openaiKey) {
+      transcribeAudio(supabase, params.fileUrl, savedMessage.id, openaiKey)
+    }
+  }
+
+  // 7. Disparar SDR e automacoes (async, best-effort)
+  const fnHeaders = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${params.supabaseKey}` }
+
+  try {
+    const { data: leadFull } = await supabase.from('leads').select('is_ai_active').eq('id', lead.id).single()
+    if (leadFull?.is_ai_active) {
+      fetch(`${params.supabaseUrl}/functions/v1/sdr-ai`, {
+        method: 'POST',
+        headers: fnHeaders,
+        body: JSON.stringify({
+          leadId: lead.id,
+          companyId: params.companyId,
+          messageContent: params.content,
+          conversationHistory: [],
+        }),
+      }).catch(() => {})
+    }
+  } catch { /* best-effort */ }
+
+  try {
+    fetch(`${params.supabaseUrl}/functions/v1/run-automations`, {
+      method: 'POST',
+      headers: fnHeaders,
+      body: JSON.stringify({
+        trigger: isNewLead ? 'lead_created' : 'message_received',
+        leadId: lead.id,
+        companyId: params.companyId,
+        triggerData: { messageContent: params.content, source: params.source },
+      }),
+    }).catch(() => {})
+  } catch { /* best-effort */ }
+
+  // 8. Auto-reply fora do horario (apenas para leads novos)
+  if (isNewLead) {
+    await handleAutoReply(supabase, params)
+  }
+
+  return { leadId: lead.id, isNewLead }
+}
+
+// --- Funcoes auxiliares ---
+
+async function createLead(
+  supabase: SupabaseClient,
+  supabasePublic: SupabaseClient,
+  params: InboundParams,
+): Promise<{ id: string; assigned_to: string | null; avatar_url: string | null; name: string | null; whatsapp_instance_name: string | null } | null> {
+  // Pipeline padrao
+  let { data: defaultPipeline } = await supabase
+    .from('pipelines')
+    .select('id')
+    .eq('company_id', params.companyId)
+    .eq('is_default', true)
+    .maybeSingle()
+
+  if (!defaultPipeline) {
+    const { data: fallback } = await supabase
+      .from('pipelines')
+      .select('id')
+      .eq('company_id', params.companyId)
+      .eq('is_active', true)
+      .order('position')
+      .limit(1)
+      .single()
+    defaultPipeline = fallback
+  }
+
+  // Primeiro stage
+  const { data: defaultStage } = await supabase
+    .from('pipeline_stages')
+    .select('id')
+    .eq('pipeline_id', defaultPipeline?.id)
+    .order('position')
+    .limit(1)
+    .single()
+
+  // Source WhatsApp
+  const { data: whatsappSource } = await supabase
+    .from('lead_sources')
+    .select('id')
+    .eq('company_id', params.companyId)
+    .eq('slug', 'whatsapp')
+    .single()
+
+  // Atribuicao automatica (vendedor aleatorio disponivel)
+  let assignedTo: string | null = null
+  const { data: sellers } = await supabasePublic
+    .from('profiles')
+    .select('id')
+    .eq('company_id', params.companyId)
+    .eq('is_available', true)
+
+  if (sellers && sellers.length > 0) {
+    const idx = Math.floor(Math.random() * sellers.length)
+    assignedTo = sellers[idx].id
+  }
+
+  const { data: newLead } = await supabase
+    .from('leads')
+    .insert({
+      company_id: params.companyId,
+      phone: params.phone,
+      name: params.senderName,
+      pipeline_id: defaultPipeline?.id,
+      stage_id: defaultStage?.id,
+      source_id: whatsappSource?.id,
+      assigned_to: assignedTo,
+      is_queued: !assignedTo,
+      ad_context: params.adContext,
+      whatsapp_instance_name: params.instanceName,
+    })
+    .select('id, assigned_to, avatar_url, name, whatsapp_instance_name')
+    .single()
+
+  return newLead
+}
+
+async function fetchAndUploadAvatar(
+  supabaseUrl: string,
+  supabaseKey: string,
+  supabase: SupabaseClient,
+  leadId: string,
+  phone: string,
+  provider: import('./whatsapp-provider.ts').WhatsAppProvider,
+  config: import('./whatsapp-provider.ts').WhatsAppConfig,
+): Promise<void> {
+  try {
+    const photoUrl = await provider.getProfilePicture(config, phone)
+    if (!photoUrl) return
+
+    const imgRes = await fetch(photoUrl)
+    const imgBuffer = await imgRes.arrayBuffer()
+    const path = `avatars/${leadId}.jpg`
+
+    const storageClient = createClient(supabaseUrl, supabaseKey)
+    const { error: uploadError } = await storageClient.storage
+      .from('chat-attachments')
+      .upload(path, imgBuffer, { contentType: 'image/jpeg', upsert: true })
+
+    if (uploadError) {
+      console.error('Avatar upload error:', JSON.stringify(uploadError))
+      return
+    }
+
+    const { data: urlData } = storageClient.storage
+      .from('chat-attachments')
+      .getPublicUrl(path)
+
+    await supabase
+      .from('leads')
+      .update({ avatar_url: urlData.publicUrl })
+      .eq('id', leadId)
+  } catch (err) {
+    console.error('Avatar fetch failed:', err instanceof Error ? err.message : JSON.stringify(err))
+  }
+}
+
+async function transcribeAudio(
+  supabase: SupabaseClient,
+  audioUrl: string,
+  messageId: string,
+  openaiKey: string,
+): Promise<void> {
+  try {
+    const audioResponse = await fetch(audioUrl)
+    const audioBuffer = await audioResponse.arrayBuffer()
+
+    const formData = new FormData()
+    formData.append('file', new Blob([audioBuffer], { type: 'audio/ogg' }), 'audio.ogg')
+    formData.append('model', 'whisper-1')
+    formData.append('language', 'pt')
+
+    const whisperResponse = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${openaiKey}` },
+      body: formData,
+    })
+
+    const result = await whisperResponse.json()
+    if (result.text) {
+      await supabase.from('messages').update({ content: result.text }).eq('id', messageId)
+    }
+  } catch (err) {
+    console.error('Transcription failed:', err)
+  }
+}
+
+async function handleAutoReply(
+  supabase: SupabaseClient,
+  params: InboundParams,
+): Promise<void> {
+  try {
+    const { data: autoReplySetting } = await supabase
+      .from('system_settings')
+      .select('value')
+      .eq('company_id', params.companyId)
+      .eq('key', 'auto_reply_config')
+      .maybeSingle()
+
+    const arConfig = autoReplySetting?.value as {
+      enabled?: boolean
+      message?: string
+      schedule?: { start: string; end: string; days: number[]; timezone: string }
+    } | null
+
+    if (!arConfig?.enabled || !arConfig.message || !arConfig.schedule) return
+
+    const now = new Date(new Date().toLocaleString('en', { timeZone: arConfig.schedule.timezone }))
+    const day = now.getDay()
+    const time = now.getHours() * 60 + now.getMinutes()
+    const [startH, startM] = arConfig.schedule.start.split(':').map(Number)
+    const [endH, endM] = arConfig.schedule.end.split(':').map(Number)
+    const isOutside = !arConfig.schedule.days.includes(day) || time < startH * 60 + startM || time >= endH * 60 + endM
+
+    if (isOutside) {
+      // Buscar lead.id a partir do phone (ja foi criado)
+      const { data: lead } = await supabase
+        .from('leads')
+        .select('id')
+        .eq('company_id', params.companyId)
+        .eq('phone', params.phone)
+        .single()
+
+      if (lead) {
+        await supabase.from('messages').insert({
+          lead_id: lead.id,
+          company_id: params.companyId,
+          content: arConfig.message,
+          sender_type: 'ai',
+          message_type: 'text',
+          source: params.source,
+          instance_name: params.instanceName,
+          delivery_status: 'sent',
+        })
+      }
+    }
+  } catch { /* best-effort */ }
+}

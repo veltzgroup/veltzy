@@ -1,0 +1,106 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { handleInboundMessage } from '../_shared/lead-inbound-handler.ts'
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-hub-secret',
+}
+
+interface EvolutionInboundPayload {
+  company_id: string
+  instance_name: string
+  phone: string
+  sender_name?: string
+  message_id: string
+  content: string
+  message_type: 'text' | 'image' | 'audio' | 'video' | 'document'
+  media_url?: string
+  media_mime_type?: string
+  timestamp: string
+  ad_context?: {
+    ad_id?: string
+    ad_title?: string
+    source_url?: string
+    ctwa_clid?: string
+  }
+}
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
+  try {
+    // 1. Validar shared secret
+    const hubSecret = req.headers.get('x-hub-secret')
+    const expectedSecret = Deno.env.get('HUB_WEBHOOK_SECRET')
+
+    if (!hubSecret || hubSecret !== expectedSecret) {
+      console.error('[evolution-inbound] Invalid x-hub-secret')
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      )
+    }
+
+    const payload: EvolutionInboundPayload = await req.json()
+
+    console.log('[evolution-inbound] Received:', JSON.stringify({
+      company_id: payload.company_id,
+      instance_name: payload.instance_name,
+      phone: payload.phone,
+      message_type: payload.message_type,
+    }))
+
+    const url = Deno.env.get('SUPABASE_URL')!
+    const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const supabasePublic = createClient(url, key)
+
+    // 2. Verificar que empresa usa Evolution
+    const { data: company } = await supabasePublic
+      .from('companies')
+      .select('active_whatsapp_provider')
+      .eq('id', payload.company_id)
+      .single()
+
+    if (company?.active_whatsapp_provider !== 'evolution') {
+      console.warn(`[evolution-inbound] Company ${payload.company_id} not using evolution (provider=${company?.active_whatsapp_provider})`)
+      return new Response(
+        JSON.stringify({ ok: true, skipped: true, reason: 'not_evolution' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      )
+    }
+
+    // 3. Delegar para handler compartilhado
+    const result = await handleInboundMessage({
+      supabaseUrl: url,
+      supabaseKey: key,
+      companyId: payload.company_id,
+      phone: payload.phone,
+      senderName: payload.sender_name ?? null,
+      content: payload.content,
+      messageType: payload.message_type,
+      externalId: payload.message_id,
+      fileUrl: payload.media_url ?? null,
+      fileName: null,
+      fileMimeType: payload.media_mime_type ?? null,
+      source: 'whatsapp',
+      instanceName: payload.instance_name,
+      adContext: payload.ad_context ?? null,
+      // Evolution nao busca avatar via provider (Hub nao expoe essa API)
+    })
+
+    console.log(`[evolution-inbound] Processed: leadId=${result.leadId}, isNew=${result.isNewLead}`)
+
+    return new Response(
+      JSON.stringify({ ok: true, leadId: result.leadId, isNewLead: result.isNewLead }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    )
+  } catch (err) {
+    console.error('[evolution-inbound] Error:', err)
+    return new Response(
+      JSON.stringify({ error: (err as Error).message }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    )
+  }
+})
