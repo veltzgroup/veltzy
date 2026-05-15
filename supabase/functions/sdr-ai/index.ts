@@ -258,7 +258,7 @@ Retorne apenas o JSON, sem texto adicional.`
     // 4. Buscar dados do lead e prompt customizado
     const { data: lead } = await supabaseVeltzy
       .from('leads')
-      .select('name, phone, email, temperature, ai_score, tags, deal_value')
+      .select('name, phone, email, temperature, ai_score, tags, deal_value, pipeline_id')
       .eq('id', leadId)
       .single()
 
@@ -327,25 +327,20 @@ Retorne apenas o JSON, sem texto adicional.`
           replyResult.tokensInput, replyResult.tokensOutput, { lead_id: leadId })
       }
 
-      // Salvar mensagem IA
-      await supabaseVeltzy.from('messages').insert({
-        lead_id: leadId,
-        company_id: companyId,
-        content: replyText,
-        sender_type: 'ai',
-        message_type: 'text',
-        source: 'whatsapp',
-      })
-
-      // Enviar via Z-API (best-effort)
+      // Enviar via whatsapp-send (salva mensagem internamente com senderType='ai')
       try {
-        await fetch(`${url}/functions/v1/zapi-send`, {
+        await fetch(`${url}/functions/v1/whatsapp-send`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${key}`,
           },
-          body: JSON.stringify({ leadId, content: replyText, messageType: 'text' }),
+          body: JSON.stringify({
+            leadId,
+            content: replyText,
+            messageType: 'text',
+            senderType: 'ai',
+          }),
         })
       } catch { /* best-effort */ }
     }

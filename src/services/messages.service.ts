@@ -110,6 +110,22 @@ export const getConversationList = async (companyId: string): Promise<LeadWithLa
 }
 
 export const isWhatsAppConnected = async (companyId: string): Promise<boolean> => {
+  // Verificar provider ativo da empresa
+  const { data: company } = await supabase
+    .from('companies')
+    .select('active_whatsapp_provider')
+    .eq('id', companyId)
+    .single()
+
+  const provider = company?.active_whatsapp_provider ?? 'zapi'
+
+  if (provider === 'evolution') {
+    // Para Evolution, consideramos "conectado" se empresa usa Evolution.
+    // A validacao real acontece no backend ao enviar.
+    return true
+  }
+
+  // Fluxo Z-API
   const { data } = await supabase
     .from('oauth_integrations')
     .select('id')
@@ -154,9 +170,9 @@ export const routeMessage = async (
   const { phone, sourceSlug } = await getLeadPhoneAndSource(companyId, payload.leadId)
   const whatsAppConnected = phone ? await isWhatsAppConnected(companyId) : false
 
-  // Lead com phone + WhatsApp conectado: envia via Z-API independente da source
+  // Lead com phone + WhatsApp conectado: envia via whatsapp-send (roteia internamente por provider)
   if (phone && whatsAppConnected) {
-    const { data, error } = await supabase.functions.invoke('zapi-send', {
+    const { data, error } = await supabase.functions.invoke('whatsapp-send', {
       body: payload,
     })
     if (error) throw error

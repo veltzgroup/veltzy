@@ -370,6 +370,9 @@ verify_jwt = false
 [functions.evolution-inbound]
 verify_jwt = false
 
+[functions.whatsapp-send]
+verify_jwt = true
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.
