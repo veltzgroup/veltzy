@@ -1,6 +1,27 @@
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import type { WhatsAppConfig, WhatsAppProviderType } from './whatsapp-provider.ts'
 
+/**
+ * Retorna o provider ativo da empresa: 'zapi' | 'evolution'
+ */
+export async function getActiveProvider(
+  supabase: SupabaseClient,
+  companyId: string,
+): Promise<'zapi' | 'evolution'> {
+  const { data } = await supabase
+    .from('companies')
+    .select('active_whatsapp_provider')
+    .eq('id', companyId)
+    .single()
+
+  const provider = (data?.active_whatsapp_provider as string) ?? 'zapi'
+  if (provider !== 'zapi' && provider !== 'evolution') {
+    console.warn(`[getActiveProvider] Valor inesperado para active_whatsapp_provider: '${provider}' (company_id=${companyId}). Fallback para 'zapi'.`)
+    return 'zapi'
+  }
+  return provider
+}
+
 function mapRow(row: {
   id: string
   company_id: string
@@ -70,7 +91,7 @@ export async function getAllConnectedConfigs(
   const { data } = await supabase
     .from('oauth_integrations')
     .select('id, company_id, provider, status, metadata')
-    .in('provider', ['zapi', 'wuzapi', 'revolution'])
+    .in('provider', ['zapi', 'evolution'])
     .eq('status', 'connected')
 
   if (!data) return []

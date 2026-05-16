@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button'
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
 } from '@/components/ui/dropdown-menu'
-import { MoreVertical, Kanban, CheckCircle } from 'lucide-react'
+import { MoreVertical, Kanban, CheckCircle, Phone } from 'lucide-react'
 import { useUpdateLead } from '@/hooks/use-leads'
 import { usePipelines } from '@/hooks/use-pipelines'
+import { useWhatsAppStatus } from '@/hooks/use-whatsapp-status'
 import type { LeadWithLastMessage } from '@/types/database'
 
 interface ChatHeaderProps {
@@ -17,6 +18,8 @@ const ChatHeader = ({ lead }: ChatHeaderProps) => {
   const navigate = useNavigate()
   const updateLead = useUpdateLead()
   const { data: pipelines } = usePipelines()
+  const { data: whatsappStatus } = useWhatsAppStatus()
+  const isEvolution = whatsappStatus?.provider === 'evolution'
   const avatarSrc = lead.avatar_url || undefined
 
   const pipelineName = pipelines && pipelines.length > 1
@@ -42,6 +45,12 @@ const ChatHeader = ({ lead }: ChatHeaderProps) => {
           {lead.phone}
           {pipelineName && <span className="ml-1.5 text-muted-foreground/60">· {pipelineName}</span>}
         </p>
+        {isEvolution && lead.whatsapp_instance_name && (
+          <p className="flex items-center gap-1 text-[10px] text-muted-foreground/60">
+            <Phone className="h-2.5 w-2.5" />
+            {lead.whatsapp_instance_name}
+          </p>
+        )}
       </div>
 
       <div className="flex items-center gap-1">

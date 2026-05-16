@@ -112,6 +112,33 @@ seller       → Atende leads atribuídos, chat, disponibilidade
 ```
 Roles armazenadas em `user_roles` (tabela separada, NUNCA em profiles).
 
+## WHATSAPP - EVOLUTION API (multi-instancia)
+
+O Veltzy suporta dois providers WhatsApp: Z-API (legado) e Evolution API (via Hub).
+O campo `companies.active_whatsapp_provider` ('zapi' | 'evolution') controla qual provider cada empresa usa.
+
+**Arquitetura:**
+- Hub (mesmo projeto Supabase) e dono da infra Evolution. Veltzy nunca chama Evolution API diretamente.
+- Envio: `whatsapp-send` roteia por provider. Para Evolution, chama `evolution-send-message` do Hub.
+- Recebimento: Hub chama `evolution-inbound` do Veltzy com payload normalizado.
+- Logica de criacao/atualizacao de lead: `_shared/lead-inbound-handler.ts` (compartilhado entre zapi-webhook e evolution-inbound).
+- Resolucao de instancia: `_shared/resolve-instance.ts` (prioridade: lead > pipeline SDR > profile vendedor).
+
+**Multi-instancia por empresa:**
+- Cada empresa tem N numeros WhatsApp (N instancias Evolution).
+- `profiles.default_whatsapp_instance`: numero padrao do vendedor.
+- `leads.whatsapp_instance_name`: instancia que originou a conversa.
+- `pipelines.sdr_instance_name`: instancia dedicada para AI SDR.
+- `messages.instance_name`: auditoria de qual instancia enviou/recebeu.
+- `messages.delivery_status`: 'sent' | 'failed' | 'pending'.
+
+**Transfer SDR -> vendedor:**
+- SDR retorna `transfer: true` no JSON. sdr-ai envia mensagem de transfer pelo numero do SDR, gera resumo IA, troca instancia do lead, notifica vendedor.
+- `leads.transfer_summary`: resumo IA salvo para exibicao no kanban.
+- `pipelines.sdr_transfer_message_template`: template configuravel com {vendedor_nome}.
+
+**Docs:** `docs/features/evolution-integration/PRD.md`, `Spec.md`, `MIGRATION-RUNBOOK.md`
+
 ## WORKFLOW DE DESENVOLVIMENTO (SDD)
 1. Leia o spec da fase atual em `docs/phases/`
 2. Implemente seguindo o spec fielmente

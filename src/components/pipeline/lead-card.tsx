@@ -15,7 +15,7 @@ import { useMoveLeadToStage } from '@/hooks/use-leads'
 import { timeAgo } from '@/lib/time'
 import type { LeadWithDetails } from '@/types/database'
 import { useNavigate } from 'react-router-dom'
-import { Phone, Mail, MoreVertical, Pencil, ArrowRightLeft, UserRoundPen, Clock, MessageSquare, Bot, CheckSquare, FolderInput } from 'lucide-react'
+import { Phone, Mail, MoreVertical, Pencil, ArrowRightLeft, UserRoundPen, Clock, MessageSquare, Bot, CheckSquare, FolderInput, ArrowLeftRight } from 'lucide-react'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import type { LeadTemperature } from '@/types/database'
 
@@ -176,6 +176,19 @@ const LeadCard = ({ lead, onTransfer, onMovePipeline, fireOnly }: LeadCardProps)
                   </span>
                 </TooltipTrigger>
                 <TooltipContent side="left">Atendido pela IA SDR</TooltipContent>
+              </Tooltip>
+            )}
+            {lead.transfer_summary && !lead.is_ai_active && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="p-0.5">
+                    <ArrowLeftRight className="h-3.5 w-3.5 text-amber-500 opacity-70" />
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="left" className="max-w-xs">
+                  <p className="font-medium text-xs mb-1">Transferido do SDR</p>
+                  <p className="text-xs opacity-80">{lead.transfer_summary}</p>
+                </TooltipContent>
               </Tooltip>
             )}
             <button

@@ -77,7 +77,7 @@ export const createPipeline = async (
 export const updatePipeline = async (
   companyId: string,
   pipelineId: string,
-  input: Partial<Pick<Pipeline, 'name' | 'slug' | 'color' | 'is_default' | 'is_active'>>
+  input: Partial<Pick<Pipeline, 'name' | 'slug' | 'color' | 'is_default' | 'is_active' | 'sdr_instance_name' | 'sdr_transfer_message_template'>>
 ): Promise<Pipeline> => {
   const { data, error } = await veltzy()
     .from('pipelines')

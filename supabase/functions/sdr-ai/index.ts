@@ -27,8 +27,13 @@ Retorne APENAS JSON valido, sem texto adicional:
   "score": number,
   "temperature": "cold" | "warm" | "hot" | "fire",
   "reply": string | null,
+  "transfer": boolean,
   "reasoning": string
-}`
+}
+
+Se o lead esta qualificado (score >= 80 e temperature "hot" ou "fire") e demonstrou
+intencao clara de compra, set transfer=true para encaminhar a um vendedor humano.
+Caso contrario, transfer=false.`
 
 interface CallAIResult {
   text: string
@@ -258,7 +263,7 @@ Retorne apenas o JSON, sem texto adicional.`
     // 4. Buscar dados do lead e prompt customizado
     const { data: lead } = await supabaseVeltzy
       .from('leads')
-      .select('name, phone, email, temperature, ai_score, tags, deal_value')
+      .select('name, phone, email, temperature, ai_score, tags, deal_value, pipeline_id')
       .eq('id', leadId)
       .single()
 
@@ -327,30 +332,118 @@ Retorne apenas o JSON, sem texto adicional.`
           replyResult.tokensInput, replyResult.tokensOutput, { lead_id: leadId })
       }
 
-      // Salvar mensagem IA
-      await supabaseVeltzy.from('messages').insert({
-        lead_id: leadId,
-        company_id: companyId,
-        content: replyText,
-        sender_type: 'ai',
-        message_type: 'text',
-        source: 'whatsapp',
-      })
-
-      // Enviar via Z-API (best-effort)
+      // Enviar via whatsapp-send (salva mensagem internamente com senderType='ai')
       try {
-        await fetch(`${url}/functions/v1/zapi-send`, {
+        await fetch(`${url}/functions/v1/whatsapp-send`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${key}`,
           },
-          body: JSON.stringify({ leadId, content: replyText, messageType: 'text' }),
+          body: JSON.stringify({
+            leadId,
+            content: replyText,
+            messageType: 'text',
+            senderType: 'ai',
+          }),
         })
       } catch { /* best-effort */ }
     }
 
-    // 9. Log de automacao
+    // 9. Transfer SDR -> vendedor (se IA decidiu transferir)
+    if (parsed.transfer === true) {
+      try {
+        const { data: leadFull } = await supabaseVeltzy
+          .from('leads')
+          .select('assigned_to, pipeline_id, name, phone')
+          .eq('id', leadId)
+          .single()
+
+        if (leadFull?.assigned_to) {
+          // Buscar vendedor
+          const { data: vendedor } = await supabase
+            .from('profiles')
+            .select('id, name, default_whatsapp_instance, user_id')
+            .eq('id', leadFull.assigned_to)
+            .single()
+
+          // Buscar config do pipeline
+          const { data: pipeline } = await supabaseVeltzy
+            .from('pipelines')
+            .select('sdr_instance_name, sdr_transfer_message_template')
+            .eq('id', leadFull.pipeline_id)
+            .single()
+
+          // Enviar mensagem de transfer ao lead (pelo numero do SDR)
+          const FALLBACK_TEMPLATE = 'Ola! A partir de agora voce sera atendido por {vendedor_nome}. Em breve ele entrara em contato.'
+          const template = pipeline?.sdr_transfer_message_template ?? FALLBACK_TEMPLATE
+          const transferMsg = template.replace(/\{vendedor_nome\}/g, vendedor?.name ?? 'nosso time')
+
+          try {
+            await fetch(`${url}/functions/v1/whatsapp-send`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+              body: JSON.stringify({
+                leadId,
+                content: transferMsg,
+                messageType: 'text',
+                senderType: 'ai',
+                instanceName: pipeline?.sdr_instance_name,
+              }),
+            })
+          } catch { /* best-effort */ }
+
+          // Gerar resumo IA das ultimas 5 mensagens
+          const { data: lastMessages } = await supabaseVeltzy
+            .from('messages')
+            .select('content, sender_type')
+            .eq('lead_id', leadId)
+            .order('created_at', { ascending: false })
+            .limit(5)
+
+          let resumo = `${lastMessages?.length ?? 0} mensagens trocadas.`
+          try {
+            const summaryConfig = await getModelConfig(supabase, 'sdr-reply')
+            const summaryResult = await callProvider(
+              summaryConfig.provider, summaryConfig.model,
+              [{
+                role: 'user',
+                content: `Resuma em 2-3 frases esta conversa entre SDR e lead. Foque no interesse do lead e proximos passos:\n\n${lastMessages?.reverse().map((m) => `${m.sender_type}: ${m.content}`).join('\n')}`,
+              }],
+              0.3, false,
+            )
+            resumo = summaryResult.text
+
+            await logUsage(supabase, companyId, 'sdr-transfer-summary', summaryConfig.provider, summaryConfig.model,
+              summaryResult.tokensInput, summaryResult.tokensOutput, { lead_id: leadId })
+          } catch { /* fallback: resumo simples */ }
+
+          // Desativar SDR, trocar instancia e salvar resumo no lead
+          await supabaseVeltzy.from('leads').update({
+            is_ai_active: false,
+            whatsapp_instance_name: vendedor?.default_whatsapp_instance ?? null,
+            transfer_summary: resumo,
+          }).eq('id', leadId)
+
+          // Notificar vendedor
+          if (vendedor?.user_id) {
+            await supabase.from('notifications').insert({
+              company_id: companyId,
+              user_id: vendedor.user_id,
+              type: 'lead_transferred',
+              title: `Lead ${leadFull.name ?? leadFull.phone} transferido do SDR`,
+              body: `Resumo: ${resumo}`,
+              action_type: 'navigate',
+              action_data: { path: `/inbox?lead=${leadId}`, lead_id: leadId, summary: resumo },
+            })
+          }
+        }
+      } catch (err) {
+        console.error('[sdr-ai] Transfer failed:', err)
+      }
+    }
+
+    // 10. Log de automacao
     await supabaseVeltzy.from('automation_logs').insert({
       company_id: companyId,
       lead_id: leadId,

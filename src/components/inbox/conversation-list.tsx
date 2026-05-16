@@ -1,4 +1,5 @@
-import { Search, Loader2 } from 'lucide-react'
+import { useState } from 'react'
+import { Search, Loader2, AlertTriangle } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -6,10 +7,27 @@ import {
 import { ConversationItem } from '@/components/inbox/conversation-item'
 import { useConversationList } from '@/hooks/use-conversation-list'
 import { useInboxStore } from '@/stores/inbox.store'
+import { useWhatsAppStatus } from '@/hooks/use-whatsapp-status'
+import { useEvolutionInstances } from '@/hooks/use-evolution-instances'
+import { useFailedMessages } from '@/hooks/use-failed-messages'
+import { useRoles } from '@/hooks/use-roles'
 
 const ConversationList = () => {
   const { data: conversations, isLoading } = useConversationList()
   const { selectedLeadId, setSelectedLeadId, filters, setFilters } = useInboxStore()
+  const { data: whatsappStatus } = useWhatsAppStatus()
+  const { data: instances } = useEvolutionInstances()
+  const { data: failedCount } = useFailedMessages()
+  const { isAdmin, isManager } = useRoles()
+  const isEvolution = whatsappStatus?.provider === 'evolution'
+  const [instanceFilter, setInstanceFilter] = useState('all')
+
+  const filteredConversations = conversations?.filter((c) => {
+    if (isEvolution && instanceFilter !== 'all' && (isAdmin || isManager)) {
+      return c.whatsapp_instance_name === instanceFilter
+    }
+    return true
+  })
 
   return (
     <div className="flex h-full flex-col border-r bg-muted/20">
@@ -52,7 +70,30 @@ const ConversationList = () => {
             </SelectContent>
           </Select>
         </div>
+
+        {isEvolution && (isAdmin || isManager) && (
+          <Select value={instanceFilter} onValueChange={setInstanceFilter}>
+            <SelectTrigger className="h-8 text-xs">
+              <SelectValue placeholder="Todos os numeros" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os numeros</SelectItem>
+              {instances?.map((inst) => (
+                <SelectItem key={inst.instance_name} value={inst.instance_name}>
+                  {inst.phone_number ? `...${inst.phone_number.slice(-4)}` : inst.instance_name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
+
+      {(isAdmin || isManager) && !!failedCount && failedCount > 0 && (
+        <div className="flex items-center gap-2 mx-3 mb-2 px-2 py-1.5 bg-destructive/10 text-destructive text-xs rounded">
+          <AlertTriangle className="h-3 w-3 shrink-0" />
+          <span>{failedCount} msg(s) nao entregue(s) nos ultimos 7 dias</span>
+        </div>
+      )}
 
       <div className="flex-1 overflow-y-auto scrollbar-minimal">
         {isLoading && (
@@ -61,13 +102,13 @@ const ConversationList = () => {
           </div>
         )}
 
-        {!isLoading && conversations?.length === 0 && (
+        {!isLoading && filteredConversations?.length === 0 && (
           <div className="flex items-center justify-center py-10">
             <p className="text-sm text-muted-foreground">Nenhuma conversa encontrada</p>
           </div>
         )}
 
-        {conversations?.map((lead) => (
+        {filteredConversations?.map((lead) => (
           <ConversationItem
             key={lead.id}
             lead={lead}

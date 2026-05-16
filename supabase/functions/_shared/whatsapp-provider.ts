@@ -1,6 +1,6 @@
 // --- Tipos ---
 
-export type WhatsAppProviderType = 'zapi' | 'wuzapi' | 'revolution'
+export type WhatsAppProviderType = 'zapi' | 'evolution'
 
 export interface WhatsAppConfig {
   id: string

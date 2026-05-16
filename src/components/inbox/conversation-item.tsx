@@ -91,7 +91,14 @@ const ConversationItem = ({ lead, isSelected, onClick }: ConversationItemProps) 
             </span>
           </div>
         </div>
-        <p className="text-xs text-muted-foreground truncate">{messagePreview(lead)}</p>
+        <div className="flex items-center gap-1">
+          <p className="text-xs text-muted-foreground truncate flex-1">{messagePreview(lead)}</p>
+          {lead.whatsapp_instance_name && (
+            <span className="text-[9px] text-muted-foreground/60 bg-muted px-1 py-0.5 rounded shrink-0">
+              ...{lead.whatsapp_instance_name.slice(-4)}
+            </span>
+          )}
+        </div>
       </div>
 
       {(lead.unread_count ?? 0) > 0 && (

@@ -1,10 +1,12 @@
 import { useState, useRef, useCallback } from 'react'
-import { SendHorizonal, Paperclip, Loader2 } from 'lucide-react'
+import { SendHorizonal, Paperclip, Loader2, AlertTriangle } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { ReplyTemplatesPopover } from '@/components/inbox/reply-templates-popover'
 import { AudioRecorder } from '@/components/inbox/audio-recorder'
 import { useSendMessage, useWhatsAppConnected } from '@/hooks/use-messages'
+import { useWhatsAppStatus } from '@/hooks/use-whatsapp-status'
 import { useAuthStore } from '@/stores/auth.store'
 import { supabase } from '@/lib/supabase'
 
@@ -21,7 +23,11 @@ const ChatInput = ({ leadId, onTyping }: ChatInputProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const sendMessage = useSendMessage()
   const { data: whatsAppConnected } = useWhatsAppConnected()
+  const { data: whatsappStatus } = useWhatsAppStatus()
+  const profile = useAuthStore((s) => s.profile)
   const companyId = useAuthStore((s) => s.company?.id)
+  const isEvolution = whatsappStatus?.provider === 'evolution'
+  const hasInstance = !isEvolution || !!profile?.default_whatsapp_instance
 
   const adjustHeight = useCallback(() => {
     const el = textareaRef.current
@@ -89,6 +95,20 @@ const ChatInput = ({ leadId, onTyping }: ChatInputProps) => {
       setUploading(false)
       if (fileInputRef.current) fileInputRef.current.value = ''
     }
+  }
+
+  if (!hasInstance) {
+    return (
+      <div className="border-t bg-background p-3">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <AlertTriangle className="h-4 w-4 text-destructive shrink-0" />
+          <span>Configure seu numero WhatsApp em{' '}
+            <Link to="/minha-conta" className="underline text-primary">Minha Conta</Link>
+            {' '}para enviar mensagens.
+          </span>
+        </div>
+      </div>
+    )
   }
 
   return (
