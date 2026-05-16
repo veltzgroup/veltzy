@@ -25,6 +25,7 @@ export class EvolutionHubProvider implements WhatsAppProvider {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'apikey': this.hubServiceKey,
         'Authorization': `Bearer ${this.hubServiceKey}`,
       },
       body: JSON.stringify(body),
