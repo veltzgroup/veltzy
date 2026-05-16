@@ -141,6 +141,7 @@ Deno.serve(async (req) => {
           mediaUrl: payload.fileUrl,
           fileName: payload.fileName,
           instanceName,
+          companyId,
         })
       } catch (err) {
         console.error('[whatsapp-send] Evolution send failed:', err)

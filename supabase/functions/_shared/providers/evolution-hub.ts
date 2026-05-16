@@ -25,6 +25,7 @@ export class EvolutionHubProvider implements WhatsAppProvider {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'apikey': this.hubServiceKey,
         'Authorization': `Bearer ${this.hubServiceKey}`,
       },
       body: JSON.stringify(body),
@@ -40,20 +41,22 @@ export class EvolutionHubProvider implements WhatsAppProvider {
 
   async sendMessage(
     _config: WhatsAppConfig,
-    payload: SendMessagePayload & { instanceName?: string },
+    payload: SendMessagePayload & { instanceName?: string; companyId?: string },
   ): Promise<void> {
     const instanceName = payload.instanceName
     if (!instanceName) {
       throw new Error('instance_name obrigatorio para Evolution provider')
     }
 
+    const isMedia = payload.type !== 'text' && payload.mediaUrl
+
     await this.callHub('evolution-send-message', {
       instance_name: instanceName,
-      phone: payload.phone,
-      content: payload.content,
-      type: payload.type,
-      media_url: payload.mediaUrl,
-      file_name: payload.fileName,
+      company_id: payload.companyId ?? _config.company_id,
+      to: payload.phone,
+      message: isMedia
+        ? { media: { type: payload.type, url: payload.mediaUrl, caption: payload.content } }
+        : { text: payload.content },
     })
   }
 
