@@ -53,7 +53,7 @@ const SdrMetricsDashboard = () => {
       <div>
         <h4 className="text-sm font-medium mb-3">Distribuicao por Faixa de Score</h4>
         <div className="h-[200px]">
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
             <BarChart data={distribution ?? []}>
               <XAxis dataKey="range" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} tickLine={false} axisLine={false} />
               <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} tickLine={false} axisLine={false} />

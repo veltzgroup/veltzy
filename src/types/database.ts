@@ -610,7 +610,8 @@ export interface EvolutionInboundPayload {
 export interface EvolutionInstance {
   instance_name: string
   company_id: string
+  display_name: string | null
   phone_number: string | null
-  status: 'open' | 'close' | 'connecting'
+  status: 'connected' | 'disconnected' | 'qr_pending'
   created_at: string
 }

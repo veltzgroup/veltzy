@@ -103,7 +103,7 @@ const ThemeCustomizer = () => {
     return match ? match.hex : hslToHex(initialHsl)
   })
   const [cardStyle, setCardStyle] = useState('glass')
-  const [sidebarStyle, setSidebarStyle] = useState('solid')
+  const [sidebarStyle, setSidebarStyle] = useState('glass')
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
@@ -175,8 +175,9 @@ const ThemeCustomizer = () => {
 
   const handleReset = () => {
     applyPreview('158 64% 42%', '#22a06b')
+    setTheme('light')
     setCardStyle('glass')
-    setSidebarStyle('solid')
+    setSidebarStyle('glass')
   }
 
   return (

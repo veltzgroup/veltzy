@@ -1,0 +1,109 @@
+# CLAUDE.md — <Nome do Projeto>
+
+## Sobre este projeto
+
+<Uma a duas frases descrevendo o que é o projeto e o que ele faz.>
+
+## Skills aplicáveis
+
+Antes de qualquer tarefa de desenvolvimento, leia:
+
+- `../claude-skills/claude-code-sdd/SKILL.md` — método SDD obrigatório para implementações
+- `../claude-skills/copy-br/SKILL.md` — convenções de escrita em português
+
+## Stack
+
+- Frontend: <Next.js 14 / React + Vite / etc.>
+- Backend: <Supabase / API Routes / etc.>
+- Deploy: Vercel
+- Repositório: GitHub
+- Outras ferramentas: <Resend, Stripe, Z-API, etc., conforme o projeto>
+
+### Versões
+
+- Node: <versão>
+- Package manager: <npm / pnpm / bun>
+
+## Estrutura de pastas
+
+\`\`\`
+<projeto>/
+├── src/
+│   ├── app/             ← rotas Next.js
+│   ├── components/      ← componentes React
+│   ├── lib/             ← utilitários e clientes
+│   └── types/           ← tipos TypeScript
+├── docs/
+│   └── features/        ← PRDs e Specs por feature
+├── supabase/
+│   └── migrations/      ← migrations SQL
+├── .claude/
+│   └── commands/        ← slash commands (/research, /spec, /implement)
+└── CLAUDE.md            ← este arquivo
+\`\`\`
+
+## Variáveis de ambiente
+
+Configuradas em `.env.local` (não versionado) e no painel da Vercel:
+
+\`\`\`
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+<outras conforme o projeto>
+\`\`\`
+
+## Comandos comuns
+
+\`\`\`bash
+# Desenvolvimento
+npm run dev
+
+# Build de produção (sempre rodar antes de declarar feito)
+npm run build
+
+# Tipos atualizados do Supabase
+npx supabase gen types typescript --project-id <ref> > src/types/database.ts
+
+# Deploy de Edge Function (com flag para webhooks externos)
+supabase functions deploy <nome> --no-verify-jwt
+\`\`\`
+
+## Slash commands disponíveis
+
+- `/research <descrição>` — Fase 1 do SDD: gera PRD
+- `/spec <caminho do PRD>` — Fase 2 do SDD: gera Spec
+- `/implement <caminho da Spec>` — Fase 3 do SDD: implementa
+
+Ritual: `/clear` entre cada fase, sempre.
+
+## Convenções
+
+### Commits
+Conventional Commits: `feat:`, `fix:`, `chore:`, `docs:`, `refactor:`
+
+### Branches
+- `main` → produção
+- `feature/<nome>` → features novas
+- `fix/<nome>` → correções
+
+### PRDs e Specs
+Cada feature tem sua pasta em `docs/features/<nome>/`:
+- `PRD.md` — produto da Fase 1
+- `Spec.md` — produto da Fase 2
+
+## Armadilhas conhecidas neste projeto
+
+<Acrescente aqui à medida que aprender. Exemplos:>
+
+- <Edge Function X precisa de --no-verify-jwt>
+- <Cron job Y roda às 3h UTC>
+- <Variável Z precisa estar setada no Vercel preview também>
+
+## Referências externas
+
+<Links para docs específicas frequentemente consultadas neste projeto.>
+
+- Supabase Dashboard: https://app.supabase.com/project/<ref>
+- Vercel Dashboard: https://vercel.com/<org>/<projeto>
+- Repositório: https://github.com/<usuario>/<projeto>
