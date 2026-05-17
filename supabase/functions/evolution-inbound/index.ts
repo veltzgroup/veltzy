@@ -16,6 +16,7 @@ interface EvolutionInboundPayload {
   message_type: 'text' | 'image' | 'audio' | 'video' | 'document'
   media_url?: string
   media_mime_type?: string
+  file_name?: string
   timestamp: string
   ad_context?: {
     ad_id?: string
@@ -82,7 +83,7 @@ Deno.serve(async (req) => {
       messageType: payload.message_type,
       externalId: payload.message_id,
       fileUrl: payload.media_url ?? null,
-      fileName: null,
+      fileName: payload.file_name ?? null,
       fileMimeType: payload.media_mime_type ?? null,
       source: 'whatsapp',
       instanceName: payload.instance_name,
