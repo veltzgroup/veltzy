@@ -12,10 +12,12 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import { LeadTagsInput } from '@/components/pipeline/lead-tags-input'
+import { toast } from 'sonner'
 import { useCreateLead } from '@/hooks/use-leads'
 import { usePipelineStages } from '@/hooks/use-pipeline-stages'
 import { useLeadSources } from '@/hooks/use-lead-sources'
 import { useCompanyLimits } from '@/hooks/use-company-limits'
+import { usePipelineStore } from '@/stores/pipeline.store'
 import type { LeadTemperature } from '@/types/database'
 import { leadTemperatureConfig } from '@/lib/lead-config'
 
@@ -26,7 +28,7 @@ const schema = z.object({
   stage_id: z.string().uuid(),
   source_id: z.string().uuid().optional(),
   temperature: z.enum(['cold', 'warm', 'hot', 'fire']),
-  deal_value: z.number().nonnegative().optional(),
+  deal_value: z.number().nonnegative().optional().or(z.nan().transform(() => undefined)),
   observations: z.string().optional(),
   tags: z.array(z.string()),
 })
@@ -42,6 +44,8 @@ interface CreateLeadModalProps {
 
 const CreateLeadModal = ({ open, onClose, defaultStageId, pipelineId }: CreateLeadModalProps) => {
   const createLead = useCreateLead()
+  const activePipelineId = usePipelineStore((s) => s.activePipelineId)
+  const resolvedPipelineId = pipelineId ?? activePipelineId
   const { data: stages } = usePipelineStages()
   const { data: sources } = useLeadSources()
   const { data: leadLimits } = useCompanyLimits('leads')
@@ -57,10 +61,13 @@ const CreateLeadModal = ({ open, onClose, defaultStageId, pipelineId }: CreateLe
   })
 
   const onSubmit = async (values: FormValues) => {
-    if (!pipelineId) return
+    if (!resolvedPipelineId) {
+      toast.error('Nenhum pipeline selecionado')
+      return
+    }
     const input = {
       ...values,
-      pipeline_id: pipelineId,
+      pipeline_id: resolvedPipelineId,
       deal_value: values.deal_value || undefined,
       email: values.email || undefined,
       name: values.name || undefined,
