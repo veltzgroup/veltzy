@@ -373,6 +373,9 @@ verify_jwt = false
 [functions.whatsapp-send]
 verify_jwt = true
 
+[functions.whatsapp-instance-manage]
+verify_jwt = false
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.
