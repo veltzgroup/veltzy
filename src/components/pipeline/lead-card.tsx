@@ -1,8 +1,10 @@
+import { useState } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { cn } from '@/lib/utils'
 import { usePipelineStore } from '@/stores/pipeline.store'
 import { LeadSourceBadge } from '@/components/pipeline/lead-source-badge'
+import { DealValueDialog } from '@/components/pipeline/deal-value-dialog'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent,
@@ -11,13 +13,26 @@ import {
 import { useRoles } from '@/hooks/use-roles'
 import { useLeadTaskCount } from '@/hooks/use-tasks'
 import { usePipelineStages } from '@/hooks/use-pipeline-stages'
-import { useMoveLeadToStage } from '@/hooks/use-leads'
+import { useMoveLeadToStage, useUpdateDealValueAndMove } from '@/hooks/use-leads'
 import { timeAgo } from '@/lib/time'
 import type { LeadWithDetails } from '@/types/database'
 import { useNavigate } from 'react-router-dom'
-import { Phone, Mail, MoreVertical, Pencil, ArrowRightLeft, UserRoundPen, Clock, MessageSquare, Bot, CheckSquare, FolderInput, ArrowLeftRight } from 'lucide-react'
+import { Phone, Mail, MoreVertical, Pencil, ArrowRightLeft, UserRoundPen, Clock, MessageSquare, Bot, CheckSquare, FolderInput, ArrowLeftRight, AlertTriangle } from 'lucide-react'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import type { LeadTemperature } from '@/types/database'
+
+function isProposalStage(slug: string) {
+  return slug.includes('proposta') || slug.includes('proposal')
+}
+
+function needsDealValueWarning(lead: LeadWithDetails, stages: { id: string; slug: string; position: number }[] | undefined) {
+  if (!stages || (lead.deal_value && lead.deal_value > 0)) return false
+  const currentStage = stages.find((s) => s.id === lead.stage_id)
+  if (!currentStage) return false
+  const proposalStage = stages.find((s) => isProposalStage(s.slug))
+  if (!proposalStage) return false
+  return currentStage.position >= proposalStage.position
+}
 
 interface LeadCardProps {
   lead: LeadWithDetails
@@ -52,6 +67,9 @@ const LeadCard = ({ lead, onTransfer, onMovePipeline, fireOnly }: LeadCardProps)
   const { data: taskCount } = useLeadTaskCount(lead.id)
   const { data: stages } = usePipelineStages()
   const moveToStage = useMoveLeadToStage()
+  const updateDealValueAndMove = useUpdateDealValueAndMove()
+  const [dealValuePending, setDealValuePending] = useState<{ stageId: string } | null>(null)
+  const showDealWarning = needsDealValueWarning(lead, stages)
 
   const {
     attributes,
@@ -140,7 +158,13 @@ const LeadCard = ({ lead, onTransfer, onMovePipeline, fireOnly }: LeadCardProps)
                 .map((s) => (
                   <DropdownMenuItem
                     key={s.id}
-                    onClick={() => moveToStage.mutate({ leadId: lead.id, stageId: s.id })}
+                    onClick={() => {
+                      if (isProposalStage(s.slug) && (!lead.deal_value || lead.deal_value <= 0)) {
+                        setDealValuePending({ stageId: s.id })
+                        return
+                      }
+                      moveToStage.mutate({ leadId: lead.id, stageId: s.id })
+                    }}
                   >
                     <ArrowRightLeft className="h-4 w-4" />
                     <span className="flex items-center gap-1.5">
@@ -206,6 +230,21 @@ const LeadCard = ({ lead, onTransfer, onMovePipeline, fireOnly }: LeadCardProps)
 
         <TemperatureBar temperature={lead.temperature} />
 
+        {showDealWarning && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              const proposalStage = stages?.find((s) => isProposalStage(s.slug))
+              if (proposalStage) setDealValuePending({ stageId: lead.stage_id })
+            }}
+            className="flex items-center gap-1.5 w-full rounded-md bg-amber-500/10 border border-amber-500/20 px-2 py-1 text-[10px] text-amber-700 dark:text-amber-400 hover:bg-amber-500/20 transition-colors cursor-pointer"
+          >
+            <AlertTriangle className="h-3 w-3 shrink-0" />
+            Valor do negocio obrigatorio
+          </button>
+        )}
+
         <div className="flex items-center justify-between gap-2">
           <LeadSourceBadge source={lead.lead_sources} />
           <div className="flex items-center gap-2">
@@ -249,6 +288,21 @@ const LeadCard = ({ lead, onTransfer, onMovePipeline, fireOnly }: LeadCardProps)
           </div>
         </div>
       </div>
+
+      <DealValueDialog
+        open={!!dealValuePending}
+        onOpenChange={(open) => { if (!open) setDealValuePending(null) }}
+        leadName={lead.name || lead.phone}
+        onConfirm={(value) => {
+          if (!dealValuePending) return
+          updateDealValueAndMove.mutate({
+            leadId: lead.id,
+            stageId: dealValuePending.stageId,
+            dealValue: value,
+          })
+          setDealValuePending(null)
+        }}
+      />
     </div>
   )
 }

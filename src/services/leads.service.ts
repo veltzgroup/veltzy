@@ -129,6 +129,23 @@ export const moveLeadToStage = async (companyId: string, leadId: string, stageId
   return data
 }
 
+export const updateDealValueAndMove = async (
+  companyId: string,
+  leadId: string,
+  stageId: string,
+  dealValue: number
+): Promise<Lead> => {
+  const { data, error } = await veltzy()
+    .from('leads')
+    .update({ stage_id: stageId, deal_value: dealValue })
+    .eq('id', leadId)
+    .eq('company_id', companyId)
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
 const BATCH_SIZE = 50
 
 const chunk = <T>(arr: T[], size: number): T[][] => {

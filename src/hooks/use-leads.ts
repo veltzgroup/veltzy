@@ -129,6 +129,37 @@ export const useMoveLeadToStage = () => {
   })
 }
 
+export const useUpdateDealValueAndMove = () => {
+  const queryClient = useQueryClient()
+  const companyId = useAuthStore((s) => s.company?.id)
+  const queryKey = useLeadsQueryKey()
+
+  return useMutation({
+    mutationFn: ({ leadId, stageId, dealValue }: { leadId: string; stageId: string; dealValue: number }) =>
+      leadsService.updateDealValueAndMove(companyId!, leadId, stageId, dealValue),
+    onMutate: async ({ leadId, stageId, dealValue }) => {
+      await queryClient.cancelQueries({ queryKey })
+      const previousLeads = queryClient.getQueryData<LeadWithDetails[]>(queryKey)
+
+      queryClient.setQueryData<LeadWithDetails[]>(
+        queryKey,
+        (old) => old?.map((lead) => (lead.id === leadId ? { ...lead, stage_id: stageId, deal_value: dealValue } : lead))
+      )
+
+      return { previousLeads }
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previousLeads) {
+        queryClient.setQueryData(queryKey, context.previousLeads)
+      }
+      toast.error('Erro ao mover lead. Tente novamente.')
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['leads'] })
+    },
+  })
+}
+
 export const useMoveLeadToPipeline = () => {
   const queryClient = useQueryClient()
   const companyId = useAuthStore((s) => s.company?.id)

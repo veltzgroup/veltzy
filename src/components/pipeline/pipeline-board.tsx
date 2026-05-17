@@ -23,12 +23,17 @@ import { PipelineSelector } from '@/components/pipeline/pipeline-selector'
 import { StageManagerModal } from '@/components/pipeline/stage-manager-modal'
 import { TransferLeadModal } from '@/components/pipeline/transfer-lead-modal'
 import { MovePipelineModal } from '@/components/pipeline/move-pipeline-modal'
+import { DealValueDialog } from '@/components/pipeline/deal-value-dialog'
 import { usePipelines } from '@/hooks/use-pipelines'
 import { usePipelineStages } from '@/hooks/use-pipeline-stages'
-import { useLeads, useMoveLeadToStage } from '@/hooks/use-leads'
+import { useLeads, useMoveLeadToStage, useUpdateDealValueAndMove } from '@/hooks/use-leads'
 import { usePipelineStore } from '@/stores/pipeline.store'
 import { triggerCelebration } from '@/lib/celebration'
 import type { LeadWithDetails } from '@/types/database'
+
+function isProposalStage(slug: string) {
+  return slug.includes('proposta') || slug.includes('proposal')
+}
 
 const PipelineBoard = () => {
   const queryClient = useQueryClient()
@@ -48,6 +53,7 @@ const PipelineBoard = () => {
   const { data: leads, isLoading: leadsLoading, isFetching: leadsFetching, isError: leadsError, refetch: refetchLeads } = useLeads()
   const isRefetching = (stagesFetching && !stagesLoading) || (leadsFetching && !leadsLoading)
   const moveLeadToStage = useMoveLeadToStage()
+  const updateDealValueAndMove = useUpdateDealValueAndMove()
 
   const { activeLeadId, setActiveLeadId, selectedLeadId, setSelectedLeadId, filters } = usePipelineStore()
 
@@ -57,6 +63,7 @@ const PipelineBoard = () => {
   const [transferLeadId, setTransferLeadId] = useState<string | null>(null)
   const [movePipelineLead, setMovePipelineLead] = useState<LeadWithDetails | null>(null)
   const [fireOnly, setFireOnly] = useState(false)
+  const [dealValuePending, setDealValuePending] = useState<{ leadId: string; stageId: string; leadName: string } | null>(null)
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -137,10 +144,17 @@ const PipelineBoard = () => {
       const stageId = targetStage ? targetStage.id : leads?.find((l) => l.id === overId)?.stage_id
       if (!stageId || stageId === lead.stage_id) return
 
+      const destStage = stages?.find((s) => s.id === stageId)
+
+      // Interceptar: proposta sem deal_value
+      if (destStage && isProposalStage(destStage.slug) && (!lead.deal_value || lead.deal_value <= 0)) {
+        setDealValuePending({ leadId, stageId, leadName: lead.name || lead.phone })
+        return
+      }
+
       moveLeadToStage.mutate({ leadId, stageId })
 
-      const finalStage = stages?.find((s) => s.id === stageId)
-      if (finalStage?.is_final && finalStage?.is_positive) {
+      if (destStage?.is_final && destStage?.is_positive) {
         triggerCelebration()
         toast.success('Negocio fechado! 🎉')
       }
@@ -275,6 +289,26 @@ const PipelineBoard = () => {
         currentPipelineId={activePipelineId ?? ''}
         open={!!movePipelineLead}
         onClose={() => setMovePipelineLead(null)}
+      />
+
+      <DealValueDialog
+        open={!!dealValuePending}
+        onOpenChange={(open) => { if (!open) setDealValuePending(null) }}
+        leadName={dealValuePending?.leadName ?? ''}
+        onConfirm={(value) => {
+          if (!dealValuePending) return
+          updateDealValueAndMove.mutate({
+            leadId: dealValuePending.leadId,
+            stageId: dealValuePending.stageId,
+            dealValue: value,
+          })
+          const destStage = stages?.find((s) => s.id === dealValuePending.stageId)
+          if (destStage?.is_final && destStage?.is_positive) {
+            triggerCelebration()
+            toast.success('Negocio fechado! 🎉')
+          }
+          setDealValuePending(null)
+        }}
       />
     </div>
   )
