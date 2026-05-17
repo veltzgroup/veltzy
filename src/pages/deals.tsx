@@ -86,7 +86,7 @@ const DealsPage = () => {
   const openValue = openLeads.reduce((sum, l) => sum + (l.deal_value ?? 0), 0)
   const closedValue = closedLeads.reduce((sum, l) => sum + (l.deal_value ?? 0), 0)
   const lostValue = lostLeads.reduce((sum, l) => sum + (l.deal_value ?? 0), 0)
-  const avgTicket = leads.length > 0 ? totalValue / leads.length : 0
+  const avgTicket = closedLeads.length > 0 ? closedValue / closedLeads.length : 0
 
   const stageMap = new Map(stages?.map((s) => [s.id, s]) ?? [])
 
@@ -299,9 +299,9 @@ const DealsPage = () => {
         <div className="glass-card rounded-xl p-5">
           {/* Toggle arquivados */}
           {(isAdmin || isManager) && (
-            <div className="flex items-center gap-2 mb-4">
-              <Switch checked={showArchived} onCheckedChange={setShowArchived} />
+            <div className="flex items-center gap-2 mb-4 justify-end">
               <span className="text-sm text-muted-foreground">Mostrar arquivados</span>
+              <Switch checked={showArchived} onCheckedChange={setShowArchived} />
             </div>
           )}
 
