@@ -14,7 +14,7 @@ Ecossistema SaaS multi-produto da Daxen Labs com identidade unificada. Cada prod
 
 ## ESTADO ATUAL DO VELTZY
 
-O Veltzy opera em **Supabase proprio** (projeto `frwzyfnrztotkggvksci`, regiao Sao Paulo), ainda nao migrado para o Supabase Central. Deploy via Vercel (app.veltzy.com). GitHub: veltzgroup/veltzy-app.
+O Veltzy opera em **Supabase proprio** (projeto `frwzyfnrztotkggvksci`, regiao Sao Paulo), ainda nao migrado para o Supabase Central. Deploy via Vercel (app.veltzy.com). GitHub: tonimeloveltz/veltzy.
 
 Feature-complete com 8 fases implementadas:
 1. Foundation (auth, multi-tenant, onboarding, layout)
