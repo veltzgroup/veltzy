@@ -1,7 +1,7 @@
 # PRD - SDR AI v2 (Veltzy)
 
 > Feature: `sdr-ai-v2`
-> Repo: `veltzgroup/veltzy` (com dependências em `veltzgroup/hub`)
+> Repo: `veltzgroup/veltzy-app` (com dependências em `veltzgroup/hub`)
 > Versão deste PRD: 1.0
 > Status: Aprovado para Fase 2 (Spec)
 
