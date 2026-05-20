@@ -1,6 +1,7 @@
 import { veltzy } from '@/lib/supabase'
 import type { LeadTemperature, PipelineStage, LeadSourceRecord, Pipeline, Profile } from '@/types/database'
 import type { LeadField } from '@/lib/csv-parser'
+import { normalizePhoneBR } from '@/lib/phone'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -55,8 +56,7 @@ const parseBrNumber = (value: string): number | undefined => {
 const normalizeText = (text: string): string =>
   text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/\s+/g, ' ')
 
-const normalizePhone = (phone: string): string =>
-  phone.replace(/\D/g, '')
+const normalizePhone = normalizePhoneBR
 
 export const mapCsvRowToLead = (
   row: string[],
