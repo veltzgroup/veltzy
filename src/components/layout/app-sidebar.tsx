@@ -55,7 +55,13 @@ const AppSidebar = () => {
   const { data: taskCounts } = useMyTaskCounts()
 
   const available = profile?.is_available ?? false
-  const onlineMembers = members?.filter((m) => m.is_available && m.id !== profile?.id) ?? []
+  const onlineMembers = members?.filter((m) => {
+    if (m.id === profile?.id) return false
+    if (!m.last_seen_at) return false
+    const lastSeen = new Date(m.last_seen_at).getTime()
+    const twoMinutesAgo = Date.now() - 2 * 60 * 1000
+    return lastSeen > twoMinutesAgo
+  }) ?? []
 
   const navItems: NavItem[] = [
     { label: 'Dashboard', href: '/', icon: LayoutDashboard },
