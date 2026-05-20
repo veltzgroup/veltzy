@@ -193,17 +193,67 @@ async function createLead(
     .eq('slug', 'whatsapp')
     .single()
 
-  // Atribuicao automatica (vendedor aleatorio disponivel)
+  // Atribuicao automatica com filtro por instancia
   let assignedTo: string | null = null
-  const { data: sellers } = await supabasePublic
-    .from('profiles')
-    .select('id')
-    .eq('company_id', params.companyId)
-    .eq('is_available', true)
 
-  if (sellers && sellers.length > 0) {
-    const idx = Math.floor(Math.random() * sellers.length)
-    assignedTo = sellers[idx].id
+  if (params.instanceName) {
+    // Evolution: filtrar vendedores pela instancia especifica
+    const { data: instanceSellers } = await supabasePublic
+      .from('profiles')
+      .select('id')
+      .eq('company_id', params.companyId)
+      .eq('is_available', true)
+      .eq('default_whatsapp_instance', params.instanceName)
+
+    if (instanceSellers && instanceSellers.length > 0) {
+      assignedTo = instanceSellers[Math.floor(Math.random() * instanceSellers.length)].id
+    } else {
+      // Fallback: buscar admins da empresa
+      const { data: adminRoles } = await supabasePublic
+        .from('user_roles')
+        .select('user_id')
+        .eq('company_id', params.companyId)
+        .eq('role', 'admin')
+
+      if (adminRoles && adminRoles.length > 0) {
+        const adminIds = adminRoles.map(r => r.user_id)
+
+        // Fallback a: admins ativos com mesma instancia
+        const { data: instanceAdmins } = await supabasePublic
+          .from('profiles')
+          .select('id')
+          .in('id', adminIds)
+          .eq('is_available', true)
+          .eq('default_whatsapp_instance', params.instanceName)
+
+        if (instanceAdmins && instanceAdmins.length > 0) {
+          assignedTo = instanceAdmins[Math.floor(Math.random() * instanceAdmins.length)].id
+        } else {
+          // Fallback b: qualquer admin ativo da empresa
+          const { data: anyAdmins } = await supabasePublic
+            .from('profiles')
+            .select('id')
+            .in('id', adminIds)
+            .eq('is_available', true)
+
+          if (anyAdmins && anyAdmins.length > 0) {
+            assignedTo = anyAdmins[Math.floor(Math.random() * anyAdmins.length)].id
+          }
+          // Fallback c: assignedTo permanece null, lead fica em queue
+        }
+      }
+    }
+  } else {
+    // Z-API legado / instancia unica: round-robin entre todos
+    const { data: sellers } = await supabasePublic
+      .from('profiles')
+      .select('id')
+      .eq('company_id', params.companyId)
+      .eq('is_available', true)
+
+    if (sellers && sellers.length > 0) {
+      assignedTo = sellers[Math.floor(Math.random() * sellers.length)].id
+    }
   }
 
   const { data: newLead } = await supabase
