@@ -18,10 +18,6 @@ export const useAuth = () => {
     }
   }
 
-  const signInWithGoogle = async () => {
-    await authService.signInWithGoogle()
-  }
-
   const signUp = async (email: string, password: string, name: string) => {
     await authService.signUp(email, password, name)
   }
@@ -62,7 +58,6 @@ export const useAuth = () => {
     isAuthenticated: !!store.user,
     hasCompany: !!store.company,
     signIn,
-    signInWithGoogle,
     signUp,
     signOut,
     hasRole,
