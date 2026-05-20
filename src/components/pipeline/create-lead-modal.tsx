@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -12,8 +13,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import { LeadTagsInput } from '@/components/pipeline/lead-tags-input'
-import { toast } from 'sonner'
 import { useCreateLead } from '@/hooks/use-leads'
+import { usePipelines } from '@/hooks/use-pipelines'
 import { usePipelineStages } from '@/hooks/use-pipeline-stages'
 import { useLeadSources } from '@/hooks/use-lead-sources'
 import { useCompanyLimits } from '@/hooks/use-company-limits'
@@ -25,7 +26,8 @@ const schema = z.object({
   phone: z.string().min(8, 'Telefone invalido'),
   name: z.string().optional(),
   email: z.string().email('Email invalido').optional().or(z.literal('')),
-  stage_id: z.string().uuid(),
+  pipeline_id: z.string().uuid('Selecione um pipeline'),
+  stage_id: z.string().uuid('Selecione uma fase'),
   source_id: z.string().uuid().optional(),
   temperature: z.enum(['cold', 'warm', 'hot', 'fire']),
   deal_value: z.number().nonnegative().optional().or(z.nan().transform(() => undefined)),
@@ -45,29 +47,57 @@ interface CreateLeadModalProps {
 const CreateLeadModal = ({ open, onClose, defaultStageId, pipelineId }: CreateLeadModalProps) => {
   const createLead = useCreateLead()
   const activePipelineId = usePipelineStore((s) => s.activePipelineId)
-  const resolvedPipelineId = pipelineId ?? activePipelineId
-  const { data: stages } = usePipelineStages()
+  const { data: pipelines } = usePipelines()
   const { data: sources } = useLeadSources()
   const { data: leadLimits } = useCompanyLimits('leads')
   const limitReached = leadLimits && !leadLimits.allowed
 
-  const { register, handleSubmit, control, reset, formState: { errors } } = useForm<FormValues>({
+  const initialPipelineId = pipelineId ?? activePipelineId ?? ''
+  const hasMultiplePipelines = (pipelines?.length ?? 0) > 1
+
+  const { register, handleSubmit, control, reset, watch, setValue, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
+      pipeline_id: initialPipelineId,
       stage_id: defaultStageId ?? '',
       temperature: 'cold',
       tags: [],
     },
   })
 
-  const onSubmit = async (values: FormValues) => {
-    if (!resolvedPipelineId) {
-      toast.error('Nenhum pipeline selecionado')
-      return
+  const selectedPipelineId = watch('pipeline_id')
+  const { data: stages } = usePipelineStages(selectedPipelineId || null)
+
+  // Quando pipeline muda, seleciona a primeira fase
+  useEffect(() => {
+    if (stages && stages.length > 0) {
+      const currentStageId = watch('stage_id')
+      const stageExists = stages.some((s) => s.id === currentStageId)
+      if (!stageExists) {
+        setValue('stage_id', stages[0].id)
+      }
     }
+  }, [stages, setValue, watch])
+
+  // Quando modal abre, reseta com pipeline correto
+  useEffect(() => {
+    if (open) {
+      const resolvedPipelineId = pipelineId ?? activePipelineId
+        ?? pipelines?.find((p) => p.is_default)?.id
+        ?? pipelines?.[0]?.id
+        ?? ''
+      reset({
+        pipeline_id: resolvedPipelineId,
+        stage_id: defaultStageId ?? '',
+        temperature: 'cold',
+        tags: [],
+      })
+    }
+  }, [open, pipelineId, activePipelineId, pipelines, defaultStageId, reset])
+
+  const onSubmit = async (values: FormValues) => {
     const input = {
       ...values,
-      pipeline_id: resolvedPipelineId,
       deal_value: values.deal_value || undefined,
       email: values.email || undefined,
       name: values.name || undefined,
@@ -113,6 +143,28 @@ const CreateLeadModal = ({ open, onClose, defaultStageId, pipelineId }: CreateLe
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
+            {hasMultiplePipelines && (
+              <div className="space-y-2">
+                <Label>Pipeline *</Label>
+                <Controller
+                  control={control}
+                  name="pipeline_id"
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {pipelines?.map((p) => (
+                          <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {errors.pipeline_id && <p className="text-xs text-destructive">{errors.pipeline_id.message}</p>}
+              </div>
+            )}
             <div className="space-y-2">
               <Label>Fase *</Label>
               <Controller
@@ -133,6 +185,9 @@ const CreateLeadModal = ({ open, onClose, defaultStageId, pipelineId }: CreateLe
               />
               {errors.stage_id && <p className="text-xs text-destructive">{errors.stage_id.message}</p>}
             </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label>Origem</Label>
               <Controller
@@ -152,9 +207,6 @@ const CreateLeadModal = ({ open, onClose, defaultStageId, pipelineId }: CreateLe
                 )}
               />
             </div>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label>Temperatura</Label>
               <Controller
@@ -176,10 +228,11 @@ const CreateLeadModal = ({ open, onClose, defaultStageId, pipelineId }: CreateLe
                 )}
               />
             </div>
-            <div className="space-y-2">
-              <Label>Valor (R$)</Label>
-              <Input type="number" step="0.01" placeholder="0,00" {...register('deal_value', { valueAsNumber: true })} />
-            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Valor (R$)</Label>
+            <Input type="number" step="0.01" placeholder="0,00" {...register('deal_value', { valueAsNumber: true })} />
           </div>
 
           <div className="space-y-2">
