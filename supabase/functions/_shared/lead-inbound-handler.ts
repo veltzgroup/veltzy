@@ -157,22 +157,33 @@ async function createLead(
   params: InboundParams,
 ): Promise<{ id: string; assigned_to: string | null; avatar_url: string | null; name: string | null; whatsapp_instance_name: string | null } | null> {
   // Pipeline padrao
-  let { data: defaultPipeline } = await supabase
+  const { data: rawDefault, error: defaultError } = await supabase
     .from('pipelines')
     .select('id')
     .eq('company_id', params.companyId)
     .eq('is_default', true)
+    .eq('is_active', true)
     .maybeSingle()
 
+  if (defaultError) {
+    console.error('[lead-inbound] Error fetching default pipeline:', JSON.stringify(defaultError))
+  }
+
+  let defaultPipeline = rawDefault
+
   if (!defaultPipeline) {
-    const { data: fallback } = await supabase
+    const { data: fallback, error: fallbackError } = await supabase
       .from('pipelines')
       .select('id')
       .eq('company_id', params.companyId)
       .eq('is_active', true)
       .order('position')
+      .order('created_at')
       .limit(1)
       .single()
+    if (fallbackError) {
+      console.error('[lead-inbound] Error fetching fallback pipeline:', JSON.stringify(fallbackError))
+    }
     defaultPipeline = fallback
   }
 
