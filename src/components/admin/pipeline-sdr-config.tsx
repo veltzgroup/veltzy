@@ -24,12 +24,12 @@ const PipelineSdrConfig = ({ pipelineId }: PipelineSdrConfigProps) => {
   const pipeline = pipelines?.find((p) => p.id === pipelineId)
   const isEvolution = whatsappStatus?.provider === 'evolution'
 
-  const [sdrInstance, setSdrInstance] = useState('')
+  const [sdrInstance, setSdrInstance] = useState('__none__')
   const [transferTemplate, setTransferTemplate] = useState('')
 
   useEffect(() => {
     if (pipeline) {
-      setSdrInstance(pipeline.sdr_instance_name ?? '')
+      setSdrInstance(pipeline.sdr_instance_name ?? '__none__')
       setTransferTemplate(pipeline.sdr_transfer_message_template ?? '')
     }
   }, [pipeline])
@@ -40,7 +40,7 @@ const PipelineSdrConfig = ({ pipelineId }: PipelineSdrConfigProps) => {
     updatePipeline.mutate({
       pipelineId,
       data: {
-        sdr_instance_name: sdrInstance || null,
+        sdr_instance_name: sdrInstance === '__none__' ? null : sdrInstance,
         sdr_transfer_message_template: transferTemplate || null,
       },
     }, {
@@ -68,7 +68,7 @@ const PipelineSdrConfig = ({ pipelineId }: PipelineSdrConfigProps) => {
               <SelectValue placeholder="Usar numero do vendedor" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Usar numero do vendedor</SelectItem>
+              <SelectItem value="__none__">Usar numero do vendedor</SelectItem>
               {instances?.map((inst) => (
                 <SelectItem key={inst.instance_name} value={inst.instance_name}>
                   {inst.phone_number ?? inst.instance_name}
