@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { normalizePhoneBR } from '../_shared/phone.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -37,7 +38,7 @@ Deno.serve(async (req) => {
     }
     const { data: stage } = await supabase.from('pipeline_stages').select('id').eq('pipeline_id', defaultPipeline?.id).order('position').limit(1).single()
 
-    const phone = payload.phone.replace(/\D/g, '')
+    const phone = normalizePhoneBR(payload.phone)
 
     const { data: existingLead } = await supabase.from('leads').select('id').eq('company_id', company.id).eq('phone', phone).maybeSingle()
 
