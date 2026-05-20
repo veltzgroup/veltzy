@@ -364,12 +364,55 @@ authorization_url_path = "/oauth/consent"
 # Allow dynamic client registration
 allow_dynamic_registration = false
 
+# --- Webhooks externos (sem JWT, validam por token/secret proprio) ---
 [functions.zapi-webhook]
 verify_jwt = false
 
 [functions.evolution-inbound]
 verify_jwt = false
 
+[functions.instagram-webhook]
+verify_jwt = false
+
+[functions.source-webhook]
+verify_jwt = false
+
+# --- Function-to-function (chamadas internas com service_role) ---
+[functions.evolution-send-message]
+verify_jwt = false
+
+[functions.sdr-ai]
+verify_jwt = false
+
+[functions.run-automations]
+verify_jwt = false
+
+[functions.instagram-send]
+verify_jwt = false
+
+[functions.send-invite-email]
+verify_jwt = false
+
+# --- Cron/scheduled (sem JWT, executadas por cron trigger) ---
+[functions.check-sla]
+verify_jwt = false
+
+[functions.check-whatsapp-health]
+verify_jwt = false
+
+[functions.distribute-queue]
+verify_jwt = false
+
+[functions.process-message-queue]
+verify_jwt = false
+
+[functions.send-task-reminders]
+verify_jwt = false
+
+[functions.fix-lead-names]
+verify_jwt = false
+
+# --- Frontend autenticado (verify_jwt=true, validam JWT do usuario) ---
 [functions.whatsapp-send]
 verify_jwt = true
 
