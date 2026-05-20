@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { handleInboundMessage } from '../_shared/lead-inbound-handler.ts'
+import { normalizePhoneBR } from '../_shared/phone.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -77,7 +78,7 @@ Deno.serve(async (req) => {
       supabaseUrl: url,
       supabaseKey: key,
       companyId: payload.company_id,
-      phone: payload.phone,
+      phone: normalizePhoneBR(payload.phone),
       senderName: payload.sender_name ?? null,
       content: payload.content,
       messageType: payload.message_type,

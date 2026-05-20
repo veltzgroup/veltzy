@@ -1,5 +1,6 @@
 import { supabase, veltzy } from '@/lib/supabase'
 import type { Lead, LeadWithDetails, CreateLeadInput, UpdateLeadInput } from '@/types/database'
+import { normalizePhoneBR } from '@/lib/phone'
 
 const LEAD_WITH_DETAILS_SELECT = `
   *,
@@ -82,9 +83,12 @@ export const createLead = async (companyId: string, input: CreateLeadInput): Pro
     throw new Error(`Limite de ${limits.limit} leads atingido. Entre em contato para fazer upgrade.`)
   }
 
+  const normalized = { ...input, company_id: companyId }
+  if (normalized.phone) normalized.phone = normalizePhoneBR(normalized.phone)
+
   const { data, error } = await veltzy()
     .from('leads')
-    .insert({ ...input, company_id: companyId })
+    .insert(normalized)
     .select()
     .single()
   if (error) {
@@ -97,9 +101,12 @@ export const createLead = async (companyId: string, input: CreateLeadInput): Pro
 }
 
 export const updateLead = async (companyId: string, leadId: string, input: UpdateLeadInput): Promise<Lead> => {
+  const payload = { ...input }
+  if (payload.phone) payload.phone = normalizePhoneBR(payload.phone)
+
   const { data, error } = await veltzy()
     .from('leads')
-    .update(input)
+    .update(payload)
     .eq('id', leadId)
     .eq('company_id', companyId)
     .select()
